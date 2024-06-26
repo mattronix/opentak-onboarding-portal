@@ -1,0 +1,109 @@
+html * {
+  font-family: {{branding.font_family}};
+}
+
+h1 {
+  font-family: '{{branding.font_family}}';
+  font-weight: 700;
+  color: {{branding.primary_color}} !important;
+}
+
+h2 {
+  font-family: {{branding.font_family}};
+  font-weight: 700;
+}
+
+h4 {
+  font-family: {{branding.font_family}};
+  color: {{branding.secondary_color}};
+  font-weight: bold;
+}
+
+h3 {
+  font-family: {{branding.font_family}};
+  color: {{branding.secondary_color}};
+}
+
+p {
+  font-family: {{branding.font_family}};
+  font-weight: 300;
+}
+
+a {
+  font-family: {{branding.font_family}};
+  font-weight: 300;
+}
+
+
+
+.navbar {
+  background-color: {{branding.navbar_color}} !important;
+}
+  
+.navbar ul li a {
+  font-size: 24px !important;
+  font-weight: 600;
+  color: #ffffff !important;
+}
+
+
+.btn-primary {
+  color: #fff;
+  background-color: {{branding.primary_color}};
+  border-color: {{branding.primary_color}};
+}
+
+.btn-primary:hover{
+  color: #fff;
+  background-color: {{branding.secondary_color}};
+  border-color: {{branding.secondary_color}};
+}
+
+.btn-primary-color {
+  color: #fff;
+  background-color: {{branding.primary_color}} !important;
+}
+.btn-secondary-color {
+  color: #fff;
+  background-color: {{branding.secondary_color}} !important;
+}
+
+.primary-color {
+  color: {{branding.primary_color}} !important;
+}
+.secondary-color {
+  color: {{branding.secondary_color}} !important;
+}
+
+.primary-background-color {
+  background-color: {{branding.primary_color}} !important;
+}
+.secondary-background-color {
+  background-color: {{branding.secondary_color}} !important;
+}
+
+.accent-background-color {
+  background-color: {{branding.accent_color}} !important;
+}
+.accent-color {
+  color: {{branding.accent_color}} !important;
+}
+
+
+.uptic-breadcrumb {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  list-style: none;
+  background-color: lightgrey;
+  border-radius: .25rem;
+}
+
+.branding_logo {
+  height: {{branding.logo_height}};
+  width: {{branding.logo_width}};
+  content: url("{{branding.logo_url}}");
+}
