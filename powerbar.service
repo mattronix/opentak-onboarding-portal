@@ -1,0 +1,19 @@
+[Unit]
+Description=Powerbar daemon
+After=network.target
+
+[Service]
+User=powerbar
+Group=powerbar
+Environment="VIRTUAL_ENV=/opt/powerbar/venv"
+Environment="PATH=/opt/powerbar/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/powerbar/venv/bin/gunicorn app:app \
+		      -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
+                      --name powerbar --workers 1 \
+                      --max-requests 400  --max-requests-jitter 50 \
+                      --log-level=info --bind=0.0.0.0:5000
+WorkingDirectory=/opt/powerbar/ti-powerbar
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
