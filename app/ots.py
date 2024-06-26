@@ -64,6 +64,7 @@ class OTSClient:
         
         if not response.get('status_code') == 200:
             raise Exception(response)
+
         return response 
 
 

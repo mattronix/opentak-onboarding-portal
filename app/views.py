@@ -7,7 +7,7 @@ from app.settings import OTS_URL
 routes = Blueprint('routes', __name__)
 
 # Create a dictionary to store the active telnet connections
-
+#otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 
 
 @routes.route('/')
@@ -26,7 +26,7 @@ def login():
         # ...
         try:
             otsSession = OTSClient(OTS_URL, username, password)
-            otsSession.get_me()
+            print(otsSession.get_me())
 
         except Exception as e:
             print(f"Error: {e}")
@@ -53,9 +53,6 @@ def branding_view():
         'logo_height': '50px',
         'logo_width':'50px'
         }
-
-
-    branding['logo_url'] = "https://techinc.nl/images/techinclogo_0.png"
 
     resp = make_response(render_template('branding.css', branding=branding))
     resp.headers['Content-Type'] = 'text/css'
