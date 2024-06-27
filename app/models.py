@@ -133,12 +133,12 @@ class UserRoleModel(db.Model):
 class UserModel(db.Model):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
-    email: Mapped[str] = mapped_column(unique=True)
-    firstName: Mapped[str] = mapped_column()
-    lastName: Mapped[str] = mapped_column()
-    callsign: Mapped[str] = mapped_column()
+    id: Mapped[int] = mapped_column(primary_key=True,nullable=True)
+    username: Mapped[str] = mapped_column(unique=True,nullable=True)
+    email: Mapped[str] = mapped_column(unique=True,nullable=True)
+    firstName: Mapped[str] = mapped_column(nullable=True)
+    lastName: Mapped[str] = mapped_column(nullable=True)
+    callsign: Mapped[str] = mapped_column(nullable=True)
 
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
@@ -160,9 +160,9 @@ class UserModel(db.Model):
     )
 
     @staticmethod
-    def create_user(username, email, first_name, last_name):
+    def create_user(username, email=None, first_name=None, last_name=None, callsign=None, roles=[], takprofiles=[]):
         try:
-            user = UserModel(username=username, email=email, firstName=first_name, lastName=last_name)
+            user = UserModel(username=username, email=email, firstName=first_name, lastName=last_name, callsign=callsign, roles=roles, takprofiles=takprofiles)
             db.session.add(user)
             db.session.commit()
             return user

@@ -44,9 +44,6 @@ def login():
             if user is None:
                 UserModel.create_user(username)
             
-
-
-
         except Exception as e:
             print(f"Error: {e}")
             return render_template('login.html', error="Invalid username or password", form=form)
