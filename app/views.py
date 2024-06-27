@@ -4,6 +4,7 @@ from flask import redirect, url_for
 from app.settings import OTS_URL
 from app.decorators import login_required
 from app.forms import LoginForm
+from app.models import User, db
 
 routes = Blueprint('routes', __name__)
 
@@ -16,6 +17,9 @@ routes = Blueprint('routes', __name__)
 @login_required
 def home():  
     user = session.get('ots_profile')
+    user = User(username='test', email='', firstName='test', lastName='tets')
+    db.session.add(user)
+    db.session.commit()
     return render_template('index.html', user=user)
 
 
