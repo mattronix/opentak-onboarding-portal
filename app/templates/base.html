@@ -67,8 +67,15 @@
 </ul>
   </div>
 
-  {% block content %}{% endblock %}
+  {% if error %}
+  <div class="container">
+    <div class="alert alert-danger" role="alert">
+        {{ error }}
+    </div>
+ </div>
+{% endif %}
 
+  {% block content %}{% endblock %}
 
   <div>
 

@@ -3,27 +3,28 @@
 
 
 {% block content %}
-<div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
-    <div class="card" style="width:300px;">
-        <div class="card-header">
-            <h2>Login</h2>
-        </div>
-        <div class="card-body">
-            <form action="/login" method="POST">
-                <label for="username">Username:</label>
-                <input class="form-control" type="text" id="username" name="username" required><br><br>
-                
-                <label for="password">Password:</label>
-                <input class="form-control" type="password" id="password" name="password" required><br><br>
-                
-                <input class="btn" type="submit" value="Login">
-                
-                <div id="error-message"></div> <!-- Element to display error message -->
-            </form>
-        </div>
-    </div>
-</div>
 
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
 
+                    <div class="card-body">
+                        <h2 class="text-center">Login</h2>
+                        <hr>
+                    <form action="/login" method="POST">
+                        <label for="username">Username:</label>
+                        <input class="form-control" type="text" id="username" name="username" required><br><br>
+                        
+                        <label for="password">Password:</label>
+                        <input class="form-control" type="password" id="password" name="password" required><br><br>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>  
 
 {% endblock %}

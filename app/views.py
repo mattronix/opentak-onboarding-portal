@@ -30,9 +30,6 @@ def login():
         # Get the username and password from the form
         username = request.form.get('username')
         password = request.form.get('password')
-
-        # Perform authentication logic here
-        # ...
         try:
             otsSession = OTSClient(OTS_URL, username, password)
             # Store the OTS session in a session variable
