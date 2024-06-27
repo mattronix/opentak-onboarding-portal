@@ -139,6 +139,7 @@ class UserModel(db.Model):
     firstName: Mapped[str] = mapped_column(nullable=True)
     lastName: Mapped[str] = mapped_column(nullable=True)
     callsign: Mapped[str] = mapped_column(nullable=True)
+    onboardedBy: Mapped[str] = mapped_column(nullable=True)
 
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
