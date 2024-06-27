@@ -1,15 +1,15 @@
 from flask import render_template, Blueprint, request, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
-from app.settings import OTS_URL
+from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
 from app.decorators import login_required
-from app.forms import LoginForm
+from app.forms import LoginForm, RegisterForm
 from app.models import UserModel, UserRoleModel, db
 
 routes = Blueprint('routes', __name__)
 
 # Create a dictionary to store the active telnet connections
-#otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
+otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 
 
 
@@ -46,22 +46,19 @@ def login():
             if user is None:
                 user = UserModel.create_user(username)
 
-            for roles in ots_profile['response']['roles']:
-                for role in ots_profile['response']['roles']:
+            for role in ots_profile['response']['roles']:
+                role_name = role['name']
+                role_description = role['description']
+
+                userRoleModel = UserRoleModel.get_role_by_name(role['name'])
+
+                if userRoleModel is None:
+                    userRoleModel = UserRoleModel.create_role(role_name)
                     
-                    role_name = role['name']
-                    role_description = role['description']
-
-                    userRoleModel = UserRoleModel.get_role_by_name(role['name'])
-
-                    if userRoleModel is None:
-                        userRoleModel = UserRoleModel.create_role(role_name)
-                        
-                    if user not in userRoleModel.users:
-                        userRoleModel.users.append(user)
-                        db.session.commit()
+                if user not in userRoleModel.users:
+                    userRoleModel.users.append(user)
+                    db.session.commit()
                 
-            
         except Exception as e:
             print(f"Error: {e}")
             return render_template('login.html', error="Invalid username or password", form=form)
@@ -72,6 +69,44 @@ def login():
 
     # Render the login page template for GET requests
     return render_template('login.html', form=form)
+
+
+
+@routes.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        # Get the username and password from the form
+        username = form.username.data
+        password = form.password.data
+        callsign = form.callsign.data
+        firstname = form.firstname.data
+        lastname = form.lastname.data
+        email = form.email.data
+
+
+        if (UserModel.query.filter_by(username=username).first() is not None):
+            return render_template('register.html', error="Username already exists.", form=form)
+        
+        if (UserModel.query.filter_by(email=email).first() is not None):
+            return render_template('register.html', error="Email already exists.", form=form)
+
+        if (UserModel.query.filter_by(callsign=callsign).first() is not None):
+            return render_template('register.html', error="Callsign already exists.", form=form)
+
+        try:
+            otsClient.create_user(username, password)
+            user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email)
+        except Exception as e:
+            return render_template('register.html', error=f"Error: {e}", form=form)
+
+
+        # Redirect to the home page if authentication is successful
+        return redirect(url_for('routes.login'))
+
+    # Render the login page template for GET requests
+    return render_template('register.html', form=form)
+
 
 @routes.route('/static/css/branding.css')  
 def branding_view(): 

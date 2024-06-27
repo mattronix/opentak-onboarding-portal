@@ -160,9 +160,9 @@ class UserModel(db.Model):
     )
 
     @staticmethod
-    def create_user(username, email=None, first_name=None, last_name=None, callsign=None, roles=[], takprofiles=[]):
+    def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[]):
         try:
-            user = UserModel(username=username, email=email, firstName=first_name, lastName=last_name, callsign=callsign, roles=roles, takprofiles=takprofiles)
+            user = UserModel(username=username, email=email, firstName=firstname, lastName=lastname, callsign=callsign, roles=roles, takprofiles=takprofiles)
             db.session.add(user)
             db.session.commit()
             return user
@@ -341,7 +341,8 @@ class OnboardingCodeModel(db.Model):
     onboardingCode: Mapped[str] = mapped_column()
     ownedByUser: Mapped[bool] = mapped_column()
     ownedByRole: Mapped[bool] = mapped_column()
-
+    uses: Mapped[int] = mapped_column()
+    maxUses: Mapped[int] = mapped_column()
 
     roles = relationship(
         "UserRoleModel",
