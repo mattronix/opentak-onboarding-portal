@@ -4,23 +4,34 @@
 
 {% block content %}
 
+
+{% for field, errors in form.errors.items() %}
+<div class="container">
+    <div class="alert alert-error">
+        {{ form[field].label }}: {{ ', '.join(errors) }}
+    </div>
+</div>
+{% endfor %}
+
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-
+                 <h2 class="mt-5 text-center">Login</h2>
                     <div class="card-body">
-                        <h2 class="text-center">Login</h2>
-                        <hr>
-                    <form action="/login" method="POST">
-                        <label for="username">Username:</label>
-                        <input class="form-control" type="text" id="username" name="username" required><br><br>
-                        
-                        <label for="password">Password:</label>
-                        <input class="form-control" type="password" id="password" name="password" required><br><br>
-                        
-                        <button type="submit" class="btn btn-primary btn-block">Login</button>
-                    </form>
+                        <form action="/login" method="post" novalidate>
+                            {{ form.csrf_token }}
+                            {{ form.hidden_tag() }}
+                            <div class="form-group">
+                                {{ form.username.label(class_="mt-3") }}
+                                {{ form.username(class_="form-control", size=32) }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.password.label(class_="mt-3") }}
+                                {{ form.password(class_="form-control", size=32) }}
+                            </div>
+                            {{ form.submit(class_="mt-5 form-control btn-primary") }}
+                        </form>
                 </div>
             </div>
         </div>

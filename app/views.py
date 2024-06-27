@@ -3,6 +3,7 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL
 from app.decorators import login_required
+from app.forms import LoginForm
 
 routes = Blueprint('routes', __name__)
 
@@ -26,10 +27,11 @@ def logout():
 
 @routes.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
+    form = LoginForm()
+    if form.validate_on_submit():
         # Get the username and password from the form
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = form.username.data
+        password = form.password.data
         try:
             otsSession = OTSClient(OTS_URL, username, password)
             # Store the OTS session in a session variable
@@ -37,14 +39,14 @@ def login():
             
         except Exception as e:
             print(f"Error: {e}")
-            return render_template('login.html', error="Invalid username or password")
+            return render_template('login.html', error="Invalid username or password", form=form)
 
 
         # Redirect to the home page if authentication is successful
         return redirect(url_for('routes.home'))
 
     # Render the login page template for GET requests
-    return render_template('login.html')
+    return render_template('login.html', form=form)
 
 @routes.route('/static/css/branding.css')  
 def branding_view(): 
