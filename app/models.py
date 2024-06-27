@@ -337,13 +337,13 @@ class TakSettingsModel(db.Model):
 class OnboardingCodeModel(db.Model):
     __tablename__ = "onboardingcodes"
     id: Mapped[int] = mapped_column(primary_key=True)
-    description: Mapped[str] = mapped_column()
-    name: Mapped[str] = mapped_column()
-    onboardingCode: Mapped[str] = mapped_column()
-    ownedByUser: Mapped[bool] = mapped_column()
-    ownedByRole: Mapped[bool] = mapped_column()
-    uses: Mapped[int] = mapped_column()
-    maxUses: Mapped[int] = mapped_column()
+    description: Mapped[str] = mapped_column(nullable=True)
+    name: Mapped[str] = mapped_column(unique=True, nullable=True)
+    onboardingCode: Mapped[str] = mapped_column(unique=True)
+    ownedByUser: Mapped[bool] = mapped_column(nullable=True)
+    ownedByRole: Mapped[bool] = mapped_column(nullable=True)
+    uses: Mapped[int] = mapped_column(nullable=True)
+    maxUses: Mapped[int] = mapped_column(nullable=True)
 
     roles = relationship(
         "UserRoleModel",
@@ -355,10 +355,11 @@ class OnboardingCodeModel(db.Model):
         secondary=user_onboardingcode_association,
         back_populates="onboarding_codes"
     )
+    
     @staticmethod
-    def create_onboarding_code(description, name, onboarding_code, owned_by_user, owned_by_role):
+    def create_onboarding_code(onboardingcode, name=None, description=None, ownedbyuser=None, ownedbyrole=None):
         try:
-            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboarding_code, ownedByUser=owned_by_user, ownedByRole=owned_by_role)
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, ownedByUser=ownedbyrole, ownedByRole=ownedbyrole)
             db.session.add(onboarding_code)
             db.session.commit()
             return onboarding_code

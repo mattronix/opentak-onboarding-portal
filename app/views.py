@@ -4,7 +4,7 @@ from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm
-from app.models import UserModel, UserRoleModel, db
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
 
 routes = Blueprint('routes', __name__)
 
@@ -72,8 +72,19 @@ def login():
 
 
 
-@routes.route('/register', methods=['GET', 'POST'])
-def register():
+@routes.route('/register/<onboardingCode>', methods=['GET', 'POST'])
+def register(onboardingCode):
+
+    onboardingCodeModel = OnboardingCodeModel.query.filter_by(onboardingCode=onboardingCode).first()
+
+    if onboardingCodeModel is None:
+        return render_template('restricted.html', error="Invalid onboarding code")
+
+    if onboardingCodeModel.maxUses is not None:
+        if onboardingCodeModel.uses == onboardingCodeModel.maxUses:
+            return render_template('restricted.html', error="Onboarding code has been used too many times")
+
+
     form = RegisterForm()
     if form.validate_on_submit():
         # Get the username and password from the form
@@ -97,15 +108,24 @@ def register():
         try:
             otsClient.create_user(username, password)
             user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email)
+
+            if onboardingCodeModel.uses is None:
+                onboardingCodeModel.uses = 1
+            else:
+                onboardingCodeModel.uses += 1
+                
+            onboardingCodeModel.update_onboarding_code(onboardingCodeModel)
+        
+            
         except Exception as e:
-            return render_template('register.html', error=f"Error: {e}", form=form)
+            return render_template('register.html', error=f"Error: {e}", form=form, url=f"/register/{onboardingCode}")
 
 
         # Redirect to the home page if authentication is successful
         return redirect(url_for('routes.login'))
 
     # Render the login page template for GET requests
-    return render_template('register.html', form=form)
+    return render_template('register.html', form=form, url=f"/register/{onboardingCode}")
 
 
 @routes.route('/static/css/branding.css')  
