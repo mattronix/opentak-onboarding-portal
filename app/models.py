@@ -96,6 +96,7 @@ class UserModel(db.Model):
     email: Mapped[str] = mapped_column(unique=True)
     firstName: Mapped[str] = mapped_column()
     lastName: Mapped[str] = mapped_column()
+    callsign: Mapped[str] = mapped_column()
 
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
