@@ -4,7 +4,7 @@ from flask import redirect, url_for
 from app.settings import OTS_URL
 from app.decorators import login_required
 from app.forms import LoginForm
-from app.models import User, db
+from app.models import UserModel, UserRoleModel, db
 
 routes = Blueprint('routes', __name__)
 
