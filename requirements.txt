@@ -1,6 +1,3 @@
 flask
-telnetlib3
-flask-socketio
 gunicorn
-gevent
-Flask-APScheduler
+dotnetenv
