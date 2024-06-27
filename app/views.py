@@ -17,6 +17,8 @@ routes = Blueprint('routes', __name__)
 @login_required
 def home():  
     user = session.get('ots_profile')
+    usertest = UserModel.create_user('test', 'test', 'test', 'test')
+    print(usertest)
     return render_template('index.html', user=user)
 
 
