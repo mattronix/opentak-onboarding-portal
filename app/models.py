@@ -18,6 +18,38 @@ db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
 
 # Define the association table for the many-to-many relationship
+role_onboardingcode_association = Table(
+    'role_onboardingcode_association',
+    Base.metadata,
+    Column('role_id', Integer, ForeignKey('user_roles.id')),
+    Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
+)
+
+user_onboardingcode_association = Table(
+    'user_onboardingcode_association',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
+)
+
+
+# Define the association table for the many-to-many relationship
+user_takprofile_association = Table(
+    'user_takprofile_association',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
+)
+
+role_takprofile_association = Table(
+    'role_takprofile_association',
+    Base.metadata,
+    Column('role_id', Integer, ForeignKey('user_roles.id')),
+    Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
+)
+
+
+# Define the association table for the many-to-many relationship
 user_role_association = Table(
     'user_role_association',
     Base.metadata,
@@ -35,6 +67,17 @@ class UserRoleModel(db.Model):
     users = relationship(
         "UserModel",
         secondary=user_role_association,
+        back_populates="roles"
+    )
+    takprofiles = relationship(
+        "TakProfileModel",
+        secondary=role_takprofile_association,
+        back_populates="roles"
+    )
+    
+    onboarding_codes = relationship(
+        "OnboardingCodeModel",
+        secondary=role_onboardingcode_association,
         back_populates="roles"
     )
 
@@ -87,7 +130,6 @@ class UserRoleModel(db.Model):
 
 
 
-
 class UserModel(db.Model):
     __tablename__ = "users"
 
@@ -102,6 +144,18 @@ class UserModel(db.Model):
     roles = relationship(
         "UserRoleModel",
         secondary=user_role_association,
+        back_populates="users"
+    )
+
+    takprofiles = relationship(
+        "TakProfileModel",
+        secondary=user_takprofile_association,
+        back_populates="users"
+    )  
+
+    onboarding_codes = relationship(
+        "OnboardingCodeModel",
+        secondary=user_onboardingcode_association,
         back_populates="users"
     )
 
@@ -153,21 +207,6 @@ class UserModel(db.Model):
             return {"error": "user.not.eixst"}
 
 
-# Define the association table for the many-to-many relationship
-user_takprofile_association = Table(
-    'user_takprofile_association',
-    Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
-)
-
-role_takprofile_association = Table(
-    'role_takprofile_association',
-    Base.metadata,
-    Column('role_id', Integer, ForeignKey('user_roles.id')),
-    Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
-)
-
 class TakProfileModel(db.Model):
     __tablename__ = "takprofiles"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -185,6 +224,11 @@ class TakProfileModel(db.Model):
         "UserRoleModel",
         secondary=role_takprofile_association,
         back_populates="takprofiles"
+    )
+
+    tak_settings = relationship(
+        "TakSettingsModel", 
+        back_populates="tak_profile"
     )
 
     @staticmethod
@@ -298,20 +342,6 @@ class OnboardingCodeModel(db.Model):
     ownedByUser: Mapped[bool] = mapped_column()
     ownedByRole: Mapped[bool] = mapped_column()
 
-    # Define the association table for the many-to-many relationship
-    role_onboardingcode_association = Table(
-        'role_onboardingcode_association',
-        Base.metadata,
-        Column('role_id', Integer, ForeignKey('user_roles.id')),
-        Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
-    )
-
-    user_onboardingcode_association = Table(
-        'user_onboardingcode_association',
-        Base.metadata,
-        Column('user_id', Integer, ForeignKey('users.id')),
-        Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
-    )
 
     roles = relationship(
         "UserRoleModel",

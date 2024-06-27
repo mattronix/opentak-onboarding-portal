@@ -38,7 +38,15 @@ def login():
             otsSession = OTSClient(OTS_URL, username, password)
             # Store the OTS session in a session variable
             session['ots_profile'] = otsSession.get_me()
+
+            # Check if the user exists in the database
+            user = UserModel.query.filter_by(username=username).first()
+            if user is None:
+                UserModel.create_user(username)
             
+
+
+
         except Exception as e:
             print(f"Error: {e}")
             return render_template('login.html', error="Invalid username or password", form=form)
