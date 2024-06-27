@@ -6,6 +6,10 @@ from flask_migrate import Migrate
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import Integer, String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
+from sqlalchemy.exc import IntegrityError
 
 class Base(DeclarativeBase):
   pass
@@ -33,6 +37,53 @@ class UserRoleModel(db.Model):
         secondary=user_role_association,
         back_populates="roles"
     )
+
+    @staticmethod
+    def create_role(name, description):
+        try:
+            role = UserRoleModel(name=name, description=description)
+            db.session.add(role)
+            db.session.commit()
+            return role
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "role.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "role.exists"}
+
+    @staticmethod
+    def get_role_by_id(role_id):
+        return UserRoleModel.query.get(role_id)
+
+    @staticmethod
+    def get_role_by_name(name):
+        return UserRoleModel.query.filter_by(name=name).first()
+
+    @staticmethod
+    def get_all_roles():
+        return UserRoleModel.query.all()
+
+    @staticmethod
+    def update_role(role):
+        try:
+            db.session.merge(role)
+            db.session.commit()
+            return {"message": "Role updated successfully"}
+        except:
+            return {"error": "role.not.exist"}
+
+    @staticmethod
+    def delete_role_by_id(role_id):
+        role = UserRoleModel.get_role_by_id(role_id)
+        if role:
+            db.session.delete(role)
+            db.session.commit()
+            return {"message": "Role deleted successfully"}
+        else:
+            return {"error": "role.not.exist"}
 
 
 
@@ -101,3 +152,215 @@ class UserModel(db.Model):
             return {"error": "user.not.eixst"}
 
 
+# Define the association table for the many-to-many relationship
+user_takprofile_association = Table(
+    'user_takprofile_association',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
+)
+
+role_takprofile_association = Table(
+    'role_takprofile_association',
+    Base.metadata,
+    Column('role_id', Integer, ForeignKey('user_roles.id')),
+    Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
+)
+
+class TakProfileModel(db.Model):
+    __tablename__ = "takprofiles"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    description: Mapped[str] = mapped_column()
+    isPublic: Mapped[bool] = mapped_column()
+    takTemplateFolderLocation: Mapped[str] = mapped_column()
+    
+    users = relationship(
+        "UserModel",
+        secondary=user_takprofile_association,
+        back_populates="takprofiles"
+    )
+    roles = relationship(
+        "UserRoleModel",
+        secondary=role_takprofile_association,
+        back_populates="takprofiles"
+    )
+
+    @staticmethod
+    def create_tak_profile(name, description, is_public, template_folder_location):
+        try:
+            tak_profile = TakProfileModel(name=name, description=description, isPublic=is_public, takTemplateFolderLocation=template_folder_location)
+            db.session.add(tak_profile)
+            db.session.commit()
+            return tak_profile
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "tak_profile.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "tak_profile.exists"}
+    
+    @staticmethod
+    def get_tak_profile_by_id(tak_profile_id):
+        return TakProfileModel.query.get(tak_profile_id)
+    
+    @staticmethod
+    def get_tak_profile_by_name(name):
+        return TakProfileModel.query.filter_by(name=name).first()
+    
+    @staticmethod
+    def get_all_tak_profiles():
+        return TakProfileModel.query.all()
+    
+    @staticmethod
+    def update_tak_profile(tak_profile):
+        try:
+            db.session.merge(tak_profile)
+            db.session.commit()
+            return {"message": "Tak profile updated successfully"}
+        except:
+            return {"error": "tak_profile.not.exist"}
+    
+    @staticmethod
+    def delete_tak_profile_by_id(tak_profile_id):
+        tak_profile = TakProfileModel.get_tak_profile_by_id(tak_profile_id)
+        if tak_profile:
+            db.session.delete(tak_profile)
+            db.session.commit()
+            return {"message": "Tak profile deleted successfully"}
+        else:
+            return {"error": "tak_profile.not.exist"}
+        
+
+class TakSettingsModel(db.Model):
+    __tablename__ = "taksettings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    description: Mapped[str] = mapped_column()
+    key: Mapped[str] = mapped_column()
+    value: Mapped[str] = mapped_column()
+    takProfileID: Mapped[int] = mapped_column(ForeignKey('takprofiles.id'))
+    tak_profile = relationship("TakProfileModel", back_populates="tak_settings")
+
+    @staticmethod
+    def create_tak_setting(name, description, key, value, tak_profile_id):
+        try:
+            tak_setting = TakSettingsModel(name=name, description=description, key=key, value=value, takProfileID=tak_profile_id)
+            db.session.add(tak_setting)
+            db.session.commit()
+            return tak_setting
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "tak_setting.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "tak_setting.exists"}
+
+    @staticmethod
+    def get_tak_setting_by_id(tak_setting_id):
+        return TakSettingsModel.query.get(tak_setting_id)
+
+    @staticmethod
+    def get_tak_settings_by_tak_profile_id(tak_profile_id):
+        return TakSettingsModel.query.filter_by(takProfileID=tak_profile_id).all()
+
+    @staticmethod
+    def update_tak_setting(tak_setting):
+        try:
+            db.session.merge(tak_setting)
+            db.session.commit()
+            return {"message": "Tak setting updated successfully"}
+        except:
+            return {"error": "tak_setting.not.exist"}
+
+    @staticmethod
+    def delete_tak_setting_by_id(tak_setting_id):
+        tak_setting = TakSettingsModel.get_tak_setting_by_id(tak_setting_id)
+        if tak_setting:
+            db.session.delete(tak_setting)
+            db.session.commit()
+            return {"message": "Tak setting deleted successfully"}
+        else:
+            return {"error": "tak_setting.not.exist"}
+
+
+class OnboardingCodeModel(db.Model):
+    __tablename__ = "onboardingcodes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    description: Mapped[str] = mapped_column()
+    name: Mapped[str] = mapped_column()
+    onboardingCode: Mapped[str] = mapped_column()
+    ownedByUser: Mapped[bool] = mapped_column()
+    ownedByRole: Mapped[bool] = mapped_column()
+
+    # Define the association table for the many-to-many relationship
+    role_onboardingcode_association = Table(
+        'role_onboardingcode_association',
+        Base.metadata,
+        Column('role_id', Integer, ForeignKey('user_roles.id')),
+        Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
+    )
+
+    user_onboardingcode_association = Table(
+        'user_onboardingcode_association',
+        Base.metadata,
+        Column('user_id', Integer, ForeignKey('users.id')),
+        Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
+    )
+
+    roles = relationship(
+        "UserRoleModel",
+        secondary=role_onboardingcode_association,
+        back_populates="onboarding_codes"
+    )
+    users = relationship(
+        "UserModel",
+        secondary=user_onboardingcode_association,
+        back_populates="onboarding_codes"
+    )
+    @staticmethod
+    def create_onboarding_code(description, name, onboarding_code, owned_by_user, owned_by_role):
+        try:
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboarding_code, ownedByUser=owned_by_user, ownedByRole=owned_by_role)
+            db.session.add(onboarding_code)
+            db.session.commit()
+            return onboarding_code
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "onboarding_code.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "onboarding_code.exists"}
+
+    @staticmethod
+    def get_onboarding_code_by_id(onboarding_code_id):
+        return OnboardingCodeModel.query.get(onboarding_code_id)
+
+    @staticmethod
+    def get_all_onboarding_codes():
+        return OnboardingCodeModel.query.all()
+
+    @staticmethod
+    def update_onboarding_code(onboarding_code):
+        try:
+            db.session.merge(onboarding_code)
+            db.session.commit()
+            return {"message": "Onboarding code updated successfully"}
+        except:
+            return {"error": "onboarding_code.not.exist"}
+
+    @staticmethod
+    def delete_onboarding_code_by_id(onboarding_code_id):
+        onboarding_code = OnboardingCodeModel.get_onboarding_code_by_id(onboarding_code_id)
+        if onboarding_code:
+            db.session.delete(onboarding_code)
+            db.session.commit()
+            return {"message": "Onboarding code deleted successfully"}
+        else:
+            return {"error": "onboarding_code.not.exist"}
