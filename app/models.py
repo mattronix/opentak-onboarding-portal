@@ -62,7 +62,7 @@ class UserRoleModel(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
-    description: Mapped[str] = mapped_column(unique=True)
+    description: Mapped[str] = mapped_column(unique=True, nullable=True)
     # Define the many-to-many relationship with UserModel
     users = relationship(
         "UserModel",
@@ -82,7 +82,7 @@ class UserRoleModel(db.Model):
     )
 
     @staticmethod
-    def create_role(name, description):
+    def create_role(name, description=None):
         try:
             role = UserRoleModel(name=name, description=description)
             db.session.add(role)

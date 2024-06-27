@@ -5,7 +5,7 @@
 {% block content %}
     <section class="features-boxed primary-color" style="background: #e9ecef;">
         <div class="container">
-            <h1 style="margin-top: 20px;"><strong>Welcome {{user.response.username}}</strong></h1>
+            <h1 style="margin-top: 20px;"><strong>Welcome {{user.username}}</strong></h1>
             <h4>KGG Dutchies ATAK Portal</h4>
         </div>
             
@@ -29,12 +29,10 @@
                         <div class="card-body">
 
 
-                            <h5>Permissions</h5>
+                            <h5>Roles</h5>
                             <ul>
-                            {%for role in user.response.roles%}
-                                {%for permission in role.permissions%}
-                                <li>{{permission}}</li>
-                                {%endfor%}
+                            {%for role in user.roles%}
+                                <li>{{role.name}}</li>
                             {%endfor%}
                             </ul>
                         </div>

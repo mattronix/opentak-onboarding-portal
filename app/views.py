@@ -16,8 +16,7 @@ routes = Blueprint('routes', __name__)
 @routes.route('/')
 @login_required
 def home():  
-    user = session.get('ots_profile')
-
+    user = UserModel.get_user_by_username(session['username'])
     return render_template('index.html', user=user)
 
 
@@ -37,12 +36,31 @@ def login():
         try:
             otsSession = OTSClient(OTS_URL, username, password)
             # Store the OTS session in a session variable
-            session['ots_profile'] = otsSession.get_me()
+            ots_profile = otsSession.get_me()
+            session['ots_profile'] = ots_profile
+            session['username'] = ots_profile["response"]["username"]
 
             # Check if the user exists in the database
             user = UserModel.query.filter_by(username=username).first()
+
             if user is None:
-                UserModel.create_user(username)
+                user = UserModel.create_user(username)
+
+            for roles in ots_profile['response']['roles']:
+                for role in ots_profile['response']['roles']:
+                    
+                    role_name = role['name']
+                    role_description = role['description']
+
+                    userRoleModel = UserRoleModel.get_role_by_name(role['name'])
+
+                    if userRoleModel is None:
+                        userRoleModel = UserRoleModel.create_role(role_name)
+                        
+                    if user not in userRoleModel.users:
+                        userRoleModel.users.append(user)
+                        db.session.commit()
+                
             
         except Exception as e:
             print(f"Error: {e}")
