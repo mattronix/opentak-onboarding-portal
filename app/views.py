@@ -141,7 +141,7 @@ def branding_view():
      
     branding={
         'primary_color':'#000000',
-        'secondary_color':'#000000',
+        'secondary_color':'orange',
         'accent_color':'#ffffff',
         'navbar_color':'#ffffff',
         'breadcrumb_color':"#e9ecef",
