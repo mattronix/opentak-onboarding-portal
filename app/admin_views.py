@@ -35,7 +35,7 @@ def onboarding_codes_add():
     form.onboardContact.choices = [(user.id, user.username) for user in UserModel.get_all_users()]
 
     if form.validate_on_submit():
-            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[], onboardcontact=None, maxuses=form.maxUses.data)
+            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data)
             
             try: 
                 e = object.get("error")
