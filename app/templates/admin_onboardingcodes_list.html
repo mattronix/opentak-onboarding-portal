@@ -44,23 +44,24 @@
                                         </td>
 
                                         <td>
-                                            {% if onboardingcode.maxUses %}
-                                            {{ onboardingcode.maxUses - onboardingcode.uses }}
-                                            {% else %}
+                                            {% if not onboardingcode.maxUses or not onboardingcode.uses %}
                                             Unlimited
+                                            {% else %}
+                                            {{ onboardingcode.maxUses - onboardingcode.uses }}
                                             {% endif %}
                                         </td>
                                         <td>{{ onboardingcode.uses }}</td>
                                         <td> 
-                                            <button class="btn btn-sm btn-primary">EDIT</button>
-                                            <button class="btn btn-sm btn-danger">DELETE</button>
+                                            <a href="onboarding_codes/edit/{{onboardingcode.id}}" class="btn btn-sm btn-primary">EDIT</a>
+                                            <a href="onboarding_codes/delete/{{onboardingcode.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                            <a href="/register/{{onboardingcode.onboardingCode}}" class="btn btn-sm btn-warning">REGISTER</a>
                                         </td>
                                       
                                     </tr>  
                                     {% endfor %}
                                 </tbody>
                             </table>
-                            <button class="btn btn-sm btn-primary">CREATE NEW LINK</button>
+                            <a href="onboarding_codes/add" class="btn btn-sm btn-primary">CREATE NEW LINK</a>
 
                         </div>
                     </div>

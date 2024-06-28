@@ -341,7 +341,7 @@ class OnboardingCodeModel(db.Model):
     description: Mapped[str] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(unique=True, nullable=True)
     onboardingCode: Mapped[str] = mapped_column(unique=True)
-    uses: Mapped[int] = mapped_column(nullable=True)
+    uses: Mapped[int] = mapped_column(nullable=True, default=0)
     maxUses: Mapped[int] = mapped_column(nullable=True)
     onboardContact = Column(Integer, ForeignKey('users.id'), nullable=True)
 
@@ -357,9 +357,9 @@ class OnboardingCodeModel(db.Model):
     )
     
     @staticmethod
-    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None):
+    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None):
         try:
-            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact)
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact, maxUses=maxuses)
             db.session.add(onboarding_code)
             db.session.commit()
             return onboarding_code
