@@ -142,7 +142,7 @@ def branding_view():
     branding={
         'primary_color':'#000000',
         'secondary_color':'orange',
-        'accent_color':'#ffffff',
+        'accent_color':'orange',
         'navbar_color':'#ffffff',
         'breadcrumb_color':"#e9ecef",
         'font_family' : "'Source Sans Pro', 'sans-serif'",
