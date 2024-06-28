@@ -84,7 +84,7 @@ def register(onboardingCode):
         return render_template('restricted.html', error="Invalid onboarding code")
 
     if onboardingCodeModel.maxUses is not None:
-        if onboardingCodeModel.uses == onboardingCodeModel.maxUses:
+        if onboardingCodeModel.uses >= onboardingCodeModel.maxUses and onboardingCodeModel.maxUses is not 0:
             return render_template('restricted.html', error="Onboarding code has been used too many times")
 
     form = RegisterForm()
