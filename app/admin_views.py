@@ -16,3 +16,13 @@ admin_routes = Blueprint('admin_routes', __name__, url_prefix='/admin')
 def home():  
     user = UserModel.get_user_by_username(session['username'])
     return render_template('admin_index.html', user=user)
+
+
+
+@admin_routes.route('onboarding_codes')
+@login_required
+@role_required(role='administrator')
+def onboarding_codes_list():  
+    onboardingcodes = OnboardingCodeModel.get_all_onboarding_codes()
+    return render_template('admin_onboardingcodes_list.html', onboardingcodes=onboardingcodes)
+

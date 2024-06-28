@@ -21,3 +21,17 @@ def doesCurrentUserHaveRole():
         return False
 
     return dict(doesCurrentUserHaveRole=_doesCurrentUserHaveRole)
+
+
+@jina2_filters_blueprint.app_context_processor
+def resolveUserPropertyByID():
+    def _resolveUserPropertyByID(id, property="username"):
+        user = UserModel.get_user_by_id(id)
+               
+        if user is None:
+            return None
+        
+        if property == "username":
+            return user.username
+
+    return dict(resolveUserPropertyByID=_resolveUserPropertyByID)
