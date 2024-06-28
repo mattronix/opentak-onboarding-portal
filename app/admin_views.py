@@ -37,9 +37,11 @@ def onboarding_codes_add():
     if form.validate_on_submit():
             object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[], onboardcontact=None, maxuses=form.maxUses.data)
             
-            if object.get("error"):
+            try: 
                 e = object.get("error")
                 return render_template('admin_onboardingcodes_add.html', form=form, error=e)
+            except:
+                pass
             
             return redirect(url_for('admin_routes.onboarding_codes_list'))
 
