@@ -6,6 +6,7 @@ from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
+from app.email import send_html_email
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 default_breadcrumb_root(routes, '.',)
@@ -21,7 +22,7 @@ def home():
     user = UserModel.get_user_by_username(session['username'])
     return render_template('index.html', user=user)
 
-
+    
 @routes.route('/logout')
 def logout():
     # Remove the OTS session from the session variable
