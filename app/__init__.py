@@ -3,7 +3,7 @@ from app.views import routes
 from app.admin_views import admin_routes
 from flask import jsonify
 from app.models import db, migrate
-
+from app.jina_filters import jina2_filters_blueprint
 
 def create_app():
     # create and configure the app
@@ -13,6 +13,7 @@ def create_app():
     migrate.init_app(app, db)
     app.register_blueprint(routes)
     app.register_blueprint(admin_routes)
+    app.register_blueprint(jina2_filters_blueprint)
     return app
 
 app = create_app()

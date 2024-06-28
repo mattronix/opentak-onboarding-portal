@@ -24,6 +24,7 @@ def home():
 def logout():
     # Remove the OTS session from the session variable
     session.pop('ots_profile', None)
+    session.pop('username', None)
     return redirect(url_for('routes.login'))
 
 @routes.route('/login', methods=['GET', 'POST'])

@@ -45,6 +45,13 @@
           <li class="nav-item">
             <a style="color: black !important;"  class="nav-link" style="font-size:17px !important;" href="/logout">LOGOUT</a>
           </li>
+
+          {% if doesCurrentUserHaveRole("administrator") %}
+          <li class="nav-item">
+            <a style="color: black !important;"  class="nav-link" style="font-size:17px !important;" href="/admin">ADMIN</a>
+          </li>
+          {% endif %}
+
         </ul>
       </div>
     </nav>
