@@ -1,5 +1,6 @@
 from flask import Flask
 from app.views import routes
+from app.admin_views import admin_routes
 from flask import jsonify
 from app.models import db, migrate
 
@@ -11,6 +12,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     app.register_blueprint(routes)
+    app.register_blueprint(admin_routes)
     return app
 
 app = create_app()
