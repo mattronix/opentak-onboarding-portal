@@ -4,6 +4,8 @@ from app.admin_views import admin_routes
 from flask import jsonify
 from app.models import db, migrate
 from app.jina_filters import jina2_filters_blueprint
+from flask_breadcrumbs import Breadcrumbs
+from flask_menu import Menu
 
 def create_app():
     # create and configure the app
@@ -11,6 +13,10 @@ def create_app():
     app.config.from_pyfile('settings.py')
     db.init_app(app)
     migrate.init_app(app, db)
+    menu = Menu()
+    breadcrumbs = Breadcrumbs(init_menu=False)
+    menu.init_app(app)
+    breadcrumbs.init_app(app)
     app.register_blueprint(routes)
     app.register_blueprint(admin_routes)
     app.register_blueprint(jina2_filters_blueprint)

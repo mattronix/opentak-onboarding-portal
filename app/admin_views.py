@@ -6,11 +6,32 @@ from app.decorators import login_required, role_required
 from app.forms import OnboardingCodeForm, DeleteForm, UserEdit
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
 import uuid
-
+from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 
 
 admin_routes = Blueprint('admin_routes', __name__, url_prefix='/admin')
+default_breadcrumb_root(admin_routes, '.',)
 
+def admin_onboardingcodes(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = OnboardingCodeModel.get_onboarding_code_by_id(object_id)
+
+    if object:
+        return [{'text': object.name, 'url': f'/admin/onboarding_codes/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
+
+
+def admin_users(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = UserModel.get_user_by_id(object_id)
+
+    if object:
+        return [{'text': object.callsign, 'url': f'/admin/users/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
+
+
+
+@register_breadcrumb(admin_routes, '.admin', 'Admin Portal')
 @admin_routes.route('/')
 @login_required
 @role_required(role='administrator')
@@ -19,7 +40,7 @@ def home():
     return render_template('admin_index.html', user=user)
 
 
-
+@register_breadcrumb(admin_routes, '.admin.onboardingcodes', 'Onboarding Codes')
 @admin_routes.route('onboarding_codes')
 @login_required
 @role_required(role='administrator')
@@ -28,6 +49,7 @@ def onboarding_codes_list():
     return render_template('admin_onboardingcodes_list.html', onboardingcodes=onboardingcodes)
 
 
+@register_breadcrumb(admin_routes, '.admin.onboardingcodes.add', 'Add Onboarding Code')
 @admin_routes.route('onboarding_codes/add', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
@@ -50,6 +72,9 @@ def onboarding_codes_add():
     return render_template('admin_onboardingcodes_add.html', form=form)
 
 
+
+
+@register_breadcrumb(admin_routes, '.admin.onboardingcodes.edit', 'Edit Onboarding Code', dynamic_list_constructor=admin_onboardingcodes)
 @admin_routes.route('onboarding_codes/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
@@ -71,6 +96,7 @@ def onboarding_codes_edit(id):
 
     return render_template('admin_onboardingcodes_edit.html', onboardingcode=onboardingcode, form=form)
 
+@register_breadcrumb(admin_routes, '.admin.onboardingcodes.delete', 'Edit Onboarding Code', dynamic_list_constructor=admin_onboardingcodes)
 @admin_routes.route('onboarding_codes/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
@@ -92,6 +118,8 @@ def onboarding_codes_delete(id):
     return render_template('admin_onboardingcodes_delete.html', onboardingcode=onboardingcode, form=form)
 
 
+
+@register_breadcrumb(admin_routes, '.admin.users', 'Users')
 @admin_routes.route('users')
 @login_required
 @role_required(role='administrator')
@@ -99,7 +127,16 @@ def users_list():
     users = UserModel.get_all_users()
     return render_template('admin_users_list.html', users=users)
 
+def admin_users(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = UserModel.get_user_by_id(object_id)
 
+    if object:
+        return [{'text': object.callsign, 'url': f'/admin/users/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
+
+
+@register_breadcrumb(admin_routes, '.admin.users.edit', 'Edit Users', dynamic_list_constructor=admin_users)
 @admin_routes.route('users/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
@@ -120,6 +157,7 @@ def users_edit(id):
     
     return render_template('admin_users_edit.html', user=user, form=form)
     
+@register_breadcrumb(admin_routes, '.admin.users.delete', 'Delete Users', dynamic_list_constructor=admin_users)
 @admin_routes.route('users/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')

@@ -5,14 +5,16 @@ from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
+from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 
-routes = Blueprint('routes', __name__)
+routes = Blueprint('routes', __name__, url_prefix='/')
+default_breadcrumb_root(routes, '.',)
 
 # Create a dictionary to store the active telnet connections
 otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 
 
-
+@register_breadcrumb(routes, '.', 'Home')
 @routes.route('/')
 @login_required
 def home():  
@@ -27,6 +29,7 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('routes.login'))
 
+@register_breadcrumb(routes, '.login', 'Login')
 @routes.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -72,7 +75,7 @@ def login():
     return render_template('login.html', form=form)
 
 
-
+@register_breadcrumb(routes, '.Register', 'Register')
 @routes.route('/register/<onboardingCode>', methods=['GET', 'POST'])
 def register(onboardingCode):
 

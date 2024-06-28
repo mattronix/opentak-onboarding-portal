@@ -6,3 +6,5 @@ Flask-WTF
 Flask-SQLAlchemy
 Flask-Migrate
 email_validator
+Flask-Menu
+flask_breadcrumbs
