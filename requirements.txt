@@ -5,3 +5,4 @@ requests
 Flask-WTF
 Flask-SQLAlchemy
 Flask-Migrate
+email_validator
