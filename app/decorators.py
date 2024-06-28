@@ -27,10 +27,10 @@ def role_required(role):
             if user is None:
                 return render_template('access_denied.html')
             
-            if role not in [r.name for r in user.roles]:
-                return render_template('access_denied.html')
+            if role in [r.name for r in user.roles]:
+                return route(*args, **kwargs)
 
-            return route(*args, **kwargs)
+            return render_template('access_denied.html')
 
         return route_wrapper
     return decorator

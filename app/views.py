@@ -146,7 +146,7 @@ def branding_view():
         'navbar_color':'#ffffff',
         'breadcrumb_color':"#e9ecef",
         'font_family' : "'Source Sans Pro', 'sans-serif'",
-        'logo_url' : 'https://techinc.nl/images/techinclogo_0.png',
+        'logo_url' : '/static/img/logo.png',
         'logo_height': '50px',
         'logo_width':'50px'
         }
