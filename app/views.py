@@ -75,6 +75,8 @@ def login():
 @routes.route('/register/<onboardingCode>', methods=['GET', 'POST'])
 def register(onboardingCode):
 
+    
+   # OnboardingCodeModel.create_onboarding_code(onboardingcode=123456, onboardcontact=1)
     onboardingCodeModel = OnboardingCodeModel.query.filter_by(onboardingCode=onboardingCode).first()
 
     if onboardingCodeModel is None:
@@ -83,7 +85,6 @@ def register(onboardingCode):
     if onboardingCodeModel.maxUses is not None:
         if onboardingCodeModel.uses == onboardingCodeModel.maxUses:
             return render_template('restricted.html', error="Onboarding code has been used too many times")
-
 
     form = RegisterForm()
     if form.validate_on_submit():
@@ -107,7 +108,13 @@ def register(onboardingCode):
 
         try:
             otsClient.create_user(username, password)
-            user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email)
+
+            if onboardingCodeModel.onboardContact is not None:
+                onboardedby = onboardingCodeModel.onboardContact
+            else:
+                onboardedby = None
+
+            user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email, onboardedby=onboardedby)
 
             if onboardingCodeModel.uses is None:
                 onboardingCodeModel.uses = 1

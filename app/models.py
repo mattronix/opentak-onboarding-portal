@@ -139,7 +139,8 @@ class UserModel(db.Model):
     firstName: Mapped[str] = mapped_column(nullable=True)
     lastName: Mapped[str] = mapped_column(nullable=True)
     callsign: Mapped[str] = mapped_column(nullable=True)
-    onboardedBy: Mapped[str] = mapped_column(nullable=True)
+    onboardedBy = Column(ForeignKey("users.id"))
+    onboarContactFor = relationship("OnboardingCodeModel", backref="user")
 
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
@@ -161,9 +162,9 @@ class UserModel(db.Model):
     )
 
     @staticmethod
-    def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[]):
+    def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[], onboardedby=None):
         try:
-            user = UserModel(username=username, email=email, firstName=firstname, lastName=lastname, callsign=callsign, roles=roles, takprofiles=takprofiles)
+            user = UserModel(username=username, email=email, firstName=firstname, lastName=lastname, callsign=callsign, roles=roles, takprofiles=takprofiles, onboardedBy=onboardedby)
             db.session.add(user)
             db.session.commit()
             return user
@@ -340,10 +341,9 @@ class OnboardingCodeModel(db.Model):
     description: Mapped[str] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(unique=True, nullable=True)
     onboardingCode: Mapped[str] = mapped_column(unique=True)
-    ownedByUser: Mapped[bool] = mapped_column(nullable=True)
-    ownedByRole: Mapped[bool] = mapped_column(nullable=True)
     uses: Mapped[int] = mapped_column(nullable=True)
     maxUses: Mapped[int] = mapped_column(nullable=True)
+    onboardContact = Column(Integer, ForeignKey('users.id'), nullable=True)
 
     roles = relationship(
         "UserRoleModel",
@@ -357,9 +357,9 @@ class OnboardingCodeModel(db.Model):
     )
     
     @staticmethod
-    def create_onboarding_code(onboardingcode, name=None, description=None, ownedbyuser=None, ownedbyrole=None):
+    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None):
         try:
-            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, ownedByUser=ownedbyrole, ownedByRole=ownedbyrole)
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact)
             db.session.add(onboarding_code)
             db.session.commit()
             return onboarding_code
