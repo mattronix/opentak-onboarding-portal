@@ -3,7 +3,7 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm
+from app.forms import OnboardingCodeForm, DeleteForm, UserEdit
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
 
 
@@ -91,3 +91,51 @@ def onboarding_codes_delete(id):
         return redirect(url_for('admin_routes.onboarding_codes_list'))
     
     return render_template('admin_onboardingcodes_delete.html', onboardingcode=onboardingcode, form=form)
+
+
+@admin_routes.route('users')
+@login_required
+@role_required(role='administrator')
+def users_list():  
+    users = UserModel.get_all_users()
+    return render_template('admin_users_list.html', users=users)
+
+
+@admin_routes.route('users/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def users_edit(id):  
+    user = UserModel.get_user_by_id(id)
+    form = UserEdit(data=user.__dict__)
+    if user is None:
+        return redirect(url_for('admin_routes.users_list'))
+    
+    if form.validate_on_submit():
+        user.username = form.username.data
+        user.callsign = form.callsign.data
+        user.firstname = form.firstname.data
+        user.lastname = form.lastname.data
+        user.email = form.email.data
+        UserModel.update_user(user)
+        return redirect(url_for('admin_routes.users_list'))
+    
+    return render_template('admin_users_edit.html', user=user, form=form)
+    
+@admin_routes.route('users/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def users_delete(id):  
+    user = UserModel.get_user_by_id(id)
+    form = DeleteForm()
+    
+    if user is None:
+        return redirect(url_for('admin_routes.users_list'))
+    
+    if form.validate_on_submit():
+        if form.areyousure.data != "OK":
+            return render_template('admin_users_delete.html', user=user, form=form, error="You must type 'OK' to delete this record")
+        
+        UserModel.delete_user_by_id(user.id)
+        return redirect(url_for('admin_routes.users_list'))
+    
+    return render_template('admin_users_delete.html', user=user, form=form)

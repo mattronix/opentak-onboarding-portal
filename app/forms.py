@@ -18,6 +18,13 @@ class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Submit')
 
+class UserEdit(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    callsign = StringField('Callsign', validators=[DataRequired()])
+    firstname = StringField('First Name', validators=[Optional()])
+    lastname = StringField('Last Name', validators=[Optional()])
+    email = StringField('Email', validators=[Optional(), Email()])
+    submit = SubmitField('Submit')
 
 class OnboardingCodeForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])

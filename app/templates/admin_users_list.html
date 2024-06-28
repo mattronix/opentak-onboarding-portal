@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+
+
+{% block content %}
+    <section class="features-boxed primary-color" style="background: #e9ecef;">
+        <div class="container">
+            <h1 style="margin-top: 20px;"><strong>Users</strong></h1>
+            <h4>KGG Dutchies ATAK Portal</h4>
+        </div>
+            
+        <div class="mt-3 container">
+            <div class="row">
+                <div class="mt-2 col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Users</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Callsign</th>
+                                        <th>Email</th>
+                                        <th>Onboarded By</th>
+                                        <th>FirstName</th>
+                                        <th>LastName</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.username }}</td>
+                                        <td>{{ user.callsign }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>{{ resolveUserPropertyByID(user.onboardedBy) }}</td>
+                                        <td>{{ user.firstName }}</td>
+                                        <td>{{ user.lastName }}</td>
+                                        <td> 
+                                            <a href="users/edit/{{user.id}}" class="btn btn-sm btn-primary">EDIT</a>
+                                            <a href="users/delete/{{user.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                        </td>
+                                      
+                                    </tr>  
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+
+    
+
+
+    </section>
+
+{% endblock %}

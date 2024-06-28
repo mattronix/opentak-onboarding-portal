@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Onboarding Editor{% endblock %}
+{% block title %}Onboarding Code Editor{% endblock %}
 
 
 {% block content %}
@@ -25,7 +25,7 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                 <h2 class="mt-5 text-center">Onboarding Editor</h2>
+                 <h2 class="mt-5 text-center">Onboarding Code Editor</h2>
                     <div class="card-body">
                         <form action="{{ url_for('admin_routes.onboarding_codes_edit',id=onboardingcode.id) }}" method="post" novalidate>
                             {{ form.csrf_token }}

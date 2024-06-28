@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Delete Onboarding Code{% endblock %}
+{% block title %}User Editor{% endblock %}
 
 
 {% block content %}
@@ -25,9 +25,9 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                 <h2 class="mt-5 text-center">Delete Onboarding Code</h2>
+                 <h2 class="mt-5 text-center">User Editor</h2>
                     <div class="card-body">
-                        <form action="{{ url_for('admin_routes.onboarding_codes_delete',id=onboardingcode.id) }}" method="post" novalidate>
+                        <form action="{{ url_for('admin_routes.users_edit',id=user.id) }}" method="post" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
                             <div class="form-group row required">
