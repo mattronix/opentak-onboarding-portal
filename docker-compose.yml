@@ -1,6 +1,8 @@
 version: '2'
 services:
     web:
+        volumes:
+          - ./:/app
         build:
             context: .
             dockerfile: Dockerfile
