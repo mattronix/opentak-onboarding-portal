@@ -5,6 +5,7 @@ from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
 from app.decorators import login_required, role_required
 from app.forms import OnboardingCodeForm, DeleteForm, UserEdit
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
+import uuid
 
 
 
@@ -33,6 +34,7 @@ def onboarding_codes_list():
 def onboarding_codes_add():
     form = OnboardingCodeForm()
     form.onboardContact.choices = [(user.id, user.username) for user in UserModel.get_all_users()]
+    form.onboardingCode.data = str(uuid.uuid4())
 
     if form.validate_on_submit():
             object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data)
@@ -44,10 +46,7 @@ def onboarding_codes_add():
                 pass
             
             return redirect(url_for('admin_routes.onboarding_codes_list'))
-
-
-            
-
+    
     return render_template('admin_onboardingcodes_add.html', form=form)
 
 

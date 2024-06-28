@@ -44,7 +44,7 @@
                                         </td>
 
                                         <td>
-                                            {% if not onboardingcode.maxUses or not onboardingcode.uses %}
+                                            {% if not onboardingcode.maxUses or onboardingcode.uses == None %}
                                             Unlimited
                                             {% else %}
                                             {{ onboardingcode.maxUses - onboardingcode.uses }}

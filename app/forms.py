@@ -31,7 +31,7 @@ class OnboardingCodeForm(FlaskForm):
     description = StringField('Description', validators=[DataRequired()])
     maxUses = IntegerField('Max Uses', validators=[Optional()])
     onboardContact = SelectField('Onboard Contact',  validators=[Optional()])
-    onboardingCode = StringField('Onboarding Code', default=str(uuid4()), validators=[DataRequired()])
+    onboardingCode = StringField('Onboarding Code', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 class DeleteForm(FlaskForm):
