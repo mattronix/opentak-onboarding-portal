@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, SelectField
+from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Optional
 from wtforms import SubmitField
-from uuid import uuid4
+from werkzeug.utils import secure_filename
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -37,3 +37,9 @@ class OnboardingCodeForm(FlaskForm):
 class DeleteForm(FlaskForm):
     areyousure = StringField('Are you sure you want to delete this record? Type "OK"', validators=[DataRequired()])
     submit = SubmitField('Delete')
+
+class TakProfileForm(FlaskForm):
+    datapackage = FileField('Datapackage', validators=[DataRequired()])
+    name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[DataRequired()])
+    submit = SubmitField('Submit')

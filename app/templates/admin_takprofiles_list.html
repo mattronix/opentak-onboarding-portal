@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Datapackages{% endblock %}
+
+
+{% block content %}
+    <section class="features-boxed primary-color" style="background: #e9ecef;">
+        <div class="container">
+            <h1 style="margin-top: 20px;"><strong>Datapackages</strong></h1>
+            <h4>KGG Dutchies ATAK Portal</h4>
+        </div>
+            
+        <div class="mt-3 container">
+            <div class="row">
+                <div class="mt-2 col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Datapackages</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Is Public</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for takprofile in takprofiles %}
+                                    <tr>
+                                        <td>{{ takprofile.name }}</td>
+                                        <td>{{ takprofile.description }}</td>
+                                        <td>{{ takprofile.isPublic }}</td>
+                                        <td> 
+                                            <a href="takprofiles/edit/{{takprofile.id}}" class="btn btn-sm btn-primary">EDIT</a>
+                                            <a href="takprofiles/delete/{{takprofile.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                        </td>
+                                      
+                                    </tr>  
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <a href="takprofiles/add" class="btn btn-sm btn-primary">CREATE NEW DATAPACKAGE</a>
+
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+
+    
+
+
+    </section>
+
+{% endblock %}

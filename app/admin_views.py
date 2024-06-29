@@ -3,8 +3,8 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEdit
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
+from app.forms import OnboardingCodeForm, DeleteForm, UserEdit, TakProfileForm
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel 
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 
@@ -27,6 +27,14 @@ def admin_users(*args, **kwargs):
 
     if object:
         return [{'text': object.callsign, 'url': f'/admin/users/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
+
+def admin_takprofiles(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = TakProfileModel.get_tak_profile_by_id(object_id)
+
+    if object:
+        return [{'text': object.name, 'url': f'/admin/takprofiles/edit/{object_id}'}]
     return {'text': "Profile", 'url':""}
 
 
@@ -176,3 +184,78 @@ def users_delete(id):
         return redirect(url_for('admin_routes.users_list'))
     
     return render_template('admin_users_delete.html', user=user, form=form)
+
+
+@register_breadcrumb(admin_routes, '.admin.takprofiles', 'Datapackages')
+@admin_routes.route('takprofiles')
+@login_required
+@role_required(role='administrator')
+def takprofiles_list():
+    takprofiles = TakProfileModel.get_all_tak_profiles()
+    return render_template('admin_takprofiles_list.html', takprofiles=takprofiles)
+
+
+@register_breadcrumb(admin_routes, '.admin.takprofiles.add', 'Add Datapackage')
+@admin_routes.route('takprofiles/add', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def takprofiles_add():
+    form = TakProfileForm()
+    unique_id = str(uuid.uuid4())
+
+    if form.validate_on_submit():
+            object = TakProfileModel.create_tak_profile(name=form.name.data, description=form.description.data)
+            
+            try: 
+                e = object.get("error")
+                return render_template('admin_takprofiles_add.html', form=form, error=e)
+            except:
+                pass
+            
+            return redirect(url_for('admin_routes.takprofiles_list'))
+    
+    return render_template('admin_takprofiles_add.html', form=form)
+
+
+
+
+
+@register_breadcrumb(admin_routes, '.admin.takprofiles.edit', 'Edit Datapackage', dynamic_list_constructor=admin_takprofiles)
+@admin_routes.route('takprofiles/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def takprofiles_edit(id):  
+    takprofile = TakProfileModel.get_tak_profile_by_id(id)
+    form = TakProfileForm(data=takprofile.__dict__)
+    
+    if takprofile is None:
+        return redirect(url_for('admin_routes.takprofiles_list'))
+
+    if form.validate_on_submit():
+        takprofile.name = form.name.data
+        takprofile.description = form.description.data
+        TakProfileModel.update_tak_profile(takprofile)
+        return redirect(url_for('admin_routes.takprofiles_list'))
+
+    return render_template('admin_takprofiles_edit.html', takprofile=takprofile, form=form)
+
+@register_breadcrumb(admin_routes, '.admin.takprofiles.delete', 'Delete Datapackage', dynamic_list_constructor=admin_takprofiles)
+@admin_routes.route('takprofiles/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+
+def takprofiles_delete(id):
+    takprofile = TakProfileModel.get_tak_profile_by_id(id)
+    form = DeleteForm()
+    
+    if takprofile is None:
+        return redirect(url_for('admin_routes.takprofiles_list'))
+    
+    if form.validate_on_submit():
+        if form.areyousure.data != "OK":
+            return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form, error="You must type 'OK' to delete this record")
+        
+        TakProfileModel.delete_tak_profile_by_id(takprofile.id)
+        return redirect(url_for('admin_routes.takprofiles_list'))
+    
+    return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form)
