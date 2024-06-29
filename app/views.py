@@ -127,12 +127,15 @@ def register(onboardingCode):
                 onboardingCodeModel.uses += 1
                 
             onboardingCodeModel.update_onboarding_code(onboardingCodeModel)
-        
-            
+
+            if onboardingCodeModel.onboardContact is not None and user.email is not None:    
+                onboardContact = UserModel.get_user_by_id(onboardingCodeModel.onboardContact)
+                send_html_email(subject="A new Registration KGG",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {user.callsign} with email {user.email} if this is not who you expect please let us know.",recipients=[onboardContact.email])
+                
         except Exception as e:
             return render_template('register.html', error=f"Error: {e}", form=form, url=f"/register/{onboardingCode}")
 
-
+    
         # Redirect to the home page if authentication is successful
         return redirect(url_for('routes.login'))
 
