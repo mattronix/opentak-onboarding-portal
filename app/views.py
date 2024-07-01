@@ -80,16 +80,13 @@ def login():
 @register_breadcrumb(routes, '.Register', 'Register')
 @routes.route('/register/<onboardingCode>', methods=['GET', 'POST'])
 def register(onboardingCode):
-
-    
-   # OnboardingCodeModel.create_onboarding_code(onboardingcode=123456, onboardcontact=1)
     onboardingCodeModel = OnboardingCodeModel.query.filter_by(onboardingCode=onboardingCode).first()
 
     if onboardingCodeModel is None:
         return render_template('restricted.html', error="Invalid onboarding code")
 
     if onboardingCodeModel.maxUses is not None:
-        if onboardingCodeModel.uses >= onboardingCodeModel.maxUses and onboardingCodeModel.maxUses is not 0:
+        if onboardingCodeModel.uses >= onboardingCodeModel.maxUses and onboardingCodeModel.maxUses != 0:
             return render_template('restricted.html', error="Onboarding code has been used too many times")
 
     form = RegisterForm()
@@ -130,12 +127,12 @@ def register(onboardingCode):
             onboardingCodeModel.update_onboarding_code(onboardingCodeModel)
 
             if MAIL_ENABLED:
-                if onboardingCodeModel.onboardContact is not None and form.username.data is not None and form.callsign.data is not None:    
+                if onboardingCodeModel.onboardContact is not None and user.email is not None and user.callsign is not None:    
                     onboardContact = UserModel.get_user_by_id(onboardingCodeModel.onboardContact)
-                    send_html_email(subject="A new Registration KGG",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {form.callsign.data} with email {form.username.data} if this is not who you expect please let us know.",recipients=[onboardContact.email])
+                    send_html_email(subject="A new Registration KGG",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {user.callsign} with email {user.email} if this is not who you expect please let us know.",recipients=[onboardContact.email])
                     
         except Exception as e:
-            return render_template('register.html', error=f"Error: TEST {e}", form=form, url=f"/register/{onboardingCode}")
+            return render_template('register.html', error=f"Error: {e}", form=form, url=f"/register/{onboardingCode}")
 
     
         # Redirect to the home page if authentication is successful
