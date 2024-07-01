@@ -42,4 +42,5 @@ class TakProfileForm(FlaskForm):
     datapackage = FileField('Datapackage', validators=[DataRequired()])
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[DataRequired()])
+    maxUses = IntegerField('Max Uses', validators=[Optional()])
     submit = SubmitField('Submit')
