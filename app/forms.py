@@ -1,8 +1,14 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField
-from wtforms.validators import DataRequired, Email, Optional
+from wtforms.validators import DataRequired, Email, Optional, ValidationError
 from wtforms import SubmitField
 from werkzeug.utils import secure_filename
+import re
+
+
+def check_username(form, field):
+    if re.search(r'[^\w\s]', field.data):
+        raise ValidationError('cannot contain special characters or hyphens.')
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -10,7 +16,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class RegisterForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField('Username', validators=[DataRequired(), check_username])
     callsign = StringField('Callsign', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     firstname = StringField('First Name', validators=[DataRequired()])
@@ -19,7 +25,7 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class UserEdit(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField('Username', validators=[DataRequired(), check_username])
     callsign = StringField('Callsign', validators=[DataRequired()])
     firstname = StringField('First Name', validators=[Optional()])
     lastname = StringField('Last Name', validators=[Optional()])

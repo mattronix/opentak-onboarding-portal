@@ -8,6 +8,7 @@ from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
 
+
 routes = Blueprint('routes', __name__, url_prefix='/')
 default_breadcrumb_root(routes, '.',)
 
@@ -94,7 +95,7 @@ def register(onboardingCode):
     form = RegisterForm()
     if form.validate_on_submit():
         # Get the username and password from the form
-        username = form.username.data
+        username = form.username.data.lower()
         password = form.password.data
         callsign = form.callsign.data
         firstname = form.firstname.data

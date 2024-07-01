@@ -164,6 +164,9 @@ class UserModel(db.Model):
     @staticmethod
     def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[], onboardedby=None):
         try:
+            if username:
+                user.username = username.lower()
+
             user = UserModel(username=username, email=email, firstName=firstname, lastName=lastname, callsign=callsign, roles=roles, takprofiles=takprofiles, onboardedBy=onboardedby)
             db.session.add(user)
             db.session.commit()
@@ -192,6 +195,10 @@ class UserModel(db.Model):
     @staticmethod
     def update_user(user):
         try:
+
+            if user.username:
+                user.username = user.username.lower()
+
             db.session.merge(user)
             db.session.commit()
             return {"message": "User updated successfully"}
