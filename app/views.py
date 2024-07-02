@@ -11,7 +11,9 @@ from flask import send_file
 import io
 import zipfile
 import os
-
+import tempfile
+import shutil
+import xml.etree.ElementTree as ET
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 default_breadcrumb_root(routes, '.',)
@@ -155,17 +157,41 @@ def register(onboardingCode):
 def downloadTakPackage(id):
 
     takProfile = TakProfileModel.get_tak_profile_by_id(id)
+    userProfile = UserModel.get_user_by_username(session['username'])
+
     if takProfile is None:
         return render_template('restricted.html', error="Invalid TAK Profile")
     
     folder = takProfile.takTemplateFolderLocation
+    temp_folder = tempfile.mkdtemp()
+    print(temp_folder)
 
-    if os.path.exists(folder):
+    shutil.copytree(folder, temp_folder, dirs_exist_ok=True)
+
+    if takProfile.takPrefFileLocation is not None:
+        config_file_location = takProfile.takPrefFileLocation[takProfile.takPrefFileLocation.index('/') + 1:]
+    
+    if takProfile.takTemplateFolderLocation is not None and os.path.exists(f"{temp_folder}/{config_file_location}") and userProfile.callsign is not None:
+
+        # Open the XML file
+        tree = ET.parse(f"{temp_folder}/{config_file_location}")
+        root = tree.getroot()
+
+        # Find the 'locationCallsign' entry and update its value
+        for entry in root.findall("./preference/entry"):
+            if entry.get("key") == "locationCallsign":
+                entry.text = userProfile.callsign
+
+        # Save the modified XML file
+        tree.write(f"{temp_folder}/{config_file_location}")
+
+
+    if os.path.exists(temp_folder):
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, 'w') as zf:
-            for root, dirs, files in os.walk(folder):
+            for root, dirs, files in os.walk(temp_folder):
                 for file in files:
-                    zf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), os.path.join(folder, '..')))
+                    zf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), os.path.join(temp_folder, '..')))
 
         memory_file.seek(0)
         return send_file(memory_file, as_attachment=True, download_name=f"{takProfile.name}.zip")
