@@ -37,8 +37,9 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         # Get the username and password from the form
-        username = form.username.data
+        form_username = form.username.data
         password = form.password.data
+        username = form_username.lower()
         try:
             otsSession = OTSClient(OTS_URL, username, password)
             # Store the OTS session in a session variable
