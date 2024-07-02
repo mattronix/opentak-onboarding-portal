@@ -17,7 +17,14 @@
                             <h5 class="card-title">Download ATAK DataPackage</h5>
                         </div>
                         <div class="card-body">
-                            Click Here
+
+                            {% for takprofile in tak_profiles %}
+                                <h5>{{takprofile.name}}</h5>
+                                <p>{{takprofile.description}}</p>
+                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-primary">Download</a>
+                                <hr>
+                            {% endfor %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>

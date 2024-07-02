@@ -27,7 +27,7 @@
             <div class="card">
                  <h2 class="mt-5 text-center">Datapackage Add</h2>
                     <div class="card-body">
-                        <form action="{{ url_for('admin_routes.takprofiles_add') }}" method="post" novalidate>
+                        <form action="{{ url_for('admin_routes.takprofiles_add') }}" method="post" enctype="multipart/form-data" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
                             <div class="form-group row required">

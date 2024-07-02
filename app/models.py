@@ -220,7 +220,8 @@ class TakProfileModel(db.Model):
     description: Mapped[str] = mapped_column()
     isPublic: Mapped[bool] = mapped_column(nullable=True, default=True)
     takTemplateFolderLocation: Mapped[str] = mapped_column(nullable=True)
-    
+    takPrefFileLocation: Mapped[str] = mapped_column(nullable=True)
+
     users = relationship(
         "UserModel",
         secondary=user_takprofile_association,
@@ -238,9 +239,9 @@ class TakProfileModel(db.Model):
     )
 
     @staticmethod
-    def create_tak_profile(name, description, is_public=None, template_folder_location=None):
+    def create_tak_profile(name, description, is_public=None, template_folder_location=None, pref_file_location=None):
         try:
-            tak_profile = TakProfileModel(name=name, description=description, isPublic=is_public, takTemplateFolderLocation=template_folder_location)
+            tak_profile = TakProfileModel(name=name, description=description, isPublic=is_public, takTemplateFolderLocation=template_folder_location, takPrefFileLocation=pref_file_location)
             db.session.add(tak_profile)
             db.session.commit()
             return tak_profile

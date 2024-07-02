@@ -1,13 +1,17 @@
 from flask import render_template, Blueprint, request, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
-from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD
+from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, DATAPACKAGE_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEdit, TakProfileForm
+from app.forms import OnboardingCodeForm, DeleteForm, UserEdit, TakProfileForm, TakProfileEditForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel 
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
-
+from werkzeug.utils import secure_filename
+import os
+import tempfile
+import zipfile
+import shutil
 
 admin_routes = Blueprint('admin_routes', __name__, url_prefix='/admin')
 default_breadcrumb_root(admin_routes, '.',)
@@ -38,6 +42,56 @@ def admin_takprofiles(*args, **kwargs):
     return {'text': "Profile", 'url':""}
 
 
+def takprofile_datapackage_uploader(file, takprofile):
+
+    filename = secure_filename(file.filename)
+
+    try:
+        if not os.path.exists(DATAPACKAGE_UPLOAD_FOLDER):
+            os.makedirs(DATAPACKAGE_UPLOAD_FOLDER)
+
+        takuploaddir = f"{DATAPACKAGE_UPLOAD_FOLDER}/{takprofile.id}"
+
+        if os.path.exists(takuploaddir):
+            shutil.rmtree(takuploaddir)
+        if not os.path.exists(takuploaddir):
+            os.makedirs(takuploaddir)
+
+    
+    except OSError:
+        print(f"Error creating {DATAPACKAGE_UPLOAD_FOLDER}")
+        return {"error" : "Error creating upload directory"}
+    
+    try: 
+        temp_dir = tempfile.mkdtemp()
+        file_path = os.path.join(temp_dir, filename)
+        file.save(file_path)
+        
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            zip_ref.extractall(takuploaddir)
+        
+        os.remove(file_path)
+        takprofile.takTemplateFolderLocation = takuploaddir
+        return takprofile
+    except Exception as e:
+        return {"error" : f"Error uploading file: {e}"}
+
+
+
+def make_tree(path):
+    tree = dict(name=os.path.basename(path), children=[])
+    try: lst = os.listdir(path)
+    except OSError:
+        pass #ignore errors
+    else:
+        for name in lst:
+            fn = os.path.join(path, name)
+            print
+            if os.path.isdir(fn):
+                tree['children'].append(make_tree(fn))
+            else:
+                tree['children'].append(dict(name=name))
+    return tree
 
 @register_breadcrumb(admin_routes, '.admin', 'Admin Portal')
 @admin_routes.route('/')
@@ -204,20 +258,16 @@ def takprofiles_add():
     unique_id = str(uuid.uuid4())
 
     if form.validate_on_submit():
-            object = TakProfileModel.create_tak_profile(name=form.name.data, description=form.description.data)
-            
-            try: 
-                e = object.get("error")
-                return render_template('admin_takprofiles_add.html', form=form, error=e)
-            except:
-                pass
-            
+            takprofile = TakProfileModel.create_tak_profile(name=form.name.data, description=form.description.data)
+
+            if form.datapackage.data:
+                takprofile = takprofile_datapackage_uploader(form.datapackage.data, takprofile)
+
+                TakProfileModel.update_tak_profile(takprofile)
+
             return redirect(url_for('admin_routes.takprofiles_list'))
     
     return render_template('admin_takprofiles_add.html', form=form)
-
-
-
 
 
 @register_breadcrumb(admin_routes, '.admin.takprofiles.edit', 'Edit Datapackage', dynamic_list_constructor=admin_takprofiles)
@@ -226,7 +276,7 @@ def takprofiles_add():
 @role_required(role='administrator')
 def takprofiles_edit(id):  
     takprofile = TakProfileModel.get_tak_profile_by_id(id)
-    form = TakProfileForm(data=takprofile.__dict__)
+    form = TakProfileEditForm(data=takprofile.__dict__)
     
     if takprofile is None:
         return redirect(url_for('admin_routes.takprofiles_list'))
@@ -234,10 +284,18 @@ def takprofiles_edit(id):
     if form.validate_on_submit():
         takprofile.name = form.name.data
         takprofile.description = form.description.data
-        TakProfileModel.update_tak_profile(takprofile)
-        return redirect(url_for('admin_routes.takprofiles_list'))
+        takprofile.takPrefFileLocation = form.takPrefFileLocation.data
 
-    return render_template('admin_takprofiles_edit.html', takprofile=takprofile, form=form)
+
+        if form.datapackage.data:
+            takprofile = takprofile_datapackage_uploader(form.datapackage.data, takprofile)
+        
+        TakProfileModel.update_tak_profile(takprofile)
+        return redirect(url_for('admin_routes.takprofiles_edit', id=takprofile.id))
+
+
+
+    return render_template('admin_takprofiles_edit.html', takprofile=takprofile, form=form, filetree=make_tree(takprofile.takTemplateFolderLocation))
 
 @register_breadcrumb(admin_routes, '.admin.takprofiles.delete', 'Delete Datapackage', dynamic_list_constructor=admin_takprofiles)
 @admin_routes.route('takprofiles/delete/<int:id>', methods=['GET', 'POST'])
@@ -256,6 +314,9 @@ def takprofiles_delete(id):
             return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form, error="You must type 'OK' to delete this record")
         
         TakProfileModel.delete_tak_profile_by_id(takprofile.id)
+        shutil.rmtree(takprofile.takTemplateFolderLocation)
         return redirect(url_for('admin_routes.takprofiles_list'))
     
+
+
     return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form)

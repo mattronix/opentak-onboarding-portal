@@ -2,13 +2,23 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Optional, ValidationError
 from wtforms import SubmitField
-from werkzeug.utils import secure_filename
+from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 import re
-
+import os
 
 def check_username(form, field):
-    if re.search(r'[^\w\s]', field.data):
+    if field.data and re.search(r'[^\w\s]', field.data):
         raise ValidationError('cannot contain special characters or hyphens.')
+
+
+def check_filename(form, field):
+    if field.data and not field.data.filename.endswith('.zip'):
+        raise ValidationError('Filename must end with .zip')
+
+
+def check_file_exists(form, field):
+    if field.data and not os.path.exists(DATAPACKAGE_UPLOAD_FOLDER + '/' + field.data):
+        raise ValidationError('File does not exist.')
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -45,8 +55,14 @@ class DeleteForm(FlaskForm):
     submit = SubmitField('Delete')
 
 class TakProfileForm(FlaskForm):
-    datapackage = FileField('Datapackage', validators=[DataRequired()])
+    datapackage = FileField('Datapackage', validators=[DataRequired(), check_filename])
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[DataRequired()])
-    maxUses = IntegerField('Max Uses', validators=[Optional()])
+    submit = SubmitField('Submit')
+
+class TakProfileEditForm(FlaskForm):
+    datapackage = FileField('Datapackage', validators=[check_filename, Optional()])
+    name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[DataRequired()])
+    takPrefFileLocation = StringField('Preference File Location', validators=[Optional(), check_file_exists])
     submit = SubmitField('Submit')

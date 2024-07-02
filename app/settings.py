@@ -21,3 +21,5 @@ MAIL_USERNAME=str(environ.get('MAIL_USERNAME'))
 MAIL_PASSWORD=str(environ.get('MAIL_PASSWORD'))
 MAIL_DEFAULT_SENDER=str(environ.get('MAIL_DEFAULT_SENDER'))
 MAIL_ENABLED=strtobool(environ.get('MAIL_ENABLED', 'False'))
+
+DATAPACKAGE_UPLOAD_FOLDER = 'datapackages'

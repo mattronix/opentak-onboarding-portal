@@ -4,9 +4,13 @@ from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, db
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
+from flask import send_file
+import io
+import zipfile
+import os
 
 
 routes = Blueprint('routes', __name__, url_prefix='/')
@@ -21,7 +25,10 @@ otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 @login_required
 def home():  
     user = UserModel.get_user_by_username(session['username'])
-    return render_template('index.html', user=user)
+
+    tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
+
+    return render_template('index.html', user=user, tak_profiles=tak_profiles)
 
     
 @routes.route('/logout')
@@ -143,6 +150,29 @@ def register(onboardingCode):
     return render_template('register.html', form=form, url=f"/register/{onboardingCode}")
 
 
+
+@routes.route('/downloadtakpackage/<id>', methods=['GET', 'POST'])
+def downloadTakPackage(id):
+
+    takProfile = TakProfileModel.get_tak_profile_by_id(id)
+    if takProfile is None:
+        return render_template('restricted.html', error="Invalid TAK Profile")
+    
+    folder = takProfile.takTemplateFolderLocation
+
+    if os.path.exists(folder):
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w') as zf:
+            for root, dirs, files in os.walk(folder):
+                for file in files:
+                    zf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), os.path.join(folder, '..')))
+
+        memory_file.seek(0)
+        return send_file(memory_file, as_attachment=True, download_name=f"{takProfile.name}.zip")
+    else:
+        return render_template('restricted.html', error="TAK Profile folder does not exist")
+
+
 @routes.route('/static/css/branding.css')  
 def branding_view(): 
      
@@ -161,3 +191,6 @@ def branding_view():
     resp = make_response(render_template('branding.css', branding=branding))
     resp.headers['Content-Type'] = 'text/css'
     return resp
+
+
+

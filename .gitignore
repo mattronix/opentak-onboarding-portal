@@ -3,3 +3,4 @@
 .env
 instance/db.sqlite
 .DS_Store
+datapackages/*

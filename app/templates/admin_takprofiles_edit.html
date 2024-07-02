@@ -27,7 +27,7 @@
             <div class="card">
                  <h2 class="mt-5 text-center">Datapackage Editor</h2>
                     <div class="card-body">
-                        <form action="{{ url_for('admin_routes.takprofiles_edit',id=takprofile.id) }}" method="post" novalidate>
+                        <form action="{{ url_for('admin_routes.takprofiles_edit',id=takprofile.id) }}" method="post" enctype="multipart/form-data" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
                             <div class="form-group row required">
@@ -51,6 +51,26 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="card">
+                <h2 class="mt-5 text-center">File Structure Viewer BETA</h2>
+                <div class="card-body">
+                    <title>Path: {{ filetree.name }}</title>
+                   <ul>
+                    <li>{{ filetree.name }}</li>
+                    <ul>
+                    {%- for item in filetree.children recursive %}
+                        <li>{{ item.name }}
+                        {%- if item.children -%}
+                            <ul>{{ loop(item.children) }}</ul>
+                        {%- endif %}</li>
+                    {%- endfor %}
+                    </ul>
+                </ul>
+                </div>
+            </div> 
+        </div>  
+
     </div> 
 </div>  
 
