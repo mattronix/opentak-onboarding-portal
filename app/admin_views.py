@@ -211,8 +211,8 @@ def users_edit(id):
     if form.validate_on_submit():
         user.username = form.username.data
         user.callsign = form.callsign.data
-        user.firstname = form.firstname.data
-        user.lastname = form.lastname.data
+        user.firstName = form.firstname.data
+        user.lastName = form.lastname.data
         user.email = form.email.data
         UserModel.update_user(user)
         return redirect(url_for('admin_routes.users_list'))

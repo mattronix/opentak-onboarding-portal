@@ -1,4 +1,4 @@
-from flask import render_template, Blueprint, request, make_response, session
+from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED
@@ -166,11 +166,17 @@ def downloadTakPackage(id):
     temp_folder = tempfile.mkdtemp()
     print(temp_folder)
 
-    shutil.copytree(folder, temp_folder, dirs_exist_ok=True)
+    try: 
+        shutil.copytree(folder, temp_folder, dirs_exist_ok=True)
+    except Exception as e:
+        return render_template('restricted.html', error=f"TEMP File Error: {e}")
 
     if takProfile.takPrefFileLocation is not None:
         config_file_location = takProfile.takPrefFileLocation[takProfile.takPrefFileLocation.index('/') + 1:]
+    else:
+        config_file_location = None
     
+
     if takProfile.takTemplateFolderLocation is not None and os.path.exists(f"{temp_folder}/{config_file_location}") and userProfile.callsign is not None:
 
         # Open the XML file
