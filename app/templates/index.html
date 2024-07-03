@@ -41,15 +41,23 @@
                                 <li>{{role.name}}</li>
                             {%endfor%}
                             </ul>
+
+                            {% if user.callsign %}
                             <h5>Callsign:</h5>
                             <p style="color: black;">{{user.callsign}}</p>
+                            {% endif %}
+                            {% if user.firstName %}
                             <h5>First Name:</h5>
                             <p style="color: black;">{{user.firstName}}</p>
+                            {% endif %}
+                            {% if user.lastName %}
                             <h5>Last Name:</h5>
                             <p style="color: black;">{{user.lastName}}</p>
+                            {% endif %}
+                            {% if user.email %}
                             <h5>E-Mail:</h5>
                             <p style="color: black;">{{user.email}}</p>
-
+                            {% endif %}
                             <a href="{{ url_for('routes.user_profile_edit') }}" class="btn btn-primary">Edit Profile</a>
                         </div>
 
