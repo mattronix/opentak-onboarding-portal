@@ -215,13 +215,14 @@ def user_profile_edit():
     user = UserModel.get_user_by_username(session['username'])
     form = UserProfileEdit(data=user.__dict__)
     
+    print(user.__dict__)
     if user is None:
         return redirect(url_for('routes.home'))
 
     if form.validate_on_submit():
         user.callsign = form.callsign.data
-        user.firstName = form.firstname.data
-        user.lastName = form.lastname.data
+        user.firstName = form.firstName.data
+        user.lastName = form.lastName.data
         user.email = form.email.data
         UserModel.update_user(user)
 

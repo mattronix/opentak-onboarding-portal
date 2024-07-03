@@ -37,15 +37,15 @@ class RegisterForm(FlaskForm):
 class UserEdit(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), check_username])
     callsign = StringField('Callsign', validators=[DataRequired()])
-    firstname = StringField('First Name', validators=[Optional()])
-    lastname = StringField('Last Name', validators=[Optional()])
+    firstName = StringField('First Name', validators=[Optional()])
+    lastName = StringField('Last Name', validators=[Optional()])
     email = StringField('Email', validators=[Optional(), Email()])
     submit = SubmitField('Submit')
 
 class UserProfileEdit(FlaskForm):
     callsign = StringField('Callsign', validators=[DataRequired()])
-    firstname = StringField('First Name', validators=[Optional()])
-    lastname = StringField('Last Name', validators=[Optional()])
+    firstName = StringField('First Name', validators=[Optional()])
+    lastName = StringField('Last Name', validators=[Optional()])
     email = StringField('Email', validators=[Email()])
     submit = SubmitField('Submit')
 
