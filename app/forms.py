@@ -42,6 +42,13 @@ class UserEdit(FlaskForm):
     email = StringField('Email', validators=[Optional(), Email()])
     submit = SubmitField('Submit')
 
+class UserProfileEdit(FlaskForm):
+    callsign = StringField('Callsign', validators=[DataRequired()])
+    firstname = StringField('First Name', validators=[Optional()])
+    lastname = StringField('Last Name', validators=[Optional()])
+    email = StringField('Email', validators=[Email()])
+    submit = SubmitField('Submit')
+
 class OnboardingCodeForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[DataRequired()])

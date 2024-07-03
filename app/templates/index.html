@@ -11,7 +11,7 @@
             
         <div class="mt-3 container">
             <div class="row">
-                <div class="mt-2 col-md-12">
+                <div class="mt-2 col-md-8">
                     <div class="card">
                         <div class="card-header">
                             <h5 class="card-title">Download ATAK DataPackage</h5>
@@ -27,7 +27,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-2 col-md-12">
+                <div class="mt-2 col-md-4">
                     <div class="card">
                         <div class="card-header">
                             <h5 class="card-title">Your Profile</h5>
@@ -41,7 +41,18 @@
                                 <li>{{role.name}}</li>
                             {%endfor%}
                             </ul>
+                            <h5>Callsign:</h5>
+                            <p style="color: black;">{{user.callsign}}</p>
+                            <h5>First Name:</h5>
+                            <p style="color: black;">{{user.firstName}}</p>
+                            <h5>Last Name:</h5>
+                            <p style="color: black;">{{user.lastName}}</p>
+                            <h5>E-Mail:</h5>
+                            <p style="color: black;">{{user.email}}</p>
+
+                            <a href="{{ url_for('routes.user_profile_edit') }}" class="btn btn-primary">Edit Profile</a>
                         </div>
+
                     </div>
                 </div>
             </div>

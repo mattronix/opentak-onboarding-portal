@@ -3,7 +3,7 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED
 from app.decorators import login_required
-from app.forms import LoginForm, RegisterForm
+from app.forms import LoginForm, RegisterForm, UserProfileEdit
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
@@ -27,7 +27,6 @@ otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 @login_required
 def home():  
     user = UserModel.get_user_by_username(session['username'])
-
     tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
 
     return render_template('index.html', user=user, tak_profiles=tak_profiles)
@@ -209,6 +208,26 @@ def downloadTakPackage(id):
     else:
         return render_template('restricted.html', error="TAK Profile folder does not exist")
 
+@register_breadcrumb(routes, '.Profile', 'Edit Profile')
+@routes.route('/editprofile', methods=['GET', 'POST'])
+@login_required
+def user_profile_edit():  
+    user = UserModel.get_user_by_username(session['username'])
+    form = UserProfileEdit(data=user.__dict__)
+    
+    if user is None:
+        return redirect(url_for('routes.home'))
+
+    if form.validate_on_submit():
+        user.callsign = form.callsign.data
+        user.firstName = form.firstname.data
+        user.lastName = form.lastname.data
+        user.email = form.email.data
+        UserModel.update_user(user)
+
+        return redirect(url_for('routes.home'))
+    
+    return render_template('user_profile_edit.html', user=user, form=form)
 
 @routes.route('/static/css/branding.css')  
 def branding_view(): 
