@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField
-from wtforms.validators import DataRequired, Email, Optional, ValidationError
+from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo
 from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 import re
@@ -28,7 +28,8 @@ class LoginForm(FlaskForm):
 class RegisterForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), check_username])
     callsign = StringField('Callsign', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6, max=10), EqualTo('password_confirm', message='Passwords must match')])
+    password_confirm = PasswordField(label='Confirm Password', validators=[DataRequired(), Length(min=6, max=10)])
     firstname = StringField('First Name', validators=[DataRequired()])
     lastname = StringField('Last Name', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
