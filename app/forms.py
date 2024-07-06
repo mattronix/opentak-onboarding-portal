@@ -28,15 +28,15 @@ class LoginForm(FlaskForm):
 class RegisterForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), check_username])
     callsign = StringField('Callsign', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=6, max=10), EqualTo('password_confirm', message='Passwords must match')])
-    password_confirm = PasswordField(label='Confirm Password', validators=[DataRequired(), Length(min=6, max=10)])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6), EqualTo('password_confirm', message='Passwords must match')])
+    password_confirm = PasswordField(label='Confirm Password', validators=[DataRequired(), Length(min=6)])
     firstname = StringField('First Name', validators=[DataRequired()])
     lastname = StringField('Last Name', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Submit')
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     submit = SubmitField('Submit')
 
 class UserEditForm(FlaskForm):
