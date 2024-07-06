@@ -3,7 +3,7 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED
 from app.decorators import login_required
-from app.forms import LoginForm, RegisterForm, UserProfileEdit
+from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
@@ -213,7 +213,7 @@ def downloadTakPackage(id):
 @login_required
 def user_profile_edit():  
     user = UserModel.get_user_by_username(session['username'])
-    form = UserProfileEdit(data=user.__dict__)
+    form = UserProfileEditForm(data=user.__dict__)
     
     print(user.__dict__)
     if user is None:
@@ -251,3 +251,22 @@ def branding_view():
 
 
 
+
+@register_breadcrumb(routes, '.ResetPassword', 'Reset Password')
+@routes.route('/resetpassword', methods=['GET', 'POST'])
+@login_required
+def reset_password():  
+    user = UserModel.get_user_by_username(session['username'])
+    form = ResetPasswordForm()
+    
+    print(user.__dict__)
+    if user is None:
+        return redirect(url_for('routes.home'))
+
+    if form.validate_on_submit():
+        user.password = form.password.data
+        otsClient.reset_user_password(user.username, form.password.data)
+
+        return redirect(url_for('routes.home'))
+    
+    return render_template('password_reset.html', user=user, form=form)

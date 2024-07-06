@@ -18,6 +18,7 @@ class OTSClient:
     _eud = _apibase + "/eud"
     _jobs = _apibase + "/scheduler/jobs"
     _points = _apibase + "/point"
+    _reset = _apibase + "/reset"
 
     
     def __init__(self, url, username, password):
@@ -205,6 +206,6 @@ class OTSClient:
     
     def reset_user_password (self, username, password):
         body = {'username': username, 'new_password': password}
-        return self.request_handler(method="POST", endpoint=self._user, body=body)
+        return self.request_handler(method="POST", endpoint=self._reset, body=body)
 
 otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)

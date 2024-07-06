@@ -3,7 +3,7 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, DATAPACKAGE_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEdit, TakProfileForm, TakProfileEditForm
+from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel 
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root

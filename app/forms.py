@@ -35,7 +35,11 @@ class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Submit')
 
-class UserEdit(FlaskForm):
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class UserEditForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), check_username])
     callsign = StringField('Callsign', validators=[DataRequired()])
     firstName = StringField('First Name', validators=[Optional()])
@@ -43,7 +47,7 @@ class UserEdit(FlaskForm):
     email = StringField('Email', validators=[Optional(), Email()])
     submit = SubmitField('Submit')
 
-class UserProfileEdit(FlaskForm):
+class UserProfileEditForm(FlaskForm):
     callsign = StringField('Callsign', validators=[DataRequired()])
     firstName = StringField('First Name', validators=[Optional()])
     lastName = StringField('Last Name', validators=[Optional()])
