@@ -18,7 +18,7 @@ class OTSClient:
     _eud = _apibase + "/eud"
     _jobs = _apibase + "/scheduler/jobs"
     _points = _apibase + "/point"
-    _reset = _apibase + "/reset"
+    _reset = _apibase + _user + "/password/reset"
 
     
     def __init__(self, url, username, password):
