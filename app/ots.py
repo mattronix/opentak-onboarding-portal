@@ -203,5 +203,8 @@ class OTSClient:
         body = {'username': username}
         return self.request_handler(method="POST", endpoint=self._user_delete, body=body)
     
-    
+    def reset_user_password (self, username, password):
+        body = {'username': username, 'new_password': password}
+        return self.request_handler(method="POST", endpoint=self._user, body=body)
+
 otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
