@@ -204,7 +204,7 @@ def admin_users(*args, **kwargs):
 @role_required(role='administrator')
 def users_edit(id):  
     user = UserModel.get_user_by_id(id)
-    form = UserEdit(data=user.__dict__)
+    form = UserEditForm(data=user.__dict__)
     if user is None:
         return redirect(url_for('admin_routes.users_list'))
     
