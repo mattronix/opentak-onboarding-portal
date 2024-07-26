@@ -22,7 +22,9 @@
                                 <h5>{{takprofile.name}}</h5>
                                 <p>{{takprofile.description}}</p>
                                 <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-primary">Download</a>
-                                <a href="{{help_link}}" class="btn btn-primary">HELP / HOW TO INSTALL</a>
+                                <a href="{{help_link}}" class="btn btn-warning">
+                                    <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
+                                </a>
                                 <hr>
                             {% endfor %}
 
