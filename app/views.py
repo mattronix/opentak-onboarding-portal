@@ -186,10 +186,12 @@ def downloadTakPackage(id):
         for entry in root.findall("./preference/entry"):
             if entry.get("key") == "locationCallsign":
                 entry.text = userProfile.callsign
-            else:
-                new_entry = ET.SubElement(root.find("./preference"), "entry")
-                new_entry.set("key", "locationCallsign")
-                new_entry.text = userProfile.callsign
+
+        location_callsign_entry = root.find("./preference/entry[@key='locationCallsign']")
+        if location_callsign_entry is None:
+            new_entry = ET.SubElement(root.find("./preference"), "entry")
+            new_entry.set("key", "locationCallsign")
+            new_entry.text = userProfile.callsign
 
 
         # Save the modified XML file
