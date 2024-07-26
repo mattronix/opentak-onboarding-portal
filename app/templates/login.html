@@ -13,7 +13,9 @@
 </div>
 {% endfor %}
 
+
 <div class="container">
+
     <div class="row justify-content-center">
         <div class="col-md-4 mt-5">
             <div class="card">
@@ -21,6 +23,9 @@
                     <img src="/static/img/logo.png", style="width: 175px;">
                 </div>
                     <div class="card-body">
+                        <div class="alert alert-warning">
+                            Enter username as lowercase!
+                         </div>
                         <form action="/login" method="post" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
@@ -32,8 +37,9 @@
                                 {{ form.password.label(class_="mt-3") }}
                                 {{ form.password(class_="form-control", size=32) }}
                             </div>
-                            {{ form.submit(class_="mt-5 form-control secondary-background-color") }}
+                            {{ form.submit(class_="mt-5 form-control btn-primary") }}
                         </form>
+                        <a href="{{ url_for('routes.reset_password') }}" class="mt-1 form-control btn btn-primary">Change Password</a>
                 </div>
             </div>
         </div>

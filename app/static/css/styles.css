@@ -116,26 +116,6 @@ h2.ssb-title {
   height: 505px;
 }
 
-.tile h4 {
-  position: relative;
-  top: 120px;
-  font-weight: 600;
-  margin-top: 0;
-  padding-left: 10px;
-  padding-top: 32px;
-  font-family: 'Source Sans Pro', sans-serif;
-  color: #92c01f;
-}
-
-.tile p {
-  position: relative;
-  top: 120px;
-  font-weight: 400;
-  margin-top: 0;
-  padding-left: 10px;
-  font-family: 'Source Sans Pro', sans-serif;
-  color: #5D7975;
-}
 
 
 .profilepic {
@@ -157,39 +137,6 @@ h2.ssb-title {
   padding-left: 0px;
   padding-right: 0px;
 }
-<<<<<<< HEAD
 html * {
   font-family: 'Source Sans Pro', sans-serif;
 }
-
-.btn-light-green {
-  color: #fff;
-  background-color: #8bc34a !important;
-}
-.btn-blue-grey {
-  color: #fff;
-  background-color: #78909c !important;
-}
-
-.btn-wtf {
-  display: inline-block;
-  align-self: center;
-  font-weight: 400;
-  line-height: 1.5;
-  text-align: center;
-  text-decoration: none;
-  vertical-align: middle;
-  cursor: pointer;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-  background-color: transparent;
-  border: 1px solid transparent;
-  padding: .375rem .75rem;
-  font-size: 1rem;
-  border-radius: .25rem;
-  /* Fixes issues with Submit button use instead of btn class on wtf form.
-  /* transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out; */
-}
-=======
->>>>>>> 296ad9c4dde39ae836964d2be0bf952d3a511b69
