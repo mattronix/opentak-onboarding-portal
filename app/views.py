@@ -1,9 +1,9 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
-from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED
+from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK
 from app.decorators import login_required
-from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm
+from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
@@ -28,8 +28,8 @@ otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 def home():  
     user = UserModel.get_user_by_username(session['username'])
     tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
-
-    return render_template('index.html', user=user, tak_profiles=tak_profiles)
+    help_link = HELP_LINK
+    return render_template('index.html', user=user, tak_profiles=tak_profiles, help_link=help_link)
 
     
 @routes.route('/logout')
@@ -163,7 +163,6 @@ def downloadTakPackage(id):
     
     folder = takProfile.takTemplateFolderLocation
     temp_folder = tempfile.mkdtemp()
-    print(temp_folder)
 
     try: 
         shutil.copytree(folder, temp_folder, dirs_exist_ok=True)
@@ -216,8 +215,7 @@ def downloadTakPackage(id):
 def user_profile_edit():  
     user = UserModel.get_user_by_username(session['username'])
     form = UserProfileEditForm(data=user.__dict__)
-    
-    print(user.__dict__)
+
     if user is None:
         return redirect(url_for('routes.home'))
 
@@ -254,14 +252,13 @@ def branding_view():
 
 
 
-@register_breadcrumb(routes, '.ResetPassword', 'Reset Password')
-@routes.route('/resetpassword', methods=['GET', 'POST'])
+@register_breadcrumb(routes, '.ChangePassword', 'Change Password')
+@routes.route('/changepassword', methods=['GET', 'POST'])
 @login_required
-def reset_password():  
+def change_password():  
     user = UserModel.get_user_by_username(session['username'])
     form = ResetPasswordForm()
     
-    print(user.__dict__)
     if user is None:
         return redirect(url_for('routes.home'))
 
@@ -271,4 +268,6 @@ def reset_password():
 
         return redirect(url_for('routes.home'))
     
-    return render_template('password_reset.html', user=user, form=form)
+    return render_template('password_change.html', user=user, form=form)
+
+
