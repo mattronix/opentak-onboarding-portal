@@ -35,7 +35,7 @@
                                     {% for field in form %}
                                         {% if field.type == "SubmitField" %}
                                         <div class="mb-0 mt-2 offset-lg-3 col-lg-9">
-                                            {{field(style="width:100px", class_="btn-wtf btn-primary")}}
+                                            {{field(style="width:100px", class_="btn-wtf btn-custom-primary")}}
                                         </div>
                                         {% elif field.type == "CSRFTokenField" %}  
                                         {{field}}

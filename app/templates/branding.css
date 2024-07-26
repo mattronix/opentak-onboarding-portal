@@ -109,11 +109,11 @@ a {
 }
 
 
-.btn-primary {
-  color: #fff;
-  background-color: {{branding.accent_color}}  !important;
+.btn-custom-primary {
+  color: #fff !important;
+  background-color: {{branding.accent_color}} !important;
   border-color: {{branding.accent_color}} !important;
-  text-transform: uppercase;
+  text-transform: uppercase !important;
 }
 
 .btn-wtf {

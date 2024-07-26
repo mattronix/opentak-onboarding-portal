@@ -21,7 +21,7 @@
                             {% for takprofile in tak_profiles %}
                                 <h5>{{takprofile.name}}</h5>
                                 <p>{{takprofile.description}}</p>
-                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-primary">Download</a>
+                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
                                 <a href="{{help_link}}" class="btn btn-warning">
                                     <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
                                 </a>
@@ -88,8 +88,8 @@
                             {% endif %}
                             <div class="row">
                                 <div class="col-sm-12">
-                                    <a href="{{ url_for('routes.user_profile_edit') }}" class="btn btn-primary">Edit Profile</a>
-                                    <a href="{{ url_for('routes.change_password') }}" class="btn btn-primary">Change Password</a>
+                                    <a href="{{ url_for('routes.user_profile_edit') }}" class="btn btn-custom-primary">Edit Profile</a>
+                                    <a href="{{ url_for('routes.change_password') }}" class="btn btn-custom-primary">Change Password</a>
                                 </div>
                             </div>
                         </div>
