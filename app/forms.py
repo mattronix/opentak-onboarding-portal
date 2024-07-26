@@ -7,9 +7,8 @@ import re
 import os
 
 def check_username(form, field):
-    if field.data and re.search(r'[^\w\s]', field.data):
-        raise ValidationError('cannot contain special characters or hyphens.')
-
+    if field.data and re.search(r'[^a-zA-Z0-9\s]', field.data):
+        raise ValidationError('Username cannot contain special characters, hyphens, or underscores.')
 
 def check_filename(form, field):
     if field.data and not field.data.filename.endswith('.zip'):
@@ -26,7 +25,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class RegisterForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), check_username])
+    username = StringField('Username', validators=[DataRequired(), check_username,])
     callsign = StringField('Callsign', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6), EqualTo('password_confirm', message='Passwords must match')])
     password_confirm = PasswordField(label='Confirm Password', validators=[DataRequired(), Length(min=6)])
