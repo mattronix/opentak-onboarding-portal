@@ -9,3 +9,4 @@ email_validator
 Flask-Menu
 flask_breadcrumbs
 Flask_mail
+flask-jwt-extended

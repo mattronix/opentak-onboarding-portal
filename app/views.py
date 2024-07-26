@@ -1,6 +1,6 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
-from flask import redirect, url_for
+from flask import redirect, url_for, request
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
@@ -14,6 +14,8 @@ import os
 import tempfile
 import shutil
 import xml.etree.ElementTree as ET
+from flask_jwt_extended import create_access_token, decode_token
+import datetime
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 default_breadcrumb_root(routes, '.',)
@@ -263,7 +265,6 @@ def change_password():
         return redirect(url_for('routes.home'))
 
     if form.validate_on_submit():
-        user.password = form.password.data
         otsClient.reset_user_password(user.username, form.password.data)
 
         return redirect(url_for('routes.home'))
@@ -271,3 +272,53 @@ def change_password():
     return render_template('password_change.html', user=user, form=form)
 
 
+@register_breadcrumb(routes, '.Forgot Password', 'Forgot Password')
+@routes.route('/forgotpassword', methods=['GET', 'POST'])
+def forgot_password():  
+    form = ResetPasswordRequestForm()
+    if session.get('username'):
+        return redirect(url_for('routes.home'))
+
+    if form.validate_on_submit():
+        user = UserModel.query.filter_by(email=form.email.data).first()
+        current_host = request.host_url
+        if user:
+            expires = datetime.timedelta(minutes=15)
+            reset_token = create_access_token(str(user.id), expires_delta=expires, additional_claims={"reset_password": True, "email": user.email, "username": user.username})
+
+            send_html_email(subject="Password Reset", link_title="Reset Password", link_url=f"{current_host}/resetpassword/{reset_token}", title="Password Reset", message="Click the link to reset your password, This link is only valid for 15 minutes and does allow multiple resets in that time window.", recipients=[user.email])
+
+            return render_template('forgot_password.html', message="If your email is found in the system we will send you a password reset.", form=form)
+        
+        return render_template('forgot_password.html', message="If your email is found in the system we will send you a password reset.", form=form)
+    
+    return render_template('forgot_password.html', form=form)
+
+@register_breadcrumb(routes, '.Reset Password', 'Reset Password')
+@routes.route('/resetpassword/<token>', methods=['GET', 'POST'])
+def reset_password(token):  
+
+    decoded_token = decode_token(token)
+    form = ResetPasswordForm()
+    reset_password = decoded_token.get("reset_password")
+    email = decoded_token.get("email")
+
+
+    
+    if not reset_password:
+        return render_template('restricted.html', error="Invalid Token")
+    
+    user = UserModel.query.filter_by(email=email).first()
+
+    if user is None:
+        return render_template('restricted.html', error="User not found")
+    
+    if form.validate_on_submit():
+        print(form.password.data)
+
+        otsClient.reset_user_password(user.username, form.password.data)
+
+        return redirect(url_for('routes.home'))
+
+    return render_template('password_reset.html', form=form, token=token)
+3

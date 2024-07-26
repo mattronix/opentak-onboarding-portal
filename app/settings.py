@@ -1,7 +1,7 @@
 from os import environ
 from dotenv import load_dotenv
 from distutils.util import strtobool
-
+import random
 load_dotenv()
 
 SECRET_KEY=str(environ.get('SECRET_KEY'))
@@ -23,3 +23,7 @@ MAIL_DEFAULT_SENDER=str(environ.get('MAIL_DEFAULT_SENDER'))
 MAIL_ENABLED=strtobool(environ.get('MAIL_ENABLED', 'False'))
 HELP_LINK=str(environ.get('HELP_LINK', 'https://www.google.com'))
 DATAPACKAGE_UPLOAD_FOLDER = 'datapackages'
+
+import secrets
+
+JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))

@@ -6,7 +6,7 @@ from app.models import db, migrate
 from app.jina_filters import jina2_filters_blueprint
 from flask_breadcrumbs import Breadcrumbs
 from flask_menu import Menu
-from app.extensions import mail
+from app.extensions import mail, jwt_manager
 
 def create_app():
     # create and configure the app
@@ -18,6 +18,7 @@ def create_app():
     breadcrumbs = Breadcrumbs(init_menu=False)
     menu.init_app(app)
     breadcrumbs.init_app(app)
+    jwt_manager.init_app(app)
     app.register_blueprint(routes)
     app.register_blueprint(admin_routes)
     app.register_blueprint(jina2_filters_blueprint)
