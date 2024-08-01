@@ -7,8 +7,8 @@ import re
 import os
 
 def check_username(form, field):
-    if field.data and re.search(r'[^a-zA-Z0-9\s]', field.data):
-        raise ValidationError('Username cannot contain special characters, hyphens, or underscores.')
+    if field.data and (re.search(r'[^a-zA-Z0-9\s]', field.data) or ' ' in field.data):
+        raise ValidationError('Username cannot contain special characters, spaces, hyphens or underscore.')
 
 def check_filename(form, field):
     if field.data and not field.data.filename.endswith('.zip'):
