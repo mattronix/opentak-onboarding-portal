@@ -24,6 +24,13 @@ MAIL_ENABLED=strtobool(environ.get('MAIL_ENABLED', 'False'))
 HELP_LINK=str(environ.get('HELP_LINK', 'https://www.google.com'))
 DATAPACKAGE_UPLOAD_FOLDER = 'datapackages'
 
+PRIMARY_COLOR = str(environ.get('PRIMARY_COLOR', '#000000'))
+SECONDARY_COLOR = str(environ.get('SECONDARY_COLOR', 'orange'))
+
+ACCENT_COLOR = str(environ.get('ACCENT_COLOR', 'orange'))
+
+LOGO_PATH = str(environ.get('LOGO_PATH', 'static/images/logo.png'))
+
 import secrets
 
 JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))

@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK
+from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, db
@@ -236,13 +236,13 @@ def user_profile_edit():
 def branding_view(): 
      
     branding={
-        'primary_color':'#000000',
-        'secondary_color':'orange',
-        'accent_color':'orange',
+        'primary_color': PRIMARY_COLOR,
+        'secondary_color': SECONDARY_COLOR,
+        'accent_color': ACCENT_COLOR,
         'navbar_color':'#ffffff',
         'breadcrumb_color':"#e9ecef",
         'font_family' : "'Source Sans Pro', 'sans-serif'",
-        'logo_url' : '/static/img/logo.png',
+        'logo_url' : LOGO_PATH,
         'logo_height': '50px',
         'logo_width':'50px'
         }
