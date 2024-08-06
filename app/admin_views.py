@@ -46,7 +46,7 @@ def admin_roles(*args, **kwargs):
     object = UserRoleModel.get_role_by_id(object_id)
 
     if object:
-        return [{'text': object.callsign, 'url': f'/admin/roles/edit/{object_id}'}]
+        return [{'text': object.name, 'url': f'/admin/roles/edit/{object_id}'}]
     return {'text': "Profile", 'url':""}
 
 def takprofile_datapackage_uploader(file, takprofile):
@@ -357,7 +357,7 @@ def admin_roles_add():
     return render_template('admin_roles_add.html', form=form)
 
 
-#@register_breadcrumb(admin_routes, '.admin.roles.delete', 'Delete Role', dynamic_list_constructor=admin_roles)
+@register_breadcrumb(admin_routes, '.admin.roles.delete', 'Delete Role', dynamic_list_constructor=admin_roles)
 @admin_routes.route('roles/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
@@ -366,7 +366,6 @@ def admin_roles_delete(id):
     role = UserRoleModel.get_role_by_id(id)
     form = DeleteForm()
     
-    print(role)
     if role is None:
         return redirect(url_for('admin_routes.admin_roles_list'))
     
@@ -378,3 +377,21 @@ def admin_roles_delete(id):
         return redirect(url_for('admin_routes.admin_roles_list'))
     return render_template('admin_roles_delete.html', role=role, form=form)
 
+
+@register_breadcrumb(admin_routes, '.admin.roles.edit', 'Edit Roles', dynamic_list_constructor=admin_roles)
+@admin_routes.route('roles/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def admin_roles_edit(id):  
+    role = UserRoleModel.get_role_by_id(id)
+    form = RoleAddForm(data=role.__dict__)
+    if role is None:
+        return redirect(url_for('admin_routes.admin_roles_edit'))
+    
+    if form.validate_on_submit():
+        role.name = form.name.data
+        UserRoleModel.update_role(role)
+        return redirect(url_for('admin_routes.admin_roles_list'))
+    
+    return render_template('admin_roles_edit.html', role=role, form=form)
+    

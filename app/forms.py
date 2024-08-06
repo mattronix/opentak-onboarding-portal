@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField
+from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo
 from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
@@ -49,6 +49,7 @@ class UserEditForm(FlaskForm):
     firstName = StringField('First Name', validators=[Optional()])
     lastName = StringField('Last Name', validators=[Optional()])
     email = StringField('Email', validators=[Optional(), Email()])
+    roles = SelectMultipleField('Roles', validators=[Optional()])
     submit = SubmitField('Submit')
 
 class UserProfileEditForm(FlaskForm):
