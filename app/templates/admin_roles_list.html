@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Datapackages{% endblock %}
+{% block title %}Roles{% endblock %}
 
 
 {% block content %}
     <section class="features-boxed primary-color" style="background: #e9ecef;">
         <div class="container">
-            <h1 style="margin-top: 20px;"><strong>Datapackages</strong></h1>
+            <h1 style="margin-top: 20px;"><strong>Roles</strong></h1>
             <h4>ATAK Portal</h4>
         </div>
             
@@ -14,37 +14,32 @@
                 <div class="mt-2 col-md-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="card-title">Datapackages</h5>
+                            <h5 class="card-title">Roles</h5>
                         </div>
                         <div class="card-body">
                             <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th>Description</th>
-                                        <th>Is Public</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for takprofile in takprofiles %}
+                                    {% for role in roles %}
                                     <tr>
-                                        <td>{{ takprofile.name }}</td>
-                                        <td>{{ takprofile.description }}</td>
-                                        <td>{{ takprofile.isPublic }}</td>
+                                        <td>{{ role.name }}</td>
                                         <td> 
-                                            <a href="takprofiles/edit/{{takprofile.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
-                                            <a href="takprofiles/delete/{{takprofile.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                            <a href="roles/edit/{{role.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
+                                            <a href="roles/delete/{{role.id}}" class="btn btn-sm btn-danger">DELETE</a>
                                         </td>
                                       
                                     </tr>  
                                     {% endfor %}
                                 </tbody>
                             </table>
-                            <a href="takprofiles/add" class="btn btn-sm btn-custom-primary">CREATE NEW DATAPACKAGE</a>
+                            <a href="roles/add" class="btn btn-sm btn-custom-primary">CREATE NEW ROLE</a>
 
                         </div>
-                        
                     </div>
                 </div>
             </div>

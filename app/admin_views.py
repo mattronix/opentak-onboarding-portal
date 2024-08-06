@@ -3,7 +3,7 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, DATAPACKAGE_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm
+from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel 
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
@@ -41,6 +41,13 @@ def admin_takprofiles(*args, **kwargs):
         return [{'text': object.name, 'url': f'/admin/takprofiles/edit/{object_id}'}]
     return {'text': "Profile", 'url':""}
 
+def admin_roles(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = UserRoleModel.get_role_by_id(object_id)
+
+    if object:
+        return [{'text': object.callsign, 'url': f'/admin/roles/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
 
 def takprofile_datapackage_uploader(file, takprofile):
 
@@ -317,7 +324,57 @@ def takprofiles_delete(id):
         TakProfileModel.delete_tak_profile_by_id(takprofile.id)
         shutil.rmtree(takprofile.takTemplateFolderLocation)
         return redirect(url_for('admin_routes.takprofiles_list'))
-    
-
-
     return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form)
+
+
+
+@register_breadcrumb(admin_routes, '.admin.roles', 'Roles')
+@admin_routes.route('roles')
+@login_required
+@role_required(role='administrator')
+def admin_roles_list():  
+    roles = UserRoleModel.get_all_roles()
+    return render_template('admin_roles_list.html', roles=roles)
+
+
+@register_breadcrumb(admin_routes, '.admin.roles.add', 'Add Role')
+@admin_routes.route('roles/add', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def admin_roles_add():
+    form = RoleAddForm()
+    
+    if form.validate_on_submit():
+            role = UserRoleModel.create_role(name=form.name.data)            
+            try: 
+                e = object.get("error")
+                return render_template('admin_roles_add.html', form=form, error=e)
+            except:
+                pass
+            
+            return redirect(url_for('admin_routes.admin_roles_list'))
+    
+    return render_template('admin_roles_add.html', form=form)
+
+
+#@register_breadcrumb(admin_routes, '.admin.roles.delete', 'Delete Role', dynamic_list_constructor=admin_roles)
+@admin_routes.route('roles/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+
+def admin_roles_delete(id):
+    role = UserRoleModel.get_role_by_id(id)
+    form = DeleteForm()
+    
+    print(role)
+    if role is None:
+        return redirect(url_for('admin_routes.admin_roles_list'))
+    
+    if form.validate_on_submit():
+        if form.areyousure.data != "OK":
+            return render_template('admin_roles_delete.html', role=role, form=form, error="You must type 'OK' to delete this record")
+        
+        UserRoleModel.delete_role_by_id(role.id)
+        return redirect(url_for('admin_routes.admin_roles_list'))
+    return render_template('admin_roles_delete.html', role=role, form=form)
+

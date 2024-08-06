@@ -82,3 +82,7 @@ class TakProfileEditForm(FlaskForm):
     description = StringField('Description', validators=[DataRequired()])
     takPrefFileLocation = StringField('Preference File Location', validators=[Optional(), check_file_exists])
     submit = SubmitField('Submit')
+
+class RoleAddForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    submit = SubmitField('Submit')
