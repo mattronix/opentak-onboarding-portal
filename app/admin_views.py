@@ -235,6 +235,7 @@ def users_delete(id):
             return render_template('admin_users_delete.html', user=user, form=form, error="You must type 'OK' to delete this record")
         
         UserModel.delete_user_by_id(user.id)
+        otsClient.delete_user(user.username)
         return redirect(url_for('admin_routes.users_list'))
     
     return render_template('admin_users_delete.html', user=user, form=form)
