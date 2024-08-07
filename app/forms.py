@@ -5,7 +5,6 @@ from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 import re
 import os
-from wtforms_sqlalchemy.fields import QuerySelectMultipleField
 
 def check_username(form, field):
     if field.data and (re.search(r'[^a-zA-Z0-9\s]', field.data) or ' ' in field.data):
