@@ -76,7 +76,7 @@ class TakProfileForm(FlaskForm):
     datapackage = FileField('Datapackage', validators=[DataRequired(), check_filename])
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[DataRequired()])
-    isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
+    isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()], default='False')
     roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     submit = SubmitField('Submit')
 
