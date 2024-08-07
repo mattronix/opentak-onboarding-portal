@@ -29,9 +29,11 @@ otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
 @login_required
 def home():  
     user = UserModel.get_user_by_username(session['username'])
-    tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
+    user_roles = [role.id for role in user.roles]
+    public_tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
+    private_tak_profiles = TakProfileModel.query.filter(TakProfileModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
     help_link = HELP_LINK
-    return render_template('index.html', user=user, tak_profiles=tak_profiles, help_link=help_link)
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link)
 
     
 @routes.route('/logout')
@@ -120,30 +122,28 @@ def register(onboardingCode):
         if (UserModel.query.filter_by(callsign=callsign).first() is not None):
             return render_template('register.html', error="Callsign already exists.", form=form)
 
-        try:
-            otsClient.create_user(username, password)
 
-            if onboardingCodeModel.onboardContact is not None:
-                onboardedby = onboardingCodeModel.onboardContact
-            else:
-                onboardedby = None
+        otsClient.create_user(username, password)
 
-            user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email, onboardedby=onboardedby)
+        if onboardingCodeModel.onboardContact is not None:
+            onboardedby = onboardingCodeModel.onboardContact
+        else:
+            onboardedby = None
 
-            if onboardingCodeModel.uses is None:
-                onboardingCodeModel.uses = 1
-            else:
-                onboardingCodeModel.uses += 1
+        user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email, onboardedby=onboardedby, roles=onboardingCodeModel.roles)
+
+        if onboardingCodeModel.uses is None:
+            onboardingCodeModel.uses = 1
+        else:
+            onboardingCodeModel.uses += 1
+            
+        onboardingCodeModel.update_onboarding_code(onboardingCodeModel)
+
+        if MAIL_ENABLED:
+            if onboardingCodeModel.onboardContact is not None and user.email is not None and user.callsign is not None:    
+                onboardContact = UserModel.get_user_by_id(onboardingCodeModel.onboardContact)
+                send_html_email(subject="A new Registration KGG",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {user.callsign} with email {user.email} if this is not who you expect please let us know.",recipients=[onboardContact.email])
                 
-            onboardingCodeModel.update_onboarding_code(onboardingCodeModel)
-
-            if MAIL_ENABLED:
-                if onboardingCodeModel.onboardContact is not None and user.email is not None and user.callsign is not None:    
-                    onboardContact = UserModel.get_user_by_id(onboardingCodeModel.onboardContact)
-                    send_html_email(subject="A new Registration KGG",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {user.callsign} with email {user.email} if this is not who you expect please let us know.",recipients=[onboardContact.email])
-                    
-        except Exception as e:
-            return render_template('register.html', error=f"Error: {e}", form=form, url=f"/register/{onboardingCode}")
 
     
         # Redirect to the home page if authentication is successful

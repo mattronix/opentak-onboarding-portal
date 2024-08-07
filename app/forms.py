@@ -77,6 +77,8 @@ class TakProfileForm(FlaskForm):
     datapackage = FileField('Datapackage', validators=[DataRequired(), check_filename])
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[DataRequired()])
+    isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
+    roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     submit = SubmitField('Submit')
 
 class TakProfileEditForm(FlaskForm):
@@ -84,6 +86,8 @@ class TakProfileEditForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[DataRequired()])
     takPrefFileLocation = StringField('Preference File Location', validators=[Optional(), check_file_exists])
+    isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
+    roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     submit = SubmitField('Submit')
 
 class RoleAddForm(FlaskForm):

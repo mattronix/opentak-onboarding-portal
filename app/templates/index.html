@@ -11,14 +11,16 @@
             
         <div class="mt-5 container">
             <div class="row">
+
+                {% if public_tak_profiles %}
                 <div class="col-md-8">
-                    <div class="card">
+                    <div class="card mb-4">
                         <div class="card-header">
-                            <h5 class="card-title">Download ATAK DataPackage</h5>
+                            <h5 class="card-title">Download ATAK DataPackage (Public)</h5>
                         </div>
                         <div class="card-body">
 
-                            {% for takprofile in tak_profiles %}
+                            {% for takprofile in public_tak_profiles %}
                                 <h5>{{takprofile.name}}</h5>
                                 <p>{{takprofile.description}}</p>
                                 <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
@@ -29,8 +31,29 @@
                             {% endfor %}
 
                         </div>
-                    
                     </div>
+                    {% endif %}
+
+                    {% if private_tak_profiles %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Download ATAK DataPackage (Private)</h5>
+                        </div>
+                        <div class="card-body">
+
+
+                            {% for takprofile in private_tak_profiles %}
+                                <h5>{{takprofile.name}}</h5>
+                                <p>{{takprofile.description}}</p>
+                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
+                                <a href="{{help_link}}" class="btn btn-warning">
+                                    <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
+                                </a>
+                                <hr>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="col-md-4">
@@ -96,7 +119,7 @@
                     </div>
                 </div>
                 
-
+                
             </div>
         </div>
             

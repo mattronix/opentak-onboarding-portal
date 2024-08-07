@@ -12,6 +12,7 @@ import os
 import tempfile
 import zipfile
 import shutil
+import ast
 
 admin_routes = Blueprint('admin_routes', __name__, url_prefix='/admin')
 default_breadcrumb_root(admin_routes, '.',)
@@ -276,8 +277,11 @@ def takprofiles_add():
     form = TakProfileForm()
     unique_id = str(uuid.uuid4())
 
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
+
     if form.validate_on_submit():
-            takprofile = TakProfileModel.create_tak_profile(name=form.name.data, description=form.description.data)
+            takprofile = TakProfileModel.create_tak_profile(name=form.name.data, description=form.description.data,
+                                                             roles=[UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data], is_public = ast.literal_eval(form.isPublic.data), template_folder_location=f"{DATAPACKAGE_UPLOAD_FOLDER}/{unique_id}")
 
             if form.datapackage.data:
                 takprofile = takprofile_datapackage_uploader(form.datapackage.data, takprofile)
@@ -296,7 +300,8 @@ def takprofiles_add():
 def takprofiles_edit(id):  
     takprofile = TakProfileModel.get_tak_profile_by_id(id)
     form = TakProfileEditForm(data=takprofile.__dict__)
-    
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
+    print(form.isPublic.data)
     if takprofile is None:
         return redirect(url_for('admin_routes.takprofiles_list'))
 
@@ -304,16 +309,17 @@ def takprofiles_edit(id):
         takprofile.name = form.name.data
         takprofile.description = form.description.data
         takprofile.takPrefFileLocation = form.takPrefFileLocation.data
+        takprofile.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
+        takprofile.isPublic = ast.literal_eval(form.isPublic.data)
 
-
+        print(form.datapackage.data)
         if form.datapackage.data:
             takprofile = takprofile_datapackage_uploader(form.datapackage.data, takprofile)
         
         TakProfileModel.update_tak_profile(takprofile)
         return redirect(url_for('admin_routes.takprofiles_edit', id=takprofile.id))
 
-
-
+    form.roles.data = [role.id for role in takprofile.roles]
     return render_template('admin_takprofiles_edit.html', takprofile=takprofile, form=form, filetree=make_tree(takprofile.takTemplateFolderLocation))
 
 @register_breadcrumb(admin_routes, '.admin.takprofiles.delete', 'Delete Datapackage', dynamic_list_constructor=admin_takprofiles)
