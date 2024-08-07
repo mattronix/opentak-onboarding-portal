@@ -171,7 +171,7 @@ def downloadTakPackage(id):
     except Exception as e:
         return render_template('restricted.html', error=f"TEMP File Error: {e}")
 
-    if takProfile.takPrefFileLocation is not None:
+    if takProfile.takPrefFileLocation is not None or takProfile.takPrefFileLocation != "":
         config_file_location = takProfile.takPrefFileLocation[takProfile.takPrefFileLocation.index('/') + 1:]
     else:
         config_file_location = None
