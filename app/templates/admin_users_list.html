@@ -26,6 +26,7 @@
                                         <th>Onboarded By</th>
                                         <th>FirstName</th>
                                         <th>LastName</th>
+                                        <th>Roles</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -38,6 +39,13 @@
                                         <td>{{ resolveUserPropertyByID(user.onboardedBy) }}</td>
                                         <td>{{ user.firstName }}</td>
                                         <td>{{ user.lastName }}</td>
+                                        <td>
+                                            <ul>
+                                                {% for role in user.roles %}
+                                                    <li>{{ role.name }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
                                         <td> 
                                             <a href="users/edit/{{user.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
                                             <a href="users/delete/{{user.id}}" class="btn btn-sm btn-danger">DELETE</a>

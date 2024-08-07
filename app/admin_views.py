@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, request, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
-from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, DATAPACKAGE_UPLOAD_FOLDER
+from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
 from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel 
@@ -126,9 +126,10 @@ def onboarding_codes_add():
     form = OnboardingCodeForm()
     form.onboardContact.choices = [(user.id, user.username) for user in UserModel.get_all_users()]
     form.onboardingCode.data = str(uuid.uuid4())
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
 
     if form.validate_on_submit():
-            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data)
+            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data)
             
             try: 
                 e = object.get("error")
@@ -151,6 +152,8 @@ def onboarding_codes_edit(id):
     onboardingcode = OnboardingCodeModel.get_onboarding_code_by_id(id)
     form = OnboardingCodeForm(data=onboardingcode.__dict__)
     form.onboardContact.choices = [(user.id, user.username) for user in UserModel.get_all_users()]
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
+    
     if onboardingcode is None:
         return redirect(url_for('admin_routes.onboarding_codes_list'))
 
@@ -160,9 +163,10 @@ def onboarding_codes_edit(id):
         onboardingcode.maxUses = form.maxUses.data
         onboardingcode.onboardContact = form.onboardContact.data
         onboardingcode.onboardingCode = form.onboardingCode.data
+        onboardingcode.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
         OnboardingCodeModel.update_onboarding_code(onboardingcode)
         return redirect(url_for('admin_routes.onboarding_codes_list'))
-
+    form.roles.data = [role.id for role in onboardingcode.roles]
     return render_template('admin_onboardingcodes_edit.html', onboardingcode=onboardingcode, form=form)
 
 @register_breadcrumb(admin_routes, '.admin.onboardingcodes.delete', 'Edit Onboarding Code', dynamic_list_constructor=admin_onboardingcodes)
@@ -211,7 +215,10 @@ def admin_users(*args, **kwargs):
 @role_required(role='administrator')
 def users_edit(id):  
     user = UserModel.get_user_by_id(id)
+
     form = UserEditForm(data=user.__dict__)
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
+
     if user is None:
         return redirect(url_for('admin_routes.users_list'))
     
@@ -221,9 +228,13 @@ def users_edit(id):
         user.firstName = form.firstName.data
         user.lastName = form.lastName.data
         user.email = form.email.data
+        user.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
         UserModel.update_user(user)
         return redirect(url_for('admin_routes.users_list'))
     
+
+    form.roles.data = [role.id for role in user.roles]
+
     return render_template('admin_users_edit.html', user=user, form=form)
     
 @register_breadcrumb(admin_routes, '.admin.users.delete', 'Delete Users', dynamic_list_constructor=admin_users)

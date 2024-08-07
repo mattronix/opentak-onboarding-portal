@@ -5,6 +5,7 @@ from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 import re
 import os
+from wtforms_sqlalchemy.fields import QuerySelectMultipleField
 
 def check_username(form, field):
     if field.data and (re.search(r'[^a-zA-Z0-9\s]', field.data) or ' ' in field.data):
@@ -49,7 +50,7 @@ class UserEditForm(FlaskForm):
     firstName = StringField('First Name', validators=[Optional()])
     lastName = StringField('Last Name', validators=[Optional()])
     email = StringField('Email', validators=[Optional(), Email()])
-    roles = SelectMultipleField('Roles', validators=[Optional()])
+    roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     submit = SubmitField('Submit')
 
 class UserProfileEditForm(FlaskForm):
@@ -65,6 +66,7 @@ class OnboardingCodeForm(FlaskForm):
     maxUses = IntegerField('Max Uses', validators=[Optional()])
     onboardContact = SelectField('Onboard Contact',  validators=[Optional()])
     onboardingCode = StringField('Onboarding Code', validators=[DataRequired()])
+    roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     submit = SubmitField('Submit')
 
 class DeleteForm(FlaskForm):
