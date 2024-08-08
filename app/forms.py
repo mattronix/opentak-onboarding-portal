@@ -91,4 +91,5 @@ class TakProfileEditForm(FlaskForm):
 
 class RoleAddForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[Optional()])
     submit = SubmitField('Submit')

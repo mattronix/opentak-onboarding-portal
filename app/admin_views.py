@@ -362,7 +362,7 @@ def admin_roles_add():
     form = RoleAddForm()
     
     if form.validate_on_submit():
-            role = UserRoleModel.create_role(name=form.name.data)            
+            role = UserRoleModel.create_role(name=form.name.data, description=form.description.data)            
             try: 
                 e = object.get("error")
                 return render_template('admin_roles_add.html', form=form, error=e)
@@ -407,6 +407,8 @@ def admin_roles_edit(id):
     
     if form.validate_on_submit():
         role.name = form.name.data
+        role.description = form.description.data
+        
         UserRoleModel.update_role(role)
         return redirect(url_for('admin_routes.admin_roles_list'))
     

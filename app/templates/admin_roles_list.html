@@ -21,6 +21,7 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
+                                        <th>Description</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -28,6 +29,7 @@
                                     {% for role in roles %}
                                     <tr>
                                         <td>{{ role.name }}</td>
+                                        <td>{{ role.description }}</td>
                                         <td> 
                                             <a href="roles/edit/{{role.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
                                             <a href="roles/delete/{{role.id}}" class="btn btn-sm btn-danger">DELETE</a>
