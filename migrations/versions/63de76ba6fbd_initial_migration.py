@@ -31,7 +31,6 @@ def upgrade():
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('description'),
     sa.UniqueConstraint('name')
     )
     op.create_table('users',
