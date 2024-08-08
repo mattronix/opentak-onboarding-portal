@@ -4,68 +4,67 @@
 
 {% block content %}
     <section class="features-boxed primary-color" style="background: #e9ecef;">
-        <div class="container">
-            <h1 style="margin-top: 20px;"><strong>Admin Portal</strong></h1>
-            <h4>Try not to break stuff!</h4>
-        </div>
-            
-        <div class="mt-3 container">
+        
+        <style>
+            .metro-tile {
+                background-color: #f8f9fa;
+                border-radius: 5px;
+                padding: 20px;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+
+            .metro-tile i {
+                font-size: 40px;
+                color: #343a40;
+            }
+
+            .metro-tile p {
+                margin-top: 10px;
+                font-size: 16px;
+                color: #343a40;
+            }
+        </style>
+
+        <div class="mt-5 container">
             <div class="row">
-           
-                <div class="mt-2 col-md-3">
-                    <a href="onboarding_codes">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="text-center">
-                                    <i class="fas fa-globe fa-5x accent-color"></i>
-                                    <h5 class="mt-3">Onboarding Links</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+
+            <div class="col-md-2">
+                <a href="/admin/onboarding_codes">
+                <div class="metro-tile">
+                    <i class="fa fa-envelope"></i>
+                    <p>Onboarding Links</p>
                 </div>
-
-                <div class="mt-2 col-md-3">
-                    <a href="users">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="text-center">
-                                    <i class="fas fa-users fa-5x accent-color"></i>
-                                    <h5 class="mt-3">Users</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>     
-
-                <div class="mt-2 col-md-3">
-                    <a href="roles">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="text-center">
-                                    <i class="fas fa-list fa-5x accent-color"></i>
-                                    <h5 class="mt-3">Roles</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>   
-
-                <div class="mt-2 col-md-3">
-                    <a href="takprofiles">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="text-center">
-                                    <i class="fas fa-file fa-5x accent-color"></i>
-                                    <h5 class="mt-3">DataPackages</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+                </a>
+            </div>
+            <div class="col-md-2">
+                <a href="/admin/users">
+                <div class="metro-tile">
+                    <i class="fa fa-users"></i>
+                    <p>Users</p>
                 </div>
+                </a>
+            </div>
+            <div class="col-md-2">
+                <a href="/admin/roles">
+                <div class="metro-tile">
+                    <i class="fa fa-shield"></i>
+                    <p>Roles</p>
+                </div>
+                </a>
+            </div>
+            <div class="col-md-2">
+                <a href="/admin/takprofiles">
+                <div class="metro-tile">
+                    <i class="fa fa-file"></i>
+                    <p>Data Packages</p>
+                </div>
+                </a>
+            </div>
+ 
             </div>
         </div>
-            
+
 
 
     </section>
