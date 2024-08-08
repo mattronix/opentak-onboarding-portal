@@ -101,13 +101,14 @@
                                     <h6 class="mb-0">Roles</h6>
                                 </div>
                                 <div class="col-sm-9 text-secondary">
-                                    <ul>
                                     {%for role in user.roles%}
-                                    <li>{{role.name}}</li>
+                  
+                                        <span class="badge badge-pill badge-dark"> {{role.name}}</span>
+                     
+                            
                                     {%endfor%}
-                                    </ul>
                             </div>
-                            <hr>
+                            <hr class="mt-4">
                             {% endif %}
                             <div class="row">
                                 <div class="col-sm-12">

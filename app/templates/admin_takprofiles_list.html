@@ -34,11 +34,9 @@
                                         <td>{{ takprofile.description }}</td>
                                         <td>{{ takprofile.isPublic }}</td>
                                         <td>
-                                            <ul>
-                                                {% for role in takprofile.roles %}
-                                                    <li>{{ role.name }}</li>
-                                                {% endfor %}
-                                            </ul>
+                                            {% for role in takprofile.roles %}
+                                              <span class="badge badge-pill badge-dark"> {{role.name}}</span>
+                                            {% endfor %}
                                         </td>
                                         <td> 
                                             <a href="takprofiles/edit/{{takprofile.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>

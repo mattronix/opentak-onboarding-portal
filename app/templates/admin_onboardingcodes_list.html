@@ -53,11 +53,9 @@
                                         </td>
                                         <td>{{ onboardingcode.uses }}</td>
                                         <td>
-                                            <ul>
-                                                {% for role in onboardingcode.roles %}
-                                                    <li>{{ role.name }}</li>
-                                                {% endfor %}
-                                            </ul>
+                                            {% for role in onboardingcode.roles %}
+                                              <span class="badge badge-pill badge-dark"> {{role.name}}</span>
+                                            {% endfor %}
                                         </td>
                                         <td> 
                                         <td> 

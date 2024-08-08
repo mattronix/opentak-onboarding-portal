@@ -40,11 +40,9 @@
                                         <td>{{ user.firstName }}</td>
                                         <td>{{ user.lastName }}</td>
                                         <td>
-                                            <ul>
-                                                {% for role in user.roles %}
-                                                    <li>{{ role.name }}</li>
-                                                {% endfor %}
-                                            </ul>
+                                            {% for role in user.roles %}
+                                              <span class="badge badge-pill badge-dark"> {{role.name}}</span>
+                                            {% endfor %}
                                         </td>
                                         <td> 
                                             <a href="users/edit/{{user.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
