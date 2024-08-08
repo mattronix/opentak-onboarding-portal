@@ -12,6 +12,11 @@
                 padding: 20px;
                 text-align: center;
                 margin-bottom: 20px;
+                cursor: pointer; /* Add cursor pointer */
+            }
+
+            .metro-tile:hover {
+                background-color: #dcdcdc; /* Change background color on hover */
             }
 
             .metro-tile i {
@@ -24,47 +29,40 @@
                 font-size: 16px;
                 color: #343a40;
             }
+
+
+            .metro-tile a:hover {
+                color: inherit; /* Inherit color from parent on hover */
+            }
         </style>
 
         <div class="mt-5 container">
             <div class="row">
 
-            <div class="col-md-2">
-                <a href="/admin/onboarding_codes">
+            <div class="col-md-2" onclick="window.location.href='/admin/onboarding_codes'">
                 <div class="metro-tile">
                     <i class="fa fa-envelope"></i>
                     <p>Onboarding Links</p>
                 </div>
-                </a>
             </div>
-            <div class="col-md-2">
-                <a href="/admin/users">
+            <div class="col-md-2" onclick="window.location.href='/admin/users'">
                 <div class="metro-tile">
                     <i class="fa fa-users"></i>
                     <p>Users</p>
                 </div>
-                </a>
             </div>
-            <div class="col-md-2">
-                <a href="/admin/roles">
+            <div class="col-md-2" onclick="window.location.href='/admin/roles'">
                 <div class="metro-tile">
                     <i class="fa fa-shield"></i>
                     <p>Roles</p>
                 </div>
-                </a>
             </div>
-            <div class="col-md-2">
-                <a href="/admin/takprofiles">
+            <div class="col-md-2" onclick="window.location.href='/admin/takprofiles'">
                 <div class="metro-tile">
                     <i class="fa fa-file"></i>
                     <p>Data Packages</p>
                 </div>
-                </a>
             </div>
- 
-            </div>
-        </div>
-
 
 
     </section>
