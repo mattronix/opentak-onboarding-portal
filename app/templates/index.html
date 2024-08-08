@@ -20,15 +20,33 @@
                         </div>
                         <div class="card-body">
 
-                            {% for takprofile in public_tak_profiles %}
-                                <h5>{{takprofile.name}}</h5>
-                                <p>{{takprofile.description}}</p>
-                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
-                                <a href="{{help_link}}" class="btn btn-warning">
-                                    <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
-                                </a>
-                                <hr>
-                            {% endfor %}
+                        
+
+                            
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 20%;">Name</th>
+                                            <th style="width: 60%;">Description</th>
+                                            <th style="width: 20%;">Download</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for takprofile in public_tak_profiles %}
+                                        <tr>
+                                            <td style="width: 20%;">{{takprofile.name}}</td>
+                                            <td style="width: 60%;">{{takprofile.description}}</td>
+                                            <td style="width: 20%;">
+                                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+
+                            <a href="{{help_link}}" class="btn btn-warning">
+                                <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
+                            </a>
 
                         </div>
                     </div>
@@ -40,18 +58,31 @@
                             <h5 class="card-title">Download ATAK DataPackage (Private)</h5>
                         </div>
                         <div class="card-body">
-
-
-                            {% for takprofile in private_tak_profiles %}
-                                <h5>{{takprofile.name}}</h5>
-                                <p>{{takprofile.description}}</p>
-                                <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
-                                <a href="{{help_link}}" class="btn btn-warning">
-                                    <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
-                                </a>
-                                <hr>
-                            {% endfor %}
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">Name</th>
+                                        <th style="width: 60%;">Description</th>
+                                        <th style="width: 20%;">Download</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for takprofile in private_tak_profiles %}
+                                    <tr>
+                                        <td style="width: 20%;">{{takprofile.name}}</td>
+                                        <td style="width: 60%;">{{takprofile.description}}</td>
+                                        <td style="width: 20%;">
+                                            <a href="{{url_for('routes.downloadTakPackage', id=takprofile.id)}}" class="btn btn-custom-primary">Download</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <a href="{{help_link}}" class="btn btn-warning">
+                                <i class="fa fa-question-circle"></i> HELP / HOW TO INSTALL
+                            </a>
                         </div>
+                 
                     </div>
                     {% endif %}
                 </div>
