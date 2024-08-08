@@ -55,3 +55,17 @@
 </div>  
 
 {% endblock %}
+
+{% block javascript %}
+  {{ super() }} 
+<script>
+  $(document).ready(function () {
+    $("#roles").select2({
+      placeholder: "{{ form.roles.label.text }}",
+      allowClear: true,
+      width: "100%",
+    });
+  });
+</script>
+
+{% endblock %}
