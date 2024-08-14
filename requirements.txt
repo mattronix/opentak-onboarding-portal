@@ -11,3 +11,4 @@ flask_breadcrumbs
 Flask_mail
 flask-jwt-extended
 APScheduler
+flask_apscheduler
