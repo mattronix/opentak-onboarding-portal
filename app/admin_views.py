@@ -130,7 +130,7 @@ def onboarding_codes_add():
     form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
 
     if form.validate_on_submit():
-            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data, expirydate=form.userExpiryDate.data)
+            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data, expirydate=form.expiryDate.data, userexpirydate=form.userExpiryDate.data)
             
             try: 
                 e = object.get("error")
@@ -166,6 +166,7 @@ def onboarding_codes_edit(id):
         onboardingcode.onboardingCode = form.onboardingCode.data
         onboardingcode.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
         onboardingcode.userExpiryDate = form.userExpiryDate.data
+        onboardingcode.expiryDate = form.expiryDate.data
         OnboardingCodeModel.update_onboarding_code(onboardingcode)
         return redirect(url_for('admin_routes.onboarding_codes_list'))
     form.roles.data = [role.id for role in onboardingcode.roles]

@@ -22,7 +22,8 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>Description</th>
-                                        <th>UUID</th>
+                                        <th>Onboarding Expiry</th>
+                                        <th>User Expiry</th>
                                         <th>Onboarding Contact</th>
                                         <th>Remaining Uses</th>
                                         <th>Total Uses</th>
@@ -35,7 +36,8 @@
                                     <tr>
                                         <td>{{ onboardingcode.name }}</td>
                                         <td>{{ onboardingcode.description }}</td>
-                                        <td>{{ onboardingcode.onboardingCode }}</td>
+                                        <td>{{ onboardingcode.expiryDate }}</td>
+                                        <td>{{ onboardingcode.userExpiryDate }}</td>
                                         <td>
                                             {% if onboardingcode.onboardContact %}
                                             {{resolveUserPropertyByID(onboardingcode.onboardContact)}}

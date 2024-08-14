@@ -20,10 +20,6 @@ import datetime
 routes = Blueprint('routes', __name__, url_prefix='/')
 default_breadcrumb_root(routes, '.',)
 
-# Create a dictionary to store the active telnet connections
-otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
-
-
 @register_breadcrumb(routes, '.', 'Home')
 @routes.route('/')
 @login_required
@@ -97,6 +93,15 @@ def register(onboardingCode):
 
     if onboardingCodeModel is None:
         return render_template('restricted.html', error="Invalid onboarding code")
+    
+
+    if onboardingCodeModel.userExpiryDate is not None:
+        if onboardingCodeModel.userExpiryDate < datetime.datetime.now():
+            return render_template('restricted.html', error="User expiry date exeeded.")
+
+    if onboardingCodeModel.expiryDate is not None:
+        if onboardingCodeModel.expiryDate < datetime.datetime.now():
+            return render_template('restricted.html', error="Onboarding code expiry date exeeded.")
 
     if onboardingCodeModel.maxUses is not None:
         if onboardingCodeModel.uses >= onboardingCodeModel.maxUses and onboardingCodeModel.maxUses != 0:

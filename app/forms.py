@@ -69,6 +69,7 @@ class OnboardingCodeForm(FlaskForm):
     onboardingCode = StringField('Onboarding Code', validators=[DataRequired()])
     roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     userExpiryDate = DateField('User Expiry Date', validators=[Optional()])
+    expiryDate = DateField('Onboarding Expiry Date', validators=[Optional()])
     submit = SubmitField('Submit')
 
 class DeleteForm(FlaskForm):

@@ -352,6 +352,7 @@ class OnboardingCodeModel(db.Model):
     uses: Mapped[int] = mapped_column(nullable=True, default=0)
     maxUses: Mapped[int] = mapped_column(nullable=True)
     onboardContact = Column(Integer, ForeignKey('users.id'), nullable=True)
+    expiryDate = mapped_column(DateTime, nullable=True) 
     userExpiryDate = mapped_column(DateTime, nullable=True) 
 
     roles = relationship(
@@ -366,9 +367,9 @@ class OnboardingCodeModel(db.Model):
     )
     
     @staticmethod
-    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None, userexpirydate=None):
+    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None, userexpirydate=None, expirydate=None):
         try:
-            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact, maxUses=maxuses, userExpiryDate=userexpirydate)
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact, maxUses=maxuses, userExpiryDate=userexpirydate, expiryDate=expirydate)
             db.session.add(onboarding_code)
             db.session.commit()
             return onboarding_code
