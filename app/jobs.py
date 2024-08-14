@@ -4,7 +4,7 @@ from datetime import datetime
 from app.ots import otsClient
 
 
-@scheduler.task(id="remove_expired_accounts", trigger="cron", hour=2)
+@scheduler.task(id="remove_expired_accounts", trigger="cron", hour=1)
 #@scheduler.task(id="remove_expired_accounts", trigger="interval", seconds=1) #DEBUG
 def remove_expired_accounts():
     print('Removing expired accounts...')
