@@ -10,6 +10,8 @@ from sqlalchemy import Integer, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
+import datetime
+from sqlalchemy import Column, Integer, DateTime
 
 class Base(DeclarativeBase):
   pass
@@ -141,7 +143,8 @@ class UserModel(db.Model):
     callsign: Mapped[str] = mapped_column(nullable=True)
     onboardedBy = Column(ForeignKey("users.id"))
     onboarContactFor = relationship("OnboardingCodeModel", backref="user")
-
+    expiryDate = mapped_column(DateTime, nullable=True) 
+    
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
         "UserRoleModel",
@@ -162,9 +165,9 @@ class UserModel(db.Model):
     )
 
     @staticmethod
-    def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[], onboardedby=None):
+    def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[], onboardedby=None, expirydate=None):
         try:
-            user = UserModel(username=username.lower(), email=email, firstName=firstname, lastName=lastname, callsign=callsign, roles=roles, takprofiles=takprofiles, onboardedBy=onboardedby)
+            user = UserModel(username=username.lower(), email=email, firstName=firstname, lastName=lastname, callsign=callsign, roles=roles, takprofiles=takprofiles, onboardedBy=onboardedby, expiryDate=expirydate)
             db.session.add(user)
             db.session.commit()
             return user
@@ -349,6 +352,7 @@ class OnboardingCodeModel(db.Model):
     uses: Mapped[int] = mapped_column(nullable=True, default=0)
     maxUses: Mapped[int] = mapped_column(nullable=True)
     onboardContact = Column(Integer, ForeignKey('users.id'), nullable=True)
+    userExpiryDate = mapped_column(DateTime, nullable=True) 
 
     roles = relationship(
         "UserRoleModel",
@@ -362,9 +366,9 @@ class OnboardingCodeModel(db.Model):
     )
     
     @staticmethod
-    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None):
+    def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None, userexpirydate=None):
         try:
-            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact, maxUses=maxuses)
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact, maxUses=maxuses, userExpiryDate=userexpirydate)
             db.session.add(onboarding_code)
             db.session.commit()
             return onboarding_code

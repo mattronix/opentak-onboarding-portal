@@ -92,46 +92,55 @@
                         <div class="card-body">
                             {% if user.firstName %}
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <h6 class="mb-0">First Name</h6>
                                 </div>
-                                <div class="col-sm-9 text-secondary">{{user.firstName}}</div>
+                                <div class="col-sm-8 text-secondary">{{user.firstName}}</div>
                             </div>
                             <hr>
                             {% endif %}
                             {% if user.lastName %}
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <h6 class="mb-0">Last Name</h6>
                                 </div>
-                                <div class="col-sm-9 text-secondary">{{user.lastName}}</div>
+                                <div class="col-sm-8 text-secondary">{{user.lastName}}</div>
                             </div>
                             <hr>
                             {% endif %}
                             {% if user.callsign %}
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <h6 class="mb-0">Callsign</h6>
                                 </div>
-                                <div class="col-sm-9 text-secondary">{{user.callsign}}</div>
+                                <div class="col-sm-8 text-secondary">{{user.callsign}}</div>
                             </div>
                             <hr>
                             {% endif %}
                             {% if user.email %}
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <h6 class="mb-0">Email</h6>
                                 </div>
-                                <div class="col-sm-9 text-secondary">{{user.email}}</div>
+                                <div class="col-sm-8 text-secondary">{{user.email}}</div>
+                            </div>
+                            <hr>
+                            {% endif %}
+                            {% if user.expiryDate %}
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <h6 class="mb-0">Expiry Date</h6>
+                                </div>
+                                <div class="col-sm-8 text-secondary">{{user.expiryDate}}</div>
                             </div>
                             <hr>
                             {% endif %}
                             {% if user.roles %}
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <h6 class="mb-0">Roles</h6>
                                 </div>
-                                <div class="col-sm-9 text-secondary">
+                                <div class="col-sm-8 text-secondary">
                                     {%for role in user.roles%}
                   
                                         <span class="badge badge-pill badge-dark"> {{role.name}}</span>
@@ -141,6 +150,7 @@
                             </div>
                             <hr class="mt-4">
                             {% endif %}
+
                             <div class="row">
                                 <div class="col-sm-12">
                                     <a href="{{ url_for('routes.user_profile_edit') }}" class="btn btn-custom-primary">Edit Profile</a>

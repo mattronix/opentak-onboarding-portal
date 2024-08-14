@@ -26,6 +26,7 @@
                                         <th>Onboarded By</th>
                                         <th>FirstName</th>
                                         <th>LastName</th>
+                                        <th>Expiry Date</th>
                                         <th>Roles</th>
                                         <th>Actions</th>
                                     </tr>
@@ -39,6 +40,7 @@
                                         <td>{{ resolveUserPropertyByID(user.onboardedBy) }}</td>
                                         <td>{{ user.firstName }}</td>
                                         <td>{{ user.lastName }}</td>
+                                        <td>{{ user.expiryDate}}</td>
                                         <td>
                                             {% for role in user.roles %}
                                               <span class="badge badge-pill badge-dark"> {{role.name}}</span>

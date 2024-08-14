@@ -111,7 +111,8 @@ def register(onboardingCode):
         firstname = form.firstname.data
         lastname = form.lastname.data
         email = form.email.data
-
+        onboardedby = None
+        expiryDate = None
 
         if (UserModel.query.filter_by(username=username).first() is not None):
             return render_template('register.html', error="Username already exists.", form=form)
@@ -127,10 +128,12 @@ def register(onboardingCode):
 
         if onboardingCodeModel.onboardContact is not None:
             onboardedby = onboardingCodeModel.onboardContact
-        else:
-            onboardedby = None
 
-        user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email, onboardedby=onboardedby, roles=onboardingCodeModel.roles)
+        if onboardingCodeModel.userExpiryDate is not None:
+            expiryDate = onboardingCodeModel.userExpiryDate
+
+
+        user = UserModel.create_user(username=username, callsign=callsign, firstname=firstname, lastname=lastname, email=email, onboardedby=onboardedby, roles=onboardingCodeModel.roles, expirydate=expiryDate)
 
         if onboardingCodeModel.uses is None:
             onboardingCodeModel.uses = 1

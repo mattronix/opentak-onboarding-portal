@@ -1,10 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField
+from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField, DateTimeField, DateField
 from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo
 from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 import re
 import os
+
 
 def check_username(form, field):
     if field.data and (re.search(r'[^a-zA-Z0-9\s]', field.data) or ' ' in field.data):
@@ -50,6 +51,7 @@ class UserEditForm(FlaskForm):
     lastName = StringField('Last Name', validators=[Optional()])
     email = StringField('Email', validators=[Optional(), Email()])
     roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
+    expiryDate = DateField('User Expiry Date', validators=[Optional()])
     submit = SubmitField('Submit')
 
 class UserProfileEditForm(FlaskForm):
@@ -66,6 +68,7 @@ class OnboardingCodeForm(FlaskForm):
     onboardContact = SelectField('Onboard Contact',  validators=[Optional()])
     onboardingCode = StringField('Onboarding Code', validators=[DataRequired()])
     roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
+    userExpiryDate = DateField('User Expiry Date', validators=[Optional()])
     submit = SubmitField('Submit')
 
 class DeleteForm(FlaskForm):
