@@ -11,8 +11,18 @@
             
         <div class="mt-5 container">
             <div class="row">
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title">Welcome</h5>
+                        </div>
+                        <div class="card-body">
+                            This portal is designed to help you get your ATAK client setup and ready to use, if you do not have ATAK you can download it using the icons on the right, once you have ATAK you can download and import the profiles below.
+                        </div>
+                    </div>
+                </div>
 
-                {% if public_tak_profiles %}
+                {% if public_tak_profiles %}        
                 <div class="col-md-8">
                     <div class="card mb-4">
                         <div class="card-header">
@@ -86,8 +96,31 @@
                     </div>
                     {% endif %}
                 </div>
-                
+
+
                 <div class="col-md-4">
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-4 text-center">
+                                        <img style="width: 100px; height: 100px;" src="/static/img/meshtastic.png">
+                                        <h6 class="mb-0">Get Meshtastic</h6>
+                                        <a href="https://apps.apple.com/in/app/meshtastic/id1586432531">Iphone</a>/<a href="https://play.google.com/store/apps/details?id=com.geeksville.mesh&hl=en">Andriod</a>               
+                                </div>
+                                <div class="col-sm-4 text-center">
+                  
+                                        <img style="width: 100px; height: 100px;" src="/static/img/atak.png">
+                                        <h6 class="mb-0">Get ATAK</h6>
+                                        <a href="https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en">Andriod</a>
+                                    
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+
                     <div class="card mb-3">
                         <div class="card-body">
                             {% if user.firstName %}
