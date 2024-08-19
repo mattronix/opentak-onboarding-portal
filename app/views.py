@@ -29,7 +29,7 @@ def home():
     public_tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
     private_tak_profiles = TakProfileModel.query.filter(TakProfileModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
     help_link = HELP_LINK
-    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link)
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL)
 
     
 @routes.route('/logout')
