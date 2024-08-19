@@ -1,10 +1,10 @@
 from flask import render_template, Blueprint, request, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
-from app.settings import DATAPACKAGE_UPLOAD_FOLDER
+from app.settings import DATAPACKAGE_UPLOAD_FOLDER, UPDATES_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm, MeshtasticForm
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel
+from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm, MeshtasticForm, PackageForm
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from werkzeug.utils import secure_filename
@@ -59,6 +59,15 @@ def admin_meshtastic(*args, **kwargs):
     if object:
         return [{'text': object.name, 'url': f'/admin/meshtastic/edit/{object_id}'}]
     return {'text': "Profile", 'url':""}
+
+def admin_packages(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = PackageModel.get_by_id(object_id)
+
+    if object:
+        return [{'text': object.name, 'url': f'/admin/packages/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
+
 
 
 def takprofile_datapackage_uploader(file, takprofile):
@@ -325,7 +334,6 @@ def takprofiles_edit(id):
         takprofile.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
         takprofile.isPublic = ast.literal_eval(form.isPublic.data)
 
-        print(form.datapackage.data)
         if form.datapackage.data:
             takprofile = takprofile_datapackage_uploader(form.datapackage.data, takprofile)
         
@@ -462,7 +470,7 @@ def admin_meshtastic_add():
 @admin_routes.route('meshtastic/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
-def meshtastic_edit(id):  
+def admin_meshtastic_edit(id):  
     object = MeshtasticModel.get_by_id(id)
     form = MeshtasticForm(data=object.__dict__)
     form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
@@ -478,10 +486,10 @@ def meshtastic_edit(id):
         object.isPublic = ast.literal_eval(form.isPublic.data)
 
         MeshtasticModel.update_meshtastic(object)
-        return redirect(url_for('admin_routes.meshtastic_edit', id=object.id))
+        return redirect(url_for('admin_routes.admin_meshtastic_edit', id=object.id))
 
     form.roles.data = [role.id for role in object.roles]
-    return render_template('form.html', form=form, title="Edit Meshtastic Config", formurl=url_for("admin_routes.meshtastic_edit",id=object.id))
+    return render_template('form.html', form=form, title="Edit Meshtastic Config", formurl=url_for("admin_routes.admin_meshtastic_edit",id=object.id))
 
 @register_breadcrumb(admin_routes, '.admin.meshtastic.delete', 'Delete Meshtastic Config', dynamic_list_constructor=admin_meshtastic)
 @admin_routes.route('meshtastic/delete/<int:id>', methods=['GET', 'POST'])
@@ -502,3 +510,109 @@ def admin_meshtastic_delete(id):
         MeshtasticModel.delete_meshtastic_by_id(object.id)
         return redirect(url_for('admin_routes.admin_meshtastic_list'))
     return render_template('form.html', form=form, title="Delete Meshtastic Config", formurl=url_for("admin_routes.admin_meshtastic_delete",id=object.id))
+
+
+def package_uploader(file, package):
+
+    filename = secure_filename(file.filename)
+
+    try:
+        if not os.path.exists(UPDATES_UPLOAD_FOLDER):
+            os.makedirs(UPDATES_UPLOAD_FOLDER)
+
+        uploaddir = f"{UPDATES_UPLOAD_FOLDER}"
+
+        if package.fileLocation and os.path.exists(package.fileLocation):
+            os.remove(package.fileLocation)
+
+        file_path = os.path.join(uploaddir, filename)
+        file.save(file_path)
+        package.fileLocation = file_path
+       
+        return package
+    
+    except OSError:
+        print(f"Error creating {UPDATES_UPLOAD_FOLDER}")
+        return {"error" : "Error creating upload directory"}
+    
+
+
+
+@register_breadcrumb(admin_routes, '.admin.packages', 'Packages')
+@admin_routes.route('packages')
+@login_required
+@role_required(role='administrator')
+def admin_packages_list():  
+    packages = PackageModel.get_all()
+    return render_template('admin_packages_list.html', packages=packages)
+
+
+@register_breadcrumb(admin_routes, '.admin.packages.add', 'Add Package')
+@admin_routes.route('packages/add', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def admin_package_add():
+    form = PackageForm()
+
+    if form.validate_on_submit():
+        object = PackageModel.create(name=form.name.data, description=form.description.data, version=form.version.data)
+
+        if form.package.data:
+            object = package_uploader(form.package.data, object)
+            PackageModel.update(object)
+
+        try:
+            e = object.get("error")
+            return render_template('form.html', form=form, error=e, title="Add Package", formurl=url_for("admin_routes.admin_package_add"))
+        except:
+            pass
+
+        return redirect(url_for('admin_routes.admin_packages_list'))
+    return render_template('form.html', form=form, title="Add Package", formurl=url_for("admin_routes.admin_package_add"))
+
+@register_breadcrumb(admin_routes, '.admin.packages.edit', 'Edit Package', dynamic_list_constructor=admin_packages)
+@admin_routes.route('packages/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def admin_package_edit(id):  
+    object = PackageModel.get_by_id(id)
+    form = PackageForm(data=object.__dict__)
+
+    if object is None:
+        return redirect(url_for('admin_routes.admin_package_edit'))
+
+    if form.validate_on_submit():
+        object.name = form.name.data
+        object.description = form.description.data
+        object.version = form.version.data
+        
+        if form.package.data:
+            object = package_uploader(form.package.data, object)
+    
+        PackageModel.update(object)
+        return redirect(url_for('admin_routes.admin_package_edit', id=object.id))
+
+    return render_template('form.html', form=form, title="Edit Package", formurl=url_for("admin_routes.admin_package_edit",id=object.id))
+
+@register_breadcrumb(admin_routes, '.admin.packages.delete', 'Delete Meshtastic Config', dynamic_list_constructor=admin_packages)
+@admin_routes.route('packages/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+
+def admin_package_delete(id):
+    object = PackageModel.get_by_id(id)
+    form = DeleteForm()
+
+    if object is None:
+        return redirect(url_for('admin_routes.admin_packages_list'))
+    
+    if form.validate_on_submit():
+        if form.areyousure.data != "OK":                
+            return render_template('form.html', role=object, form=form, error="You must type 'OK' to delete this record", title="Delete Meshtastic Config", formurl=url_for("admin_routes.admin_package_delete",id=object.id))
+        
+        if object.fileLocation and os.path.exists(object.fileLocation):
+            os.remove(object.fileLocation)
+            
+        PackageModel.delete_by_id(object.id)
+        return redirect(url_for('admin_routes.admin_packages_list'))
+    return render_template('form.html', form=form, title="Delete Package", formurl=url_for("admin_routes.admin_package_delete",id=object.id))

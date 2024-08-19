@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField, DateTimeField, DateField
 from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo, URL
 from wtforms import SubmitField
-from app.settings import DATAPACKAGE_UPLOAD_FOLDER
+from app.settings import DATAPACKAGE_UPLOAD_FOLDER, UPDATES_UPLOAD_FOLDER
 import re
 import os
 
@@ -15,10 +15,18 @@ def check_filename(form, field):
     if field.data and not field.data.filename.endswith('.zip'):
         raise ValidationError('Filename must end with .zip')
 
+def check_package_filename(form, field):
+    if field.data and not field.data.filename.endswith('.apk'):
+        raise ValidationError('Filename must end with .apk')
 
 def check_file_exists(form, field):
     if field.data and not os.path.exists(DATAPACKAGE_UPLOAD_FOLDER + '/' + field.data):
         raise ValidationError('File does not exist.')
+
+def check_package_exists(form, field):
+    if field.data and os.path.exists(UPDATES_UPLOAD_FOLDER + '/' + field.data.filename):
+        raise ValidationError('File conflicts with an existing package.')
+    
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -105,4 +113,11 @@ class MeshtasticForm(FlaskForm):
     description = StringField('Description', validators=[Optional()])
     url = StringField('URL', validators=[DataRequired(), URL()])
     isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class PackageForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[Optional()])
+    package = FileField('Package', validators=[DataRequired(), check_package_filename, check_package_exists])
+    version = StringField('Version', validators=[DataRequired()])
     submit = SubmitField('Submit')

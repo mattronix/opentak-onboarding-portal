@@ -500,3 +500,59 @@ class MeshtasticModel(db.Model):
             return {"message": "meshtastic code deleted successfully"}
         else:
             return {"error": "meshtastic.not.exist"}
+
+class PackageModel(db.Model):
+    __tablename__ = "packages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    description: Mapped[str] = mapped_column()
+    fileLocation: Mapped[str] = mapped_column(nullable=True)
+    version: Mapped[str] = mapped_column()
+
+    @staticmethod
+    def create(name, description, file_location=None, version=None):
+        try:
+            object = PackageModel(name=name, description=description, fileLocation=file_location, version=version)
+            db.session.add(object)
+            db.session.commit()
+            return object
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "tak_profile.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "tak_profile.exists"}
+    
+    @staticmethod
+    def get_by_id(id):
+        return PackageModel.query.get(id)
+    
+    @staticmethod
+    def get_by_name(name):
+        return PackageModel.query.filter_by(name=name).first()
+    
+    @staticmethod
+    def get_all():
+        return PackageModel.query.all()
+    
+    @staticmethod
+    def update(object):
+        try:
+            db.session.merge(object)
+            db.session.commit()
+            return {"message": "Updated successfully"}
+        except:
+            return {"error": "object.not.found"}
+    
+    @staticmethod
+    def delete_by_id(id):
+        object = PackageModel.get_by_id(id)
+        if object:
+            db.session.delete(object)
+            db.session.commit()
+            return {"message": "Tak profile deleted successfully"}
+        else:
+            return {"error": "object.not.found"}
+        

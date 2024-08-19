@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Roles{% endblock %}
+
+
+{% block content %}
+    <section class="features-boxed primary-color" style="background: #e9ecef;">
+        <div class="container">
+            <h1 style="margin-top: 20px;"><strong>Update Server Packages</strong></h1>
+            <h4>ATAK Portal</h4>
+        </div>
+            
+        <div class="mt-3 container">
+            <div class="row">
+                <div class="mt-2 col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Packages</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Version</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for package in packages %}
+                                    <tr>
+                                        <td>{{ package.name }}</td>
+                                        <td>{{ package.description }}</td>
+                                        <td>{{ package.version}}</td>
+                                        <td> 
+                                            <a href="packages/edit/{{package.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
+                                            <a href="packages/delete/{{package.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                        </td>
+                                      
+                                    </tr>  
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <a href="packages/add" class="btn btn-sm btn-custom-primary">CREATE NEW PACKAGE</a>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+
+    
+
+
+    </section>
+
+{% endblock %}
+

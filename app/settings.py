@@ -23,6 +23,7 @@ MAIL_DEFAULT_SENDER=str(environ.get('MAIL_DEFAULT_SENDER'))
 MAIL_ENABLED=strtobool(environ.get('MAIL_ENABLED', 'False'))
 HELP_LINK=str(environ.get('HELP_LINK', 'https://www.google.com'))
 DATAPACKAGE_UPLOAD_FOLDER = 'datapackages'
+UPDATES_UPLOAD_FOLDER = 'updates'
 
 PRIMARY_COLOR = str(environ.get('PRIMARY_COLOR', '#000000'))
 SECONDARY_COLOR = str(environ.get('SECONDARY_COLOR', 'orange'))
