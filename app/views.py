@@ -76,14 +76,14 @@ def login():
                 
         except Exception as e:
             print(f"Error: {e}")
-            return render_template('login.html', error="Invalid username or password", form=form)
+            return render_template('login.html', error="Invalid username or password", form=form, LOGO_PATH=LOGO_PATH)
 
 
         # Redirect to the home page if authentication is successful
         return redirect(url_for('routes.home'))
 
     # Render the login page template for GET requests
-    return render_template('login.html', form=form)
+    return render_template('login.html', form=form, LOGO_PATH=LOGO_PATH)
 
 
 @register_breadcrumb(routes, '.Register', 'Register')

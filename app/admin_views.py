@@ -425,7 +425,7 @@ def admin_roles_edit(id):
         UserRoleModel.update_role(role)
         return redirect(url_for('admin_routes.admin_roles_list'))
     
-    return render_template('form.html', role=role, form=form, title="Edit Roles", formurl=url_for("admin_roles.admin_roles_edit",id=role.id))
+    return render_template('form.html', role=role, form=form, title="Edit Roles", formurl=url_for("admin_routes.admin_roles_edit",id=role.id))
 
 
 @register_breadcrumb(admin_routes, '.admin.meshtastic', 'Mestastic')
