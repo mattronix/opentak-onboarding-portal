@@ -9,7 +9,8 @@ This project is an Opensource ATAK Portal that works with OpenTak Server to prov
 * Meshtastic QR Code (WIP)
 * Data package automatic Config of call sign (beta)
 
-# Setup 
+# Setup
+git clone
 copy env.dist to .env and replace with real info. 
 ```
 cp env.dist .env
@@ -18,6 +19,13 @@ docker compose exec web flask db upgrade
 docker compose -d 
 ```
 
+# upgrade
+```
+git pull
+docker compose build
+docker compose exec web flask db upgrade
+docker compose -d 
+```
 
 # DEV 
 
