@@ -76,7 +76,10 @@
                                 <div class="card-body">
                                     <div class="text-center">
                                         <img style="width: 100%;" src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                        <hr>
                                         <p>{{config.description}}</p>
+                                        <hr>
+                                        <p> Cant Scan? <a href="{{config.url}}">Copy/Click Link</a></p>
                                     </div>
                                     
                                 </div>
