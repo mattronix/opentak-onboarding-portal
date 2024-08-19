@@ -500,19 +500,28 @@ class MeshtasticModel(db.Model):
             return {"message": "meshtastic code deleted successfully"}
         else:
             return {"error": "meshtastic.not.exist"}
-
+        
 class PackageModel(db.Model):
     __tablename__ = "packages"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
+    platform: Mapped[str] = mapped_column()
+    typePackage: Mapped[str] = mapped_column()
     description: Mapped[str] = mapped_column()
     fileLocation: Mapped[str] = mapped_column(nullable=True)
+    imageLocation: Mapped[str] = mapped_column(nullable=True)
     version: Mapped[str] = mapped_column()
+    revisionCode: Mapped[int] = mapped_column(nullable=True)
+    apkHash: Mapped[int] = mapped_column(nullable=True)
+    osRequirement: Mapped[str] = mapped_column(nullable=True)
+    takPreReq: Mapped[str] = mapped_column(nullable=True)
+    apkSize: Mapped[int] = mapped_column(nullable=True)
+    fullPackageName: Mapped[str] = mapped_column(nullable=True)
 
     @staticmethod
-    def create(name, description, file_location=None, version=None):
+    def create(name, description, file_location=None, version=None, image_location=None, platform=None, type_package=None, revision_code=None, apk_hash=None, os_requirement=None, tak_prereq=None, apk_size=None, full_package_name=None):
         try:
-            object = PackageModel(name=name, description=description, fileLocation=file_location, version=version)
+            object = PackageModel(name=name, description=description, fileLocation=file_location, version=version, imageLocation=image_location, platform=platform, typePackage=type_package, revisionCode=revision_code, apkHash=apk_hash, osRequirement=os_requirement, takPreReq=tak_prereq, apkSize=apk_size, fullPackageName=full_package_name)
             db.session.add(object)
             db.session.commit()
             return object
@@ -524,7 +533,7 @@ class PackageModel(db.Model):
             db.session.rollback()
             print(f"Error: {e}")
             return {"error": "tak_profile.exists"}
-    
+
     @staticmethod
     def get_by_id(id):
         return PackageModel.query.get(id)

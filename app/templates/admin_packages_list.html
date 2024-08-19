@@ -20,6 +20,7 @@
                             <table class="table">
                                 <thead>
                                     <tr>
+                                        <th>Image</th>
                                         <th>Name</th>
                                         <th>Description</th>
                                         <th>Version</th>
@@ -29,6 +30,8 @@
                                 <tbody>
                                     {% for package in packages %}
                                     <tr>
+                                        {{ package.imageLocation }}
+                                        <td><img src="/{{ package.imageLocation }}" alt="{{ package.name }}" style="width: 50px; height: 50px;"></td>
                                         <td>{{ package.name }}</td>
                                         <td>{{ package.description }}</td>
                                         <td>{{ package.version}}</td>

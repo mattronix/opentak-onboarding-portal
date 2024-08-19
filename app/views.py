@@ -1,10 +1,10 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH
+from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, db
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
 from flask import send_file
@@ -333,4 +333,17 @@ def reset_password(token):
         return redirect(url_for('routes.home'))
 
     return render_template('password_reset.html', form=form, token=token)
-3
+
+
+
+@routes.route('/updates/<filename>', methods=['GET', 'POST'])
+def downloadUpdatePackage(filename):
+
+    filepath = f"{UPDATES_UPLOAD_FOLDER}/{filename}"
+    
+    if os.path.exists(filepath):
+        print(f"Sending file: {filepath}")
+        return send_file(f"../{filepath}", as_attachment=True, download_name=filename)
+
+    
+    return render_template('restricted.html', error="Update Package does not exist")

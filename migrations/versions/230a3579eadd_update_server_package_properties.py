@@ -1,8 +1,8 @@
-"""Update Server Packages
+"""Update Server Package, Properties
 
-Revision ID: 2b02b0e278fd
+Revision ID: 230a3579eadd
 Revises: ed29579e0646
-Create Date: 2024-08-19 15:42:26.794302
+Create Date: 2024-08-19 18:16:05.877303
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '2b02b0e278fd'
+revision = '230a3579eadd'
 down_revision = 'ed29579e0646'
 branch_labels = None
 depends_on = None
@@ -21,9 +21,18 @@ def upgrade():
     op.create_table('packages',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('platform', sa.String(), nullable=False),
+    sa.Column('typePackage', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=False),
     sa.Column('fileLocation', sa.String(), nullable=True),
+    sa.Column('imageLocation', sa.String(), nullable=True),
     sa.Column('version', sa.String(), nullable=False),
+    sa.Column('revisionCode', sa.Integer(), nullable=True),
+    sa.Column('apkHash', sa.Integer(), nullable=True),
+    sa.Column('osRequirement', sa.String(), nullable=True),
+    sa.Column('takPreReq', sa.String(), nullable=True),
+    sa.Column('apkSize', sa.Integer(), nullable=True),
+    sa.Column('fullPackageName', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

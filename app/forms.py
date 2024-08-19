@@ -18,7 +18,11 @@ def check_filename(form, field):
 def check_package_filename(form, field):
     if field.data and not field.data.filename.endswith('.apk'):
         raise ValidationError('Filename must end with .apk')
-
+    
+def check_image_filename(form, field):
+    if field.data and not field.data.filename.endswith('.png'):
+        raise ValidationError('Filename must end with .png')
+        
 def check_file_exists(form, field):
     if field.data and not os.path.exists(DATAPACKAGE_UPLOAD_FOLDER + '/' + field.data):
         raise ValidationError('File does not exist.')
@@ -26,7 +30,7 @@ def check_file_exists(form, field):
 def check_package_exists(form, field):
     if field.data and os.path.exists(UPDATES_UPLOAD_FOLDER + '/' + field.data.filename):
         raise ValidationError('File conflicts with an existing package.')
-    
+ 
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -115,9 +119,35 @@ class MeshtasticForm(FlaskForm):
     isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
     submit = SubmitField('Submit')
 
-class PackageForm(FlaskForm):
+class AddPackageForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     description = StringField('Description', validators=[Optional()])
-    package = FileField('Package', validators=[DataRequired(), check_package_filename, check_package_exists])
+    package = FileField('Package', validators=[DataRequired(), check_package_filename])
+    image = FileField('Image/Icon', validators=[DataRequired(), check_image_filename])
     version = StringField('Version', validators=[DataRequired()])
+    platform = SelectField('Platform', choices=[('Android', 'Android'), ('Windows', 'Windows'), ('iOS', 'iOS')], validators=[DataRequired()], default='Android')
+    typePackage = SelectField('Type', choices=[('app', 'App'), ('plugin', 'Plugin')], validators=[DataRequired()])
+    revisionCode = IntegerField('Revision Code', validators=[Optional()], default=1)
+    apkHash = IntegerField('APK Hash', validators=[Optional()])
+    osRequirement = StringField('OS Requirement', validators=[Optional()])
+    takPreReq = StringField('TAK Prerequisite', validators=[Optional()],default="com.atakmap.app@4.10.0.CIV")
+    apkSize = IntegerField('APK Size', validators=[Optional()], default=-1)
+    fullPackageName = StringField('Full Package Name', validators=[Optional()])
+    submit = SubmitField('Submit')
+
+
+class EditPackageForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[Optional()])
+    package = FileField('Package', validators=[check_package_filename])
+    image = FileField('Image/Icon', validators=[check_image_filename])
+    version = StringField('Version', validators=[DataRequired()])
+    platform = SelectField('Platform', choices=[('Android', 'Android'), ('Windows', 'Windows'), ('iOS', 'iOS')], validators=[DataRequired()], default='Android')
+    typePackage = SelectField('Type', choices=[('app', 'App'), ('plugin', 'Plugin')], validators=[DataRequired()])
+    revisionCode = IntegerField('Revision Code', validators=[Optional()], default=1)
+    apkHash = IntegerField('APK Hash', validators=[Optional()])
+    osRequirement = StringField('OS Requirement', validators=[Optional()])
+    takPreReq = StringField('TAK Prerequisite', validators=[Optional()],default="com.atakmap.app@4.10.0.CIV")
+    apkSize = IntegerField('APK Size', validators=[Optional()], default=-1)
+    fullPackageName = StringField('Full Package Name', validators=[Optional()])
     submit = SubmitField('Submit')

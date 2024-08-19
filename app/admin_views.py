@@ -1,9 +1,10 @@
 from flask import render_template, Blueprint, request, make_response, session
+from wtforms import ValidationError
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER, UPDATES_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm, MeshtasticForm, PackageForm
+from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm, MeshtasticForm, AddPackageForm, EditPackageForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
@@ -512,23 +513,31 @@ def admin_meshtastic_delete(id):
     return render_template('form.html', form=form, title="Delete Meshtastic Config", formurl=url_for("admin_routes.admin_meshtastic_delete",id=object.id))
 
 
-def package_uploader(file, package):
+def package_uploader(file, package, key):
 
-    filename = secure_filename(file.filename)
+    filename = f"{package.id}.{file.filename.split('.')[-1]}"
 
     try:
         if not os.path.exists(UPDATES_UPLOAD_FOLDER):
             os.makedirs(UPDATES_UPLOAD_FOLDER)
 
         uploaddir = f"{UPDATES_UPLOAD_FOLDER}"
-
-        if package.fileLocation and os.path.exists(package.fileLocation):
-            os.remove(package.fileLocation)
-
         file_path = os.path.join(uploaddir, filename)
+
+        if key == "fileLocation" and package.fileLocation and os.path.exists(package.fileLocation):
+            os.remove(package.fileLocation)
+        
+        if key == "imageLocation" and package.imageLocation and os.path.exists(package.imageLocation):
+            os.remove(package.imageLocation)
+
+        if key == "fileLocation":
+            package.fileLocation = file_path
+        if key == "imageLocation":
+            package.imageLocation = file_path
+
+
         file.save(file_path)
-        package.fileLocation = file_path
-       
+
         return package
     
     except OSError:
@@ -546,20 +555,23 @@ def admin_packages_list():
     packages = PackageModel.get_all()
     return render_template('admin_packages_list.html', packages=packages)
 
-
 @register_breadcrumb(admin_routes, '.admin.packages.add', 'Add Package')
 @admin_routes.route('packages/add', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
 def admin_package_add():
-    form = PackageForm()
+    form = AddPackageForm()
 
     if form.validate_on_submit():
-        object = PackageModel.create(name=form.name.data, description=form.description.data, version=form.version.data)
+        object = PackageModel.create(name=form.name.data, description=form.description.data, version=form.version.data, platform=form.platform.data, type_package=form.typePackage.data, revision_code=form.revisionCode.data, apk_hash=form.apkHash.data, os_requirement=form.osRequirement.data, tak_prereq=form.takPreReq.data, apk_size=form.apkSize.data, full_package_name=form.fullPackageName.data)
 
         if form.package.data:
-            object = package_uploader(form.package.data, object)
-            PackageModel.update(object)
+            object = package_uploader(form.package.data, object, "fileLocation")
+
+        if form.image.data:
+            object = package_uploader(form.image.data, object, "imageLocation")
+        
+        PackageModel.update(object)
 
         try:
             e = object.get("error")
@@ -576,7 +588,7 @@ def admin_package_add():
 @role_required(role='administrator')
 def admin_package_edit(id):  
     object = PackageModel.get_by_id(id)
-    form = PackageForm(data=object.__dict__)
+    form = EditPackageForm(data=object.__dict__)
 
     if object is None:
         return redirect(url_for('admin_routes.admin_package_edit'))
@@ -585,10 +597,21 @@ def admin_package_edit(id):
         object.name = form.name.data
         object.description = form.description.data
         object.version = form.version.data
+        object.platform = form.platform.data
+        object.typePackage = form.typePackage.data
+        object.revisionCode = form.revisionCode.data
+        object.apkHash = form.apkHash.data
+        object.osRequirement = form.osRequirement.data
+        object.takPreReq = form.takPreReq.data
+        object.apkSize = form.apkSize.data
+        object.fullPackageName = form.fullPackageName.data
         
         if form.package.data:
-            object = package_uploader(form.package.data, object)
-    
+            object = package_uploader(form.package.data, object, "fileLocation")
+
+        if form.image.data:
+            object = package_uploader(form.image.data, object, "imageLocation")
+            
         PackageModel.update(object)
         return redirect(url_for('admin_routes.admin_package_edit', id=object.id))
 
@@ -612,6 +635,9 @@ def admin_package_delete(id):
         
         if object.fileLocation and os.path.exists(object.fileLocation):
             os.remove(object.fileLocation)
+
+        if object.imageLocation and os.path.exists(object.imageLocation):
+            os.remove(object.imageLocation)
             
         PackageModel.delete_by_id(object.id)
         return redirect(url_for('admin_routes.admin_packages_list'))
