@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField, DateTimeField, DateField
-from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo
+from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo, URL
 from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 import re
@@ -103,6 +103,6 @@ class MeshtasticForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     roles = SelectMultipleField('Roles', validators=[Optional()], coerce=int)
     description = StringField('Description', validators=[Optional()])
-    url = StringField('URL', validators=[DataRequired()])
+    url = StringField('URL', validators=[DataRequired(), URL()])
     isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
     submit = SubmitField('Submit')
