@@ -6,8 +6,17 @@ This project is an Opensource ATAK Portal that works with OpenTak Server to prov
 # Features 
 * Temporary access and cleanup of temporary accounts
 * Registration by secure link withn max uses and email notification to link owner 
-* Meshtastic QR Code (WIP)
-* Data package automatic Config of call sign (beta)
+* Meshtastic QR Code Display
+* Data package automatic Config of call sign
+* Role Based Access Control to Datapackages and Meshtastic Configs
+* Email Notifications for New Registrations
+* Max Link Usage
+* Link Expiry
+* User Expiry
+* Forgot Password and E-Mail Reset (bit basic still as it uses a token that is time invalidated FIXED Soon)
+* Data Package Structure Viewer (really basic)
+* Uses OPENTAK Server for authentication
+* Admins in Opentak are Admin's in Portal
 
 # Setup
 git clone
@@ -45,3 +54,18 @@ flask run --debug
 
 # Debug Flag will enable auto refresh
 ```
+
+
+# Screenshots
+
+Here are some screenshots of the project:
+
+## Homepage
+![Screenshot 1](screenshots/home.png)
+## Admin Menu
+![Screenshot 2](screenshots/admin.png)
+## Onboarding Listing Page
+![Screenshot 3](screenshots/editor_onboarding.png)
+## User Registration
+![Screenshot 4](screenshots/registration.png)
+
