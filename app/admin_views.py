@@ -14,6 +14,8 @@ import tempfile
 import zipfile
 import shutil
 import ast
+import os
+import zipfile
 
 admin_routes = Blueprint('admin_routes', __name__, url_prefix='/admin')
 default_breadcrumb_root(admin_routes, '.',)
@@ -545,8 +547,6 @@ def package_uploader(file, package, key):
         return {"error" : "Error creating upload directory"}
     
 
-
-
 @register_breadcrumb(admin_routes, '.admin.packages', 'Packages')
 @admin_routes.route('packages')
 @login_required
@@ -642,3 +642,71 @@ def admin_package_delete(id):
         PackageModel.delete_by_id(object.id)
         return redirect(url_for('admin_routes.admin_packages_list'))
     return render_template('form.html', form=form, title="Delete Package", formurl=url_for("admin_routes.admin_package_delete",id=object.id))
+
+
+@register_breadcrumb(admin_routes, '.admin.packages.generateinfz', 'Generate Package Infz')
+@admin_routes.route('packages/generate', methods=['GET'])
+@login_required
+@role_required(role='administrator')
+def admin_package_generate_infz():  
+
+
+    packages = PackageModel.get_all()
+    inf_data = "#platform (Android Windows or iOS), type (app or plugin), full package name, display/label, version, revision code (integer), relative path to APK file, relative path to icon file, description, apk hash, os requirement, tak prereq (e.g. plugin-api), apk size\n"
+
+    for package in packages:
+
+        if not package.platform:
+            package.platform = ""
+        if not package.typePackage:
+            package.typePackage = ""
+        if not package.fullPackageName:
+            package.fullPackageName = ""
+        if not package.name:
+            package.name = ""
+        if not package.version:
+            package.version = ""
+        if not package.revisionCode:
+            package.revisionCode = ""
+        if package.fileLocation:
+            package.fileLocation = package.fileLocation.replace('updates/', '', 1)
+        else: 
+            package.fileLocation = ""
+        if package.imageLocation:
+            package.imageLocation = package.fileLocation.replace('update/', '', 1)
+        else:
+            package.imageLocation = ""
+        if not package.description:
+            package.description = ""
+        if not package.apkHash:
+            package.apkHash = ""
+        if not package.osRequirement:
+            package.osRequirement = ""
+        if not package.takPreReq:
+            package.takPreReq = ""
+        if not package.apkSize:
+            package.apkSize = ""
+
+        inf_data += f"{package.platform},{package.typePackage},{package.fullPackageName},{package.name},{package.version},{package.revisionCode},{package.fileLocation},{package.imageLocation},{package.description},{package.apkHash},{package.osRequirement},{package.takPreReq},{package.apkSize}\n"
+
+    if os.path.exists(UPDATES_UPLOAD_FOLDER):
+        inf_filename = "product.inf"
+        inf_file_path = os.path.join(UPDATES_UPLOAD_FOLDER, inf_filename)
+
+        with open(inf_file_path, "w") as inf_file:
+            inf_file.write(inf_data)
+
+    
+
+    if os.path.exists(UPDATES_UPLOAD_FOLDER):
+        zip_filename = "product.infz"
+        zip_file_path = os.path.join(UPDATES_UPLOAD_FOLDER, zip_filename)
+
+        with zipfile.ZipFile(zip_file_path, "w") as zip_file:
+            for root, dirs, files in os.walk(UPDATES_UPLOAD_FOLDER):
+                for file in files:
+                    if not file.endswith(".infz"):
+                        file_path = os.path.join(root, file)
+                        zip_file.write(file_path, os.path.relpath(file_path, UPDATES_UPLOAD_FOLDER))
+
+    return '', 200

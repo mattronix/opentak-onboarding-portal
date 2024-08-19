@@ -45,7 +45,7 @@
                                 </tbody>
                             </table>
                             <a href="packages/add" class="btn btn-sm btn-custom-primary">CREATE NEW PACKAGE</a>
-
+                            <button onclick="generatePackages()" class="btn btn-sm btn-custom-primary">GENERATE PACKAGES</button>
                         </div>
                     </div>
                 </div>
@@ -60,3 +60,26 @@
 
 {% endblock %}
 
+
+
+
+
+{% block javascript %}
+  {{ super() }} 
+<script>
+    function generatePackages() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "packages/generate", true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                // Handle successful response here
+                alert("Success!");
+            } else {
+                // Handle error or other status codes here
+            }
+        };
+        xhr.send();
+    }
+</script>
+
+{% endblock %}

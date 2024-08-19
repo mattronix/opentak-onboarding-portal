@@ -336,61 +336,6 @@ def reset_password(token):
     return render_template('password_reset.html', form=form, token=token)
 
 
-@routes.route('/updates/product.inf', methods=['GET', 'POST'])
-def downloadUpdateInf():
-    packages = PackageModel.get_all()
-    inf_data = "#platform (Android Windows or iOS), type (app or plugin), full package name, display/label, version, revision code (integer), relative path to APK file, relative path to icon file, description, apk hash, os requirement, tak prereq (e.g. plugin-api), apk size\n"
-
-    for package in packages:
-       # Android,
-       # plugin,
-       # com.atakmap.android.gbr.timer.plugin,
-       # TAK Timer
-       # ,1.21 [5.1.0]
-       # ,20240402,
-       # ATAK-TakTimer-1.21.apk,
-       # ATAK-TakTimer.png,
-       # This plugin contains a simple TAK Timer widget,
-       # ,25
-       # ,com.atakmap.app@5.1.0.CIV
-       # ,4993163
-
-
-        if not package.platform:
-            package.platform = ""
-        if not package.typePackage:
-            package.typePackage = ""
-        if not package.fullPackageName:
-            package.fullPackageName = ""
-        if not package.name:
-            package.name = ""
-        if not package.version:
-            package.version = ""
-        if not package.revisionCode:
-            package.revisionCode = ""
-        if not package.fileLocation:
-            package.fileLocation = ""
-        if not package.imageLocation:
-            package.imageLocation = ""
-        if not package.description:
-            package.description = ""
-        if not package.apkHash:
-            package.apkHash = ""
-        if not package.osRequirement:
-            package.osRequirement = ""
-        if not package.takPreReq:
-            package.takPreReq = ""
-        if not package.apkSize:
-            package.apkSize = ""
-
-        inf_data += f"{package.platform},{package.typePackage},{package.fullPackageName},{package.name},{package.version},{package.revisionCode},{package.fileLocation},{package.imageLocation},{package.description},{package.apkHash},{package.osRequirement},{package.takPreReq},{package.apkSize}\n"
-   
-
-
-    response = Response(inf_data, content_type="application/octet-stream")
-    response.headers["Content-Disposition"] = "attachment; filename=product.inf"
-    return response
-
 @routes.route('/updates/<filename>', methods=['GET', 'POST'])
 def downloadUpdatePackage(filename):
 
