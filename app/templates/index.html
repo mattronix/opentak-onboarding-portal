@@ -96,19 +96,21 @@
 
 
                     {% if public_meshtastic_configs or private_meshtastic_configs %}
-                    <h1>Step 2 - Scan this QR Code in The Meshtastic App</h1>
+                    <h1 class="mb-4">Step 2 - Scan this QR Code in The Meshtastic App</h1>
                     <div class="row">
 
                         {% for config in public_meshtastic_configs %}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card mb-4">
                                 <div class="card-header">
-                                    <h5 class="card-title">{{config.url}}</h5>
+                                    <h5 class="card-title">{{config.name}}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="text-center">
-                                        <img src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                        <img style="width: 100%;" src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                        <p>{{config.description}}</p>
                                     </div>
+                                    
                                 </div>
                             </div>
 
@@ -116,14 +118,15 @@
                         {% endfor %}
 
                         {% for config in private_meshtastic_configs %}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card mb-4">
                                 <div class="card-header">
                                     <h5 class="card-title">{{config.name}}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="text-center">
-                                        <img src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                        <img style="width: 100%;" src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                        <p>{{config.description}}</p>
                                     </div>
                                 </div>
                             </div>
