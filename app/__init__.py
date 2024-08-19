@@ -7,9 +7,10 @@ from app.jina_filters import jina2_filters_blueprint
 from flask_breadcrumbs import Breadcrumbs
 from flask_menu import Menu
 from app.extensions import mail, jwt_manager
-from .extensions import scheduler
+from app.extensions import scheduler
 import logging 
 from app.jobs import remove_expired_accounts
+from app.extensions import qrcode
 
 def create_app():
     # create and configure the app
@@ -21,6 +22,7 @@ def create_app():
     breadcrumbs = Breadcrumbs(init_menu=False)
     menu.init_app(app)
     breadcrumbs.init_app(app)
+    qrcode.init_app(app)
     # initialize scheduler
     logging.getLogger("apscheduler").setLevel(logging.INFO)
     # if you don't wanna use a config, you can set options here:

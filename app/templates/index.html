@@ -22,6 +22,7 @@
                     </div>
                 </div>
 
+                <h1>Step 1 - Get your TAK profiles</h1>
                 {% if public_tak_profiles %}        
                 <div class="col-md-8">
                     <div class="card mb-4">
@@ -29,9 +30,6 @@
                             <h5 class="card-title">Download ATAK DataPackage (Public)</h5>
                         </div>
                         <div class="card-body">
-
-                        
-
                             
                                 <table class="table">
                                     <thead>
@@ -95,9 +93,51 @@
                  
                     </div>
                     {% endif %}
+
+
+                    {% if public_meshtastic_configs or private_meshtastic_configs %}
+                    <h1>Step 2 - Scan this QR Code in The Meshtastic App</h1>
+                    <div class="row">
+
+                        {% for config in public_meshtastic_configs %}
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title">{{config.url}}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <img src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        {% endfor %}
+
+                        {% for config in private_meshtastic_configs %}
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title">{{config.name}}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <img src="{{ qrcode(config.url, error_correction='H', icon_img='img/meshtastic.png') }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        {% endfor %}
+
+
+                    </div>
+                    {% endif %}
                 </div>
 
-
+            
+            
                 <div class="col-md-4">
 
                     <div class="card mb-3">

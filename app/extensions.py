@@ -10,3 +10,8 @@ jwt_manager = JWTManager()
 from flask_apscheduler import APScheduler
 
 scheduler = APScheduler()
+
+
+from flask_qrcode import QRcode
+
+qrcode = QRcode()

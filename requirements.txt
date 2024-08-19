@@ -12,3 +12,4 @@ Flask_mail
 flask-jwt-extended
 APScheduler
 flask_apscheduler
+flask-qrcode

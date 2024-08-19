@@ -4,7 +4,7 @@ from flask import redirect, url_for, request
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, db
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
 from flask import send_file
@@ -28,8 +28,10 @@ def home():
     user_roles = [role.id for role in user.roles]
     public_tak_profiles = TakProfileModel.query.filter_by(isPublic=True)
     private_tak_profiles = TakProfileModel.query.filter(TakProfileModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
+    public_meshtastic_configs = MeshtasticModel.query.filter_by(isPublic=True)
+    private_meshtastic_configs = MeshtasticModel.query.filter(MeshtasticModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
     help_link = HELP_LINK
-    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL)
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, public_meshtastic_configs=public_meshtastic_configs, private_meshtastic_configs=private_meshtastic_configs)
 
     
 @routes.route('/logout')
