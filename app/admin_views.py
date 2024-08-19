@@ -673,7 +673,7 @@ def admin_package_generate_infz():
         else: 
             package.fileLocation = ""
         if package.imageLocation:
-            package.imageLocation = package.fileLocation.replace('updates/', '', 1)
+            package.imageLocation = package.imageLocation.replace('updates/', '', 1)
         else:
             package.imageLocation = ""
         if not package.description:
