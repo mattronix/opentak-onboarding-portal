@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Delete Onboarding Code{% endblock %}
+{% block title %}Datapackage Add{% endblock %}
 
 
 {% block content %}
@@ -25,9 +25,9 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                 <h2 class="mt-5 text-center">Delete Onboarding Code</h2>
+                 <h2 class="mt-5 text-center">{{title}}</h2>
                     <div class="card-body">
-                        <form action="{{ url_for('admin_routes.onboarding_codes_delete',id=onboardingcode.id) }}" method="post" novalidate>
+                        <form action="{{ formurl }}" method="post" enctype="multipart/form-data" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
                             <div class="form-group row required">
@@ -54,4 +54,22 @@
     </div> 
 </div>  
 
+{% endblock %}
+
+
+
+
+{% block javascript %}
+  {{ super() }} 
+  {% if form.roles %}
+    <script>
+    $(document).ready(function () {
+        $("#roles").select2({
+        placeholder: "{{ form.roles.label.text }}",
+        allowClear: true,
+        width: "100%",
+        });
+    });
+    </script>
+    {% endif %}
 {% endblock %}

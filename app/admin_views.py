@@ -3,8 +3,8 @@ from app.ots import otsClient, OTSClient
 from flask import redirect, url_for
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 from app.decorators import login_required, role_required
-from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel 
+from app.forms import OnboardingCodeForm, DeleteForm, UserEditForm, TakProfileForm, TakProfileEditForm, RoleAddForm, MeshtasticForm
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel
 import uuid
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from werkzeug.utils import secure_filename
@@ -44,11 +44,22 @@ def admin_takprofiles(*args, **kwargs):
 
 def admin_roles(*args, **kwargs):
     object_id = request.view_args['id']
-    object = UserRoleModel.get_role_by_id(object_id)
+    object = UserRoleModel.get_by_id(object_id)
 
     if object:
         return [{'text': object.name, 'url': f'/admin/roles/edit/{object_id}'}]
     return {'text': "Profile", 'url':""}
+
+
+
+def admin_meshtastic(*args, **kwargs):
+    object_id = request.view_args['id']
+    object = MeshtasticModel.get_by_id(object_id)
+
+    if object:
+        return [{'text': object.name, 'url': f'/admin/meshtastic/edit/{object_id}'}]
+    return {'text': "Profile", 'url':""}
+
 
 def takprofile_datapackage_uploader(file, takprofile):
 
@@ -130,17 +141,17 @@ def onboarding_codes_add():
     form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
 
     if form.validate_on_submit():
-            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data, expirydate=form.expiryDate.data, userexpirydate=form.userExpiryDate.data)
+            object = OnboardingCodeModel.create_onboarding_code(onboardingcode=form.onboardingCode.data, name=form.name.data, description=form.description.data, users=[], roles=[UserRoleModel.get_by_id(role_id) for role_id in form.roles.data], onboardcontact=form.onboardContact.data, maxuses=form.maxUses.data, expirydate=form.expiryDate.data, userexpirydate=form.userExpiryDate.data)
             
             try: 
                 e = object.get("error")
-                return render_template('admin_onboardingcodes_add.html', form=form, error=e)
+                return render_template('form.html', form=form, error=e, title="Add Onboarding Code", formurl=url_for("admin_routes.onboarding_codes_add"))
             except:
                 pass
             
             return redirect(url_for('admin_routes.onboarding_codes_list'))
     
-    return render_template('admin_onboardingcodes_add.html', form=form)
+    return render_template('form.html', form=form, title="Add Onboarding Code", formurl=url_for("admin_routes.onboarding_codes_add"))
 
 
 
@@ -164,13 +175,13 @@ def onboarding_codes_edit(id):
         onboardingcode.maxUses = form.maxUses.data
         onboardingcode.onboardContact = form.onboardContact.data
         onboardingcode.onboardingCode = form.onboardingCode.data
-        onboardingcode.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
+        onboardingcode.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
         onboardingcode.userExpiryDate = form.userExpiryDate.data
         onboardingcode.expiryDate = form.expiryDate.data
         OnboardingCodeModel.update_onboarding_code(onboardingcode)
         return redirect(url_for('admin_routes.onboarding_codes_list'))
     form.roles.data = [role.id for role in onboardingcode.roles]
-    return render_template('admin_onboardingcodes_edit.html', onboardingcode=onboardingcode, form=form)
+    return render_template('form.html', onboardingcode=onboardingcode, form=form, title="Edit Onboarding Code", formurl=url_for("admin_routes.onboarding_codes_edit",id=onboardingcode.id))
 
 @register_breadcrumb(admin_routes, '.admin.onboardingcodes.delete', 'Edit Onboarding Code', dynamic_list_constructor=admin_onboardingcodes)
 @admin_routes.route('onboarding_codes/delete/<int:id>', methods=['GET', 'POST'])
@@ -186,12 +197,12 @@ def onboarding_codes_delete(id):
     if form.validate_on_submit():
 
         if form.areyousure.data != "OK":
-            return render_template('admin_onboardingcodes_delete.html', onboardingcode=onboardingcode, form=form, error="You must type 'OK' to delete this record")
+            return render_template('form.html', onboardingcode=onboardingcode, form=form, error="You must type 'OK' to delete this record", title="Delete Onboarding Code", formurl=url_for("admin_routes.onboarding_codes_delete",id=onboardingcode.id))
         
         OnboardingCodeModel.delete_onboarding_code_by_id(onboardingcode.id)
         return redirect(url_for('admin_routes.onboarding_codes_list'))
     
-    return render_template('admin_onboardingcodes_delete.html', onboardingcode=onboardingcode, form=form)
+    return render_template('form.html', onboardingcode=onboardingcode, form=form, title="Delete Onboarding Code", formurl=url_for("admin_routes.onboarding_codes_delete",id=onboardingcode.id))
 
 
 
@@ -231,7 +242,7 @@ def users_edit(id):
         user.firstName = form.firstName.data
         user.lastName = form.lastName.data
         user.email = form.email.data
-        user.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
+        user.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
         user.expiryDate = form.expiryDate.data
         UserModel.update_user(user)
         return redirect(url_for('admin_routes.users_list'))
@@ -239,7 +250,7 @@ def users_edit(id):
 
     form.roles.data = [role.id for role in user.roles]
 
-    return render_template('admin_users_edit.html', user=user, form=form)
+    return render_template('form.html', user=user, form=form, title="Edit Users", formurl=url_for("admin_routes.users_edit",id=user.id))
     
 @register_breadcrumb(admin_routes, '.admin.users.delete', 'Delete Users', dynamic_list_constructor=admin_users)
 @admin_routes.route('users/delete/<int:id>', methods=['GET', 'POST'])
@@ -254,13 +265,13 @@ def users_delete(id):
     
     if form.validate_on_submit():
         if form.areyousure.data != "OK":
-            return render_template('admin_users_delete.html', user=user, form=form, error="You must type 'OK' to delete this record")
+            return render_template('form.html', user=user, form=form, error="You must type 'OK' to delete this record", title="Delete Users", formurl=url_for("admin_routes.users_delete",id=user.id))
         
         UserModel.delete_user_by_id(user.id)
         otsClient.delete_user(user.username)
         return redirect(url_for('admin_routes.users_list'))
     
-    return render_template('admin_users_delete.html', user=user, form=form)
+    return render_template('form.html', user=user, form=form, title="Delete Users", formurl=url_for("admin_routes.users_delete",id=user.id))
 
 
 @register_breadcrumb(admin_routes, '.admin.takprofiles', 'Datapackages')
@@ -284,7 +295,7 @@ def takprofiles_add():
 
     if form.validate_on_submit():
             takprofile = TakProfileModel.create_tak_profile(name=form.name.data, description=form.description.data,
-                                                             roles=[UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data], is_public = ast.literal_eval(form.isPublic.data), template_folder_location=f"{DATAPACKAGE_UPLOAD_FOLDER}/{unique_id}")
+                                                             roles=[UserRoleModel.get_by_id(role_id) for role_id in form.roles.data], is_public = ast.literal_eval(form.isPublic.data), template_folder_location=f"{DATAPACKAGE_UPLOAD_FOLDER}/{unique_id}")
 
             if form.datapackage.data:
                 takprofile = takprofile_datapackage_uploader(form.datapackage.data, takprofile)
@@ -293,7 +304,7 @@ def takprofiles_add():
 
             return redirect(url_for('admin_routes.takprofiles_list'))
     
-    return render_template('admin_takprofiles_add.html', form=form)
+    return render_template('form.html', form=form, title="Add Datapackage", formurl=url_for("admin_routes.takprofiles_add"))
 
 
 @register_breadcrumb(admin_routes, '.admin.takprofiles.edit', 'Edit Datapackage', dynamic_list_constructor=admin_takprofiles)
@@ -304,7 +315,6 @@ def takprofiles_edit(id):
     takprofile = TakProfileModel.get_tak_profile_by_id(id)
     form = TakProfileEditForm(data=takprofile.__dict__)
     form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
-    print(form.isPublic.data)
     if takprofile is None:
         return redirect(url_for('admin_routes.takprofiles_list'))
 
@@ -312,7 +322,7 @@ def takprofiles_edit(id):
         takprofile.name = form.name.data
         takprofile.description = form.description.data
         takprofile.takPrefFileLocation = form.takPrefFileLocation.data
-        takprofile.roles = [UserRoleModel.get_role_by_id(role_id) for role_id in form.roles.data]
+        takprofile.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
         takprofile.isPublic = ast.literal_eval(form.isPublic.data)
 
         print(form.datapackage.data)
@@ -323,7 +333,7 @@ def takprofiles_edit(id):
         return redirect(url_for('admin_routes.takprofiles_edit', id=takprofile.id))
 
     form.roles.data = [role.id for role in takprofile.roles]
-    return render_template('admin_takprofiles_edit.html', takprofile=takprofile, form=form, filetree=make_tree(takprofile.takTemplateFolderLocation))
+    return render_template('admin_takprofiles_edit.html', takprofile=takprofile, form=form, filetree=make_tree(takprofile.takTemplateFolderLocation), title="Edit Datapackage", formurl=url_for("admin_routes.takprofiles_edit",id=takprofile.id))
 
 @register_breadcrumb(admin_routes, '.admin.takprofiles.delete', 'Delete Datapackage', dynamic_list_constructor=admin_takprofiles)
 @admin_routes.route('takprofiles/delete/<int:id>', methods=['GET', 'POST'])
@@ -339,12 +349,12 @@ def takprofiles_delete(id):
     
     if form.validate_on_submit():
         if form.areyousure.data != "OK":
-            return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form, error="You must type 'OK' to delete this record")
+            return render_template('form.html', takprofile=takprofile, form=form, error="You must type 'OK' to delete this record", title="Delete Datapackage", formurl=url_for("admin_routes.takprofiles_delete",id=takprofile.id))
         
         TakProfileModel.delete_tak_profile_by_id(takprofile.id)
         shutil.rmtree(takprofile.takTemplateFolderLocation)
         return redirect(url_for('admin_routes.takprofiles_list'))
-    return render_template('admin_takprofiles_delete.html', takprofile=takprofile, form=form)
+    return render_template('form.html', takprofile=takprofile, form=form, title="Delete Datapackage", formurl=url_for("admin_routes.takprofiles_delete",id=takprofile.id))
 
 
 
@@ -368,13 +378,13 @@ def admin_roles_add():
             role = UserRoleModel.create_role(name=form.name.data, description=form.description.data)            
             try: 
                 e = object.get("error")
-                return render_template('admin_roles_add.html', form=form, error=e)
+                return render_template('form.html', form=form, error=e, title="Add Role", formurl=url_for("admin_routes.admin_roles_add"))
             except:
                 pass
             
             return redirect(url_for('admin_routes.admin_roles_list'))
     
-    return render_template('admin_roles_add.html', form=form)
+    return render_template('form.html', form=form, title="Add Role", formurl=url_for("admin_routes.admin_roles_add"))
 
 
 @register_breadcrumb(admin_routes, '.admin.roles.delete', 'Delete Role', dynamic_list_constructor=admin_roles)
@@ -383,7 +393,7 @@ def admin_roles_add():
 @role_required(role='administrator')
 
 def admin_roles_delete(id):
-    role = UserRoleModel.get_role_by_id(id)
+    role = UserRoleModel.get_by_id(id)
     form = DeleteForm()
     
     if role is None:
@@ -391,11 +401,11 @@ def admin_roles_delete(id):
     
     if form.validate_on_submit():
         if form.areyousure.data != "OK":
-            return render_template('admin_roles_delete.html', role=role, form=form, error="You must type 'OK' to delete this record")
+            return render_template('form.html', role=role, form=form, error="You must type 'OK' to delete this record", title="Delete Role", formurl=url_for("admin_routes.admin_roles_delete",id=role.id))
         
         UserRoleModel.delete_role_by_id(role.id)
         return redirect(url_for('admin_routes.admin_roles_list'))
-    return render_template('admin_roles_delete.html', role=role, form=form)
+    return render_template('form.html', role=role, form=form, title="Delete Role", formurl=url_for("admin_routes.admin_roles_delete",id=role.id))
 
 
 @register_breadcrumb(admin_routes, '.admin.roles.edit', 'Edit Roles', dynamic_list_constructor=admin_roles)
@@ -403,7 +413,7 @@ def admin_roles_delete(id):
 @login_required
 @role_required(role='administrator')
 def admin_roles_edit(id):  
-    role = UserRoleModel.get_role_by_id(id)
+    role = UserRoleModel.get_by_id(id)
     form = RoleAddForm(data=role.__dict__)
     if role is None:
         return redirect(url_for('admin_routes.admin_roles_edit'))
@@ -415,5 +425,80 @@ def admin_roles_edit(id):
         UserRoleModel.update_role(role)
         return redirect(url_for('admin_routes.admin_roles_list'))
     
-    return render_template('admin_roles_edit.html', role=role, form=form)
+    return render_template('form.html', role=role, form=form, title="Edit Roles", formurl=url_for("admin_roles.admin_roles_edit",id=role.id))
+
+
+@register_breadcrumb(admin_routes, '.admin.meshtastic', 'Mestastic')
+@admin_routes.route('meshtastic')
+@login_required
+@role_required(role='administrator')
+def admin_meshtastic_list():  
+    meshtasticconfigs = MeshtasticModel.get_all_meshtastic()
+    return render_template('admin_meshtastic_list.html', meshtasticconfigs=meshtasticconfigs)
+
+@register_breadcrumb(admin_routes, '.admin.meshtastic.add', 'Add Meshtastic')
+@admin_routes.route('meshtastic/add', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def admin_meshtastic_add():
+    form = MeshtasticForm()
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
+
+    if form.validate_on_submit():
+        meshtastic = MeshtasticModel.create_meshtastic(name=form.name.data, description=form.description.data, url=form.url.data, roles=[UserRoleModel.get_by_id(role_id) for role_id in form.roles.data])
+        try:
+            e = object.get("error")
+            return render_template('form.html', form=form, error=e, title="Add Meshtastic", formurl=url_for("admin_routes.admin_meshtastic_add"))
+        except:
+            pass
+
+        return redirect(url_for('admin_routes.admin_meshtastic_list'))
+
     
+    return render_template('form.html', form=form, title="Add Meshtastic", formurl=url_for("admin_routes.admin_meshtastic_add"))
+
+
+@register_breadcrumb(admin_routes, '.admin.meshtastic.edit', 'Edit Meshtastic', dynamic_list_constructor=admin_meshtastic)
+@admin_routes.route('meshtastic/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def meshtastic_edit(id):  
+    object = MeshtasticModel.get_by_id(id)
+    form = MeshtasticForm(data=object.__dict__)
+    form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
+
+    if object is None:
+        return redirect(url_for('admin_routes.meshtastic_edit'))
+
+    if form.validate_on_submit():
+        object.name = form.name.data
+        object.description = form.description.data
+        object.url = form.url.data
+        object.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
+        object.isPublic = ast.literal_eval(form.isPublic.data)
+
+        MeshtasticModel.update_meshtastic(object)
+        return redirect(url_for('admin_routes.meshtastic_edit', id=object.id))
+
+    form.roles.data = [role.id for role in object.roles]
+    return render_template('form.html', form=form, title="Edit Meshtastic Config", formurl=url_for("admin_routes.meshtastic_edit",id=object.id))
+
+@register_breadcrumb(admin_routes, '.admin.meshtastic.delete', 'Delete Meshtastic Config', dynamic_list_constructor=admin_meshtastic)
+@admin_routes.route('meshtastic/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+
+def admin_meshtastic_delete(id):
+    object = MeshtasticModel.get_by_id(id)
+    form = DeleteForm()
+    
+    if object is None:
+        return redirect(url_for('admin_routes.admin_meshtastic_list'))
+    
+    if form.validate_on_submit():
+        if form.areyousure.data != "OK":
+            return render_template('form.html', role=object, form=form, error="You must type 'OK' to delete this record", title="Delete Meshtastic Config", formurl=url_for("admin_routes.admin_meshtastic_delete",id=object.id))
+        
+        MeshtasticModel.delete_meshtastic_by_id(object.id)
+        return redirect(url_for('admin_routes.admin_meshtastic_list'))
+    return render_template('form.html', form=form, title="Delete Meshtastic Config", formurl=url_for("admin_routes.admin_meshtastic_delete",id=object.id))

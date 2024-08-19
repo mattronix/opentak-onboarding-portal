@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Delete Datapackage{% endblock %}
+{% block title %}Meshtastic Config Add{% endblock %}
 
 
 {% block content %}
@@ -25,9 +25,9 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                 <h2 class="mt-5 text-center">Delete Datapackage</h2>
+                 <h2 class="mt-5 text-center">Meshtastic Config Add</h2>
                     <div class="card-body">
-                        <form action="{{ url_for('admin_routes.takprofiles_delete',id=takprofile.id) }}" method="post" novalidate>
+                        <form action="{{ url_for('admin_routes.admin_meshtastic_add') }}" method="post" enctype="multipart/form-data" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
                             <div class="form-group row required">
@@ -53,5 +53,19 @@
         </div>
     </div> 
 </div>  
+
+{% endblock %}
+
+{% block javascript %}
+  {{ super() }} 
+<script>
+  $(document).ready(function () {
+    $("#roles").select2({
+      placeholder: "{{ form.roles.label.text }}",
+      allowClear: true,
+      width: "100%",
+    });
+  });
+</script>
 
 {% endblock %}

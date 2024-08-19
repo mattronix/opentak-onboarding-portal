@@ -238,7 +238,7 @@ def user_profile_edit():
 
         return redirect(url_for('routes.home'))
     
-    return render_template('user_profile_edit.html', user=user, form=form)
+    return render_template('form.html', user=user, form=form, title="Edit Profile", formurl=url_for('routes.user_profile_edit'))
 
 @routes.route('/static/css/branding.css')  
 def branding_view(): 

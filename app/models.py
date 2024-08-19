@@ -59,6 +59,23 @@ user_role_association = Table(
     Column('role_id', Integer, ForeignKey('user_roles.id'))
 )
 
+
+# Define the association table for the many-to-many relationship
+user_meshtastic_association = Table(
+    'user_meshtastic_association',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('meshtastic_id', Integer, ForeignKey('meshtastic.id'))
+)
+
+role_meshtastic_association = Table(
+    'role_meshtastic_association',
+    Base.metadata,
+    Column('role_id', Integer, ForeignKey('user_roles.id')),
+    Column('meshtastic_id', Integer, ForeignKey('meshtastic.id'))
+)
+
+
 class UserRoleModel(db.Model):
     __tablename__ = "user_roles"
 
@@ -83,6 +100,12 @@ class UserRoleModel(db.Model):
         back_populates="roles"
     )
 
+    meshtastic = relationship(
+        "MeshtasticModel",
+        secondary=role_meshtastic_association,
+        back_populates="roles"
+    )
+
     @staticmethod
     def create_role(name, description=""):
         try:
@@ -100,7 +123,7 @@ class UserRoleModel(db.Model):
             return {"error": "role.exists"}
 
     @staticmethod
-    def get_role_by_id(role_id):
+    def get_by_id(role_id):
         return UserRoleModel.query.get(role_id)
 
     @staticmethod
@@ -122,7 +145,7 @@ class UserRoleModel(db.Model):
 
     @staticmethod
     def delete_role_by_id(role_id):
-        role = UserRoleModel.get_role_by_id(role_id)
+        role = UserRoleModel.get_by_id(role_id)
         if role:
             db.session.delete(role)
             db.session.commit()
@@ -161,6 +184,12 @@ class UserModel(db.Model):
     onboarding_codes = relationship(
         "OnboardingCodeModel",
         secondary=user_onboardingcode_association,
+        back_populates="users"
+    )
+
+    meshtastic = relationship(
+        "MeshtasticModel",
+        secondary=user_meshtastic_association,
         back_populates="users"
     )
 
@@ -408,3 +437,66 @@ class OnboardingCodeModel(db.Model):
             return {"message": "Onboarding code deleted successfully"}
         else:
             return {"error": "onboarding_code.not.exist"}
+
+
+class MeshtasticModel(db.Model):
+    __tablename__ = "meshtastic"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    description: Mapped[str] = mapped_column(nullable=True)
+    name: Mapped[str] = mapped_column(unique=True, nullable=True)
+    url: Mapped[str] = mapped_column(unique=False)
+    isPublic: Mapped[bool] = mapped_column(nullable=True, default=True)
+
+    roles = relationship(
+        "UserRoleModel",
+        secondary=role_meshtastic_association,
+        back_populates="meshtastic"
+    )
+    users = relationship(
+        "UserModel",
+        secondary=user_meshtastic_association,
+        back_populates="meshtastic"
+    )
+    
+    @staticmethod
+    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, is_public=None):
+        try:
+            meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users)
+            db.session.add(meshtastic)
+            db.session.commit()
+            return meshtastic
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "onboarding_code.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "onboarding_code.exists"}
+
+    @staticmethod
+    def get_by_id(meshtastic_id):
+        return MeshtasticModel.query.get(meshtastic_id)
+
+    @staticmethod
+    def get_all_meshtastic():
+        return MeshtasticModel.query.all()
+
+    @staticmethod
+    def update_meshtastic(meshtastic):
+        try:
+            db.session.merge(meshtastic)
+            db.session.commit()
+            return {"message": "meshtastitc code updated successfully"}
+        except:
+            return {"error": "meshtastitc.not.exist"}
+
+    @staticmethod
+    def delete_meshtastic_by_id(meshtastic_id):
+        meshtastic = MeshtasticModel.get_by_id(meshtastic_id)
+        if meshtastic:
+            db.session.delete(meshtastic)
+            db.session.commit()
+            return {"message": "meshtastic code deleted successfully"}
+        else:
+            return {"error": "meshtastic.not.exist"}
