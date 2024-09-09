@@ -705,7 +705,7 @@ def admin_package_generate_infz():
         with zipfile.ZipFile(zip_file_path, "w") as zip_file:
             for root, dirs, files in os.walk(UPDATES_UPLOAD_FOLDER):
                 for file in files:
-                    if not file.endswith(".infz"):
+                    if not file.endswith(".infz") and file.endswith(".inf"):
                         file_path = os.path.join(root, file)
                         zip_file.write(file_path, os.path.relpath(file_path, UPDATES_UPLOAD_FOLDER))
 
