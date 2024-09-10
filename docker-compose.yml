@@ -3,6 +3,8 @@ services:
     web:
         volumes:
           - ./:/app
+           #  Used to export updates to the host
+           # - /var/www/html/opentakserver/update:/app/updates
         build:
             context: .
             dockerfile: Dockerfile
