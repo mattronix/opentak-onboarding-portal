@@ -5,3 +5,7 @@ instance/db.sqlite
 .DS_Store
 datapackages/*
 updates/*
+app/static/img/custom/*.png
+app/static/img/custom/*.jpeg
+app/static/img/custom/*.jpeg
+app/static/img/custom/*.webp
