@@ -39,6 +39,25 @@ docker compose up -d
 docker compose exec web flask db upgrade
 ```
 
+# Update Server Info
+
+If you want to expose a tak update server via OTS and this container runs on the same host as OTS uncomment the volume line in docker-compose.yml 
+
+Otherwise by default its exposed on /updates but for ATAK clients to work you will need to add the webserver certificate in a trust-store and add it to the "update trust store" of the ATAK device.
+
+WARNING: You will want to add a volume bind mount to ensure the data is not lost when the container restarts this can be done by adding a volume to the docker-compose.yml 
+Example Volume Mount: 
+
+```
+version: '2'
+services:
+    web:
+        volumes:
+          - ./:/app
+           #  Used to export updates to the host
+          - ./update:/app/updates
+```
+
 # DEV 
 
 ## Creating Migrations
@@ -71,4 +90,6 @@ Here are some screenshots of the project:
 ![Screenshot 3](screenshots/editor_onboarding.png)
 ## User Registration
 ![Screenshot 4](screenshots/registration.png)
+
+
 
