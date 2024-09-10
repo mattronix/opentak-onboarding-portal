@@ -24,16 +24,16 @@ copy env.dist to .env and replace with real info.
 ```
 cp env.dist .env
 docker compose build
+docker compose up -d
 docker compose exec web flask db upgrade
-docker compose -d 
 ```
 
 # upgrade
 ```
 git pull
 docker compose build
+docker compose up -d
 docker compose exec web flask db upgrade
-docker compose -d 
 ```
 
 # DEV 
