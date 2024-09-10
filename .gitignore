@@ -9,3 +9,4 @@ app/static/img/custom/*.png
 app/static/img/custom/*.jpeg
 app/static/img/custom/*.jpeg
 app/static/img/custom/*.webp
+docker-compose.yml
