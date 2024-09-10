@@ -23,6 +23,7 @@ git clone
 copy env.dist to .env and replace with real info. 
 ```
 cp env.dist .env
+cp docker-compose.yml.dist docker-compose.yml
 docker compose build
 docker compose up -d
 docker compose exec web flask db upgrade
