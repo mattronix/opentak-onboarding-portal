@@ -17,6 +17,7 @@ This project is an Opensource ATAK Portal that works with OpenTak Server to prov
 * Data Package Structure Viewer (really basic)
 * Uses OPENTAK Server for authentication
 * Admins in Opentak are Admin's in Portal
+* TAK Update Server Generator/Manager
 
 # Setup
 git clone
@@ -24,6 +25,7 @@ copy env.dist to .env and replace with real info.
 ```
 cp env.dist .env
 cp docker-compose.yml.dist docker-compose.yml
+# If you want to expose a tak update server via OTS and this container runs on the same host as OTS uncomment the volume line in docker-compose.yml 
 docker compose build
 docker compose up -d
 docker compose exec web flask db upgrade
