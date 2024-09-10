@@ -31,6 +31,7 @@ SECONDARY_COLOR = str(environ.get('SECONDARY_COLOR', 'orange'))
 ACCENT_COLOR = str(environ.get('ACCENT_COLOR', 'orange'))
 
 LOGO_PATH = str(environ.get('LOGO_PATH', '/static/img/logo.png'))
+BRAND_NAME = str(environ.get('BRAND_NAME', 'My OTS Portal'))
 
 import secrets
 
