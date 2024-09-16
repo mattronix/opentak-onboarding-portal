@@ -39,7 +39,9 @@
                             </div>
                             {{ form.submit(class_="mt-5 form-control btn-custom-primary") }}
                         </form>
+                        {% if config['MAIL_ENABLED'] and config['FORGOT_PASSWORD_ENABLED'] %}
                         <a href="{{ url_for('routes.forgot_password') }}" class="mt-1 form-control btn btn-custom-primary">Forget Password?</a>
+                        {% endif %}
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, BRAND_NAME, GENERATE_ITAK_QR_CODE, ITAK_HOSTNAME
+from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, db
@@ -271,6 +271,7 @@ def branding_view():
 @routes.route('/changepassword', methods=['GET', 'POST'])
 @login_required
 def change_password():  
+    
     user = UserModel.get_user_by_username(session['username'])
     form = ResetPasswordForm()
     
@@ -288,6 +289,14 @@ def change_password():
 @register_breadcrumb(routes, '.Forgot Password', 'Forgot Password')
 @routes.route('/forgotpassword', methods=['GET', 'POST'])
 def forgot_password():  
+
+
+    if not MAIL_ENABLED:
+        return render_template('restricted.html', error="Mail is disabled.")
+    
+    if not FORGOT_PASSWORD_ENABLED:
+        return render_template('restricted.html', error="Forgot Password is disabled.")
+    
     form = ResetPasswordRequestForm()
     if session.get('username'):
         return redirect(url_for('routes.home'))
@@ -316,7 +325,8 @@ def reset_password(token):
     reset_password = decoded_token.get("reset_password")
     email = decoded_token.get("email")
 
-
+    if FORGOT_PASSWORD_ENABLED is False or MAIL_ENABLED is False:
+        return render_template('restricted.html', error="Forgot Password or Mail is disabled.")
     
     if not reset_password:
         return render_template('restricted.html', error="Invalid Token")

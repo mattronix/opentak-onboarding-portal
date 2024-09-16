@@ -1,8 +1,8 @@
 from os import environ
 from dotenv import load_dotenv
 from distutils.util import strtobool
-import random
 from urllib.parse import urlparse
+import secrets
 
 load_dotenv()
 
@@ -36,6 +36,6 @@ ACCENT_COLOR = str(environ.get('ACCENT_COLOR', 'orange'))
 LOGO_PATH = str(environ.get('LOGO_PATH', '/static/img/logo.png'))
 BRAND_NAME = str(environ.get('BRAND_NAME', 'My OTS Portal'))
 
-import secrets
+FORGOT_PASSWORD_ENABLED = strtobool(environ.get('FORGOT_PASSWORD_ENABLED', 'True'))
 
 JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
