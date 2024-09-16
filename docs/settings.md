@@ -11,6 +11,7 @@ OTS_URL: Open Tak Server url must be in format of http(s)://tak.domain.tld
 
 DEBUG: Show more detailed errors
 
+MAIL_ENABLED: Disable mail in App
 MAIL_SERVER: Hostname of the Mailserver
 MAIL_PORT: Port to use for E-Mail
 MAIL_USERNAME: Username for E-Mail
