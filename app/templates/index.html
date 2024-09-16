@@ -6,7 +6,7 @@
     <section class="features-boxed primary-color" style="background: #e9ecef;">
         <div class="container">
             <h1 style="margin-top: 20px;"><strong>Welcome {{user.username}}</strong></h1>
-            <h4>{{BRAND_NAME}}</h4>
+            <h4>{{config['BRAND_NAME']}}</h4>
         </div>
             
         <div class="mt-5 container">
@@ -120,9 +120,9 @@
                                     <a href="{{OTS_URL}}/api/truststore">Download</a>
                                 </div>
 
-                                {% if GENERATE_ITAK_QR_CODE %}
+                                {% if config['GENERATE_ITAK_QR_CODE'] %}
                                 <div class="col-sm-4 text-center mb-3">
-                                    <img style="width: 100%;" src="{{ qrcode(BRAND_NAME ~ ',' ~ ITAK_HOSTNAME ~ ',8089,SSL', error_correction='H', icon_img='img/atak.png') }}">
+                                    <img style="width: 100%;" src="{{ qrcode(config['BRAND_NAME'] ~ ',' ~ config['ITAK_HOSTNAME'] ~ ',8089,SSL', error_correction='H', icon_img='img/atak.png') }}">
                                     Scan this QR code in ITAK
                                 </div>  
                                 {% endif %}

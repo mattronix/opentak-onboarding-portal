@@ -34,7 +34,7 @@ def home():
     private_meshtastic_configs = MeshtasticModel.query.filter(MeshtasticModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
     meshtastic_configs = list(set(public_meshtastic_configs + private_meshtastic_configs))
     help_link = HELP_LINK
-    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs, BRAND_NAME=BRAND_NAME, GENERATE_ITAK_QR_CODE=GENERATE_ITAK_QR_CODE, ITAK_HOSTNAME=ITAK_HOSTNAME)
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs)
 
     
 @routes.route('/logout')
@@ -81,14 +81,14 @@ def login():
                 
         except Exception as e:
             print(f"Error: {e}")
-            return render_template('login.html', error="Invalid username or password", form=form, LOGO_PATH=LOGO_PATH)
+            return render_template('login.html', error="Invalid username or password", form=form)
 
 
         # Redirect to the home page if authentication is successful
         return redirect(url_for('routes.home'))
 
     # Render the login page template for GET requests
-    return render_template('login.html', form=form, LOGO_PATH=LOGO_PATH)
+    return render_template('login.html', form=form)
 
 
 @register_breadcrumb(routes, '.Register', 'Register')
