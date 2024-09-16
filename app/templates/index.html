@@ -122,7 +122,7 @@
 
                                 {% if GENERATE_ITAK_QR_CODE %}
                                 <div class="col-sm-4 text-center mb-3">
-                                    <img style="width: 100%;" src="{{ qrcode(BRAND_NAME ~ ',' ~ OTS_HOSTNAME ~ ',8089,SSL', error_correction='H', icon_img='img/atak.png') }}">
+                                    <img style="width: 100%;" src="{{ qrcode(BRAND_NAME ~ ',' ~ ITAK_HOSTNAME ~ ',8089,SSL', error_correction='H', icon_img='img/atak.png') }}">
                                     Scan this QR code in ITAK
                                 </div>  
                                 {% endif %}

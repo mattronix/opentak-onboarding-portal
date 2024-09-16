@@ -28,3 +28,4 @@ HELP_EMAIL: Shows who to contact at bottem of email communications.
 
 
 GENERATE_ITAK_QR_CODE: Generate QR Code for ITAK
+ITAK_HOSTNAME: set the hostname if the OTS_URL is not the correct hostname, this defaults to hostname from OTS_URL
