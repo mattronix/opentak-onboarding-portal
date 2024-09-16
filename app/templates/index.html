@@ -99,26 +99,33 @@
                     <div class="card mb-3">
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-sm-4 text-center">
+                                <div class="col-sm-4 text-center mb-3">
                                         <img style="width: 100px; height: 100px;" src="/static/img/meshtastic.png">
                                         <h6 class="mb-0">Get Meshtastic</h6>
                                         <a href="https://apps.apple.com/in/app/meshtastic/id1586432531">iPhone</a>/<a href="https://play.google.com/store/apps/details?id=com.geeksville.mesh&hl=en">Andriod</a>               
                                 </div>
-                                <div class="col-sm-4 text-center">
+                                <div class="col-sm-4 text-center mb-3">
                                         <img style="width: 100px; height: 100px;" src="/static/img/atak.png">
                                         <h6 class="mb-0">Get ATAK</h6>
                                         <a href="https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en">Andriod</a>
                                 </div>
-                                <div class="col-sm-4 text-center">
+                                <div class="col-sm-4 text-center mb-3">
                                     <img style="width: 100px; height: 100px;" src="/static/img/itak.jpg">
                                     <h6 class="mb-0">Get ITAK</h6>
                                     <a href="https://apps.apple.com/app/itak/id1561656396">iPhone</a>
                                 </div>
-                                <div class="col-sm-4 text-center">
+                                <div class="col-sm-4 text-center mb-3">
                                     <img style="width: 100px; height: 100px;" src="/static/img/certificate.png">
                                     <h6 class="mb-0">TrustStore</h6>
                                     <a href="{{OTS_URL}}/api/truststore">Downlaod</a>
                                 </div>
+
+                                {% if GENERATE_ITAK_QR_CODE %}
+                                <div class="col-sm-4 text-center mb-3">
+                                    <img style="width: 100%;" src="{{ qrcode(BRAND_NAME ~ ',' ~ OTS_HOSTNAME ~ ',8089,SSL', error_correction='H', icon_img='img/atak.png') }}">
+                                    Scan this QR code in ITAK
+                                </div>  
+                                {% endif %}
                             </div>
 
 

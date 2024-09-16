@@ -25,3 +25,6 @@ BRAND_NAME: Sets the name of the portal used on headers and emails.
 LOGO_PATH: Sets a logo path, if you want to add your own upload it to /app/static/img/custom/logo.ext and set the path to "/static/img/custom/logo.ext" we advise PNG formated.
 
 HELP_EMAIL: Shows who to contact at bottem of email communications.
+
+
+GENERATE_ITAK_QR_CODE: Generate QR Code for ITAK

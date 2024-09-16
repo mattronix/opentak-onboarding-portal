@@ -2,6 +2,8 @@ from os import environ
 from dotenv import load_dotenv
 from distutils.util import strtobool
 import random
+from urllib.parse import urlparse
+
 load_dotenv()
 
 SECRET_KEY=str(environ.get('SECRET_KEY'))
@@ -9,10 +11,10 @@ SECRET_KEY=str(environ.get('SECRET_KEY'))
 OTS_USERNAME=str(environ.get('OTS_USERNAME'))
 OTS_PASSWORD=str(environ.get('OTS_PASSWORD'))
 OTS_URL=str(environ.get('OTS_URL'))
+OTS_HOSTNAME=urlparse(OTS_URL).hostname
 DEBUG=strtobool(environ.get('DEBUG'))
 SQLALCHEMY_DATABASE_URI=str(environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///db.sqlite'))
-
-
+GENERATE_ITAK_QR_CODE=strtobool(environ.get('GENERATE_ITAK_QR_CODE', 'True'))
 MAIL_SERVER=str(environ.get('MAIL_SERVER'))
 MAIL_PORT=int(environ.get('MAIL_PORT'))
 MAIL_USE_TLS=strtobool(environ.get('MAIL_USE_TLS'))

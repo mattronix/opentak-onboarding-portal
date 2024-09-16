@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, BRAND_NAME
+from app.settings import OTS_URL, OTS_HOSTNAME, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, BRAND_NAME, GENERATE_ITAK_QR_CODE
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, db
@@ -34,7 +34,7 @@ def home():
     private_meshtastic_configs = MeshtasticModel.query.filter(MeshtasticModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
     meshtastic_configs = list(set(public_meshtastic_configs + private_meshtastic_configs))
     help_link = HELP_LINK
-    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs, BRAND_NAME=BRAND_NAME)
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs, BRAND_NAME=BRAND_NAME, GENERATE_ITAK_QR_CODE=GENERATE_ITAK_QR_CODE, OTS_HOSTNAME=OTS_HOSTNAME)
 
     
 @routes.route('/logout')
