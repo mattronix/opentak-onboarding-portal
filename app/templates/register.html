@@ -19,6 +19,9 @@
             <div class="card">
                  <h2 class="mt-5 text-center">Register</h2>
                     <div class="card-body">
+                        <div class="alert alert-warning">
+                            Enter username as lowercase!
+                         </div>
                         <form action="{{url}}" method="post" novalidate>
                             {{ form.csrf_token }}
                             {{ form.hidden_tag() }}
