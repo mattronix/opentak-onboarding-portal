@@ -15,6 +15,8 @@ class OTSClient:
     _users = _apibase + "/users"
     _user_add = _user + "/add"
     _user_delete = _user + "/delete"
+    _user_activate = _user + "/activate"
+    _user_deactivate = _user + "/deactivate"
     _eud = _apibase + "/eud"
     _jobs = _apibase + "/scheduler/jobs"
     _points = _apibase + "/point"
@@ -207,5 +209,13 @@ class OTSClient:
     def reset_user_password (self, username, password):
         body = {'username': username, 'new_password': password}
         return self.request_handler(method="POST", endpoint=self._reset, body=body)
+
+    def activate_user(self, username):
+        body = {'username': username}
+        return self.request_handler(method="POST", endpoint=self._user_activate, body=body)
+    
+    def deactivate_user(self, username):
+        body = {'username': username}
+        return self.request_handler(method="POST", endpoint=self._user_deactivate, body=body)
 
 otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
