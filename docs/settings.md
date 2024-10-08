@@ -9,9 +9,9 @@ OTS_USERNAME: Dedicated username of the Administrative Open Tak Server User.
 OTS_PASSWORD: Password for the Open Tak Server Username
 OTS_URL: Open Tak Server url must be in format of http(s)://tak.domain.tld
 
-DEBUG: Show more detailed errors
+DEBUG: (True/False) Show more detailed errors
 
-MAIL_ENABLED: Disable mail in App
+MAIL_ENABLED: (True/False) Disable mail in App
 MAIL_SERVER: Hostname of the Mailserver
 MAIL_PORT: Port to use for E-Mail
 MAIL_USERNAME: Username for E-Mail
@@ -28,7 +28,8 @@ LOGO_PATH: Sets a logo path, if you want to add your own upload it to /app/stati
 HELP_EMAIL: Shows who to contact at bottem of email communications.
 
 
-GENERATE_ITAK_QR_CODE: Generate QR Code for ITAK
+GENERATE_ITAK_QR_CODE: (True/False) Generate QR Code for ITAK 
 ITAK_HOSTNAME: set the hostname if the OTS_URL is not the correct hostname, this defaults to hostname from OTS_URL
 
 FORGOT_PASSWORD_ENABLED: Controls if forgot password is allowed.
+ZEROTIER_ICON: (True/False) Shows a Zerotier icon on home page.

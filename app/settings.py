@@ -39,3 +39,5 @@ BRAND_NAME = str(environ.get('BRAND_NAME', 'My OTS Portal'))
 FORGOT_PASSWORD_ENABLED = strtobool(environ.get('FORGOT_PASSWORD_ENABLED', 'True'))
 
 JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
+
+ZEROTIER_ICON = strtobool(environ.get('ZEROTIER_ICON', 'False'))
