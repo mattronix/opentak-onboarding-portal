@@ -155,7 +155,7 @@ def register(onboardingCode):
         if MAIL_ENABLED:
             if onboardingCodeModel.onboardContact is not None and user.email is not None and user.callsign is not None:    
                 onboardContact = UserModel.get_user_by_id(onboardingCodeModel.onboardContact)
-                send_html_email(subject="A new Registration KGG",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {user.callsign} with email {user.email} if this is not who you expect please let us know.",recipients=[onboardContact.email])
+                send_html_email(subject="A new Registration",title="New Registration using your link.",message=f"Using your Signup Link a new registration has been made by callsign: {user.callsign} with email {user.email} if this is not who you expect please let us know.",recipients=[onboardContact.email])
                 
 
     
