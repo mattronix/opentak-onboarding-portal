@@ -5,8 +5,8 @@ requests==2.32.3
 APScheduler==3.10.4
 email-validator==1.1.2
 Flask-APScheduler==1.12.4
-Flask-SQLAlchemy=3.0.3
-Flask-Migrate=4.0.7
+Flask-SQLAlchemy==3.0.3
+Flask-Migrate==4.0.7
 Flask-Breadcrumbs=0.5.1
 Flask-Mail==0.10.0
 Flask-JWT-Extended==4.6.0
