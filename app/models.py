@@ -1,20 +1,12 @@
-from sqlalchemy import Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Integer, String, Boolean, Table, Column, ForeignKey, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
 from flask_migrate import Migrate
-from sqlalchemy import Table, Column, ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import Integer, String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
 import datetime
-from sqlalchemy import Column, Integer, DateTime
 
 class Base(DeclarativeBase):
-  pass
+    pass
 
 db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
@@ -564,4 +556,4 @@ class PackageModel(db.Model):
             return {"message": "Tak profile deleted successfully"}
         else:
             return {"error": "object.not.found"}
-        
+
