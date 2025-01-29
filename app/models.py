@@ -1,27 +1,24 @@
-from sqlalchemy import Integer, String, Boolean, Table, Column, ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
+from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declarative_base
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
-import datetime
+# import datetime
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
+db = SQLAlchemy()
 migrate = Migrate()
 
 # Define the association table for the many-to-many relationship
 role_onboardingcode_association = Table(
     'role_onboardingcode_association',
-    Base.metadata,
+    db.metadata,
     Column('role_id', Integer, ForeignKey('user_roles.id')),
     Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
 )
 
 user_onboardingcode_association = Table(
     'user_onboardingcode_association',
-    Base.metadata,
+    db.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('onboardingcode_id', Integer, ForeignKey('onboardingcodes.id'))
 )
@@ -30,14 +27,14 @@ user_onboardingcode_association = Table(
 # Define the association table for the many-to-many relationship
 user_takprofile_association = Table(
     'user_takprofile_association',
-    Base.metadata,
+    db.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
 )
 
 role_takprofile_association = Table(
     'role_takprofile_association',
-    Base.metadata,
+    db.metadata,
     Column('role_id', Integer, ForeignKey('user_roles.id')),
     Column('takprofile_id', Integer, ForeignKey('takprofiles.id'))
 )
@@ -46,7 +43,7 @@ role_takprofile_association = Table(
 # Define the association table for the many-to-many relationship
 user_role_association = Table(
     'user_role_association',
-    Base.metadata,
+    db.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('role_id', Integer, ForeignKey('user_roles.id'))
 )
@@ -55,14 +52,14 @@ user_role_association = Table(
 # Define the association table for the many-to-many relationship
 user_meshtastic_association = Table(
     'user_meshtastic_association',
-    Base.metadata,
+    db.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('meshtastic_id', Integer, ForeignKey('meshtastic.id'))
 )
 
 role_meshtastic_association = Table(
     'role_meshtastic_association',
-    Base.metadata,
+    db.metadata,
     Column('role_id', Integer, ForeignKey('user_roles.id')),
     Column('meshtastic_id', Integer, ForeignKey('meshtastic.id'))
 )
@@ -451,7 +448,7 @@ class MeshtasticModel(db.Model):
     )
     
     @staticmethod
-    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, is_public=None):
+    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None):
         try:
             meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users)
             db.session.add(meshtastic)
