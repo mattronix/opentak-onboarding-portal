@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED
+from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED, ENABLE_REPO
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, db
@@ -16,7 +16,7 @@ import shutil
 import xml.etree.ElementTree as ET
 from flask_jwt_extended import create_access_token, decode_token
 import datetime
-from flask import make_response, Response
+
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 default_breadcrumb_root(routes, '.',)
@@ -164,6 +164,7 @@ def register(onboardingCode):
 
     # Render the login page template for GET requests
     return render_template('register.html', form=form, url=f"/register/{onboardingCode}")
+
 
 
 

@@ -33,3 +33,5 @@ ITAK_HOSTNAME: set the hostname if the OTS_URL is not the correct hostname, this
 
 FORGOT_PASSWORD_ENABLED: Controls if forgot password is allowed.
 ZEROTIER_ICON: (True/False) Shows a Zerotier icon on home page.
+
+ENABLE_REPO: If set to True will Enable the Update Server in Tak Portal. (Defaults to Disabled)
