@@ -1,5 +1,5 @@
-from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship, declarative_base
+from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime, String, CheckConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
@@ -551,6 +551,72 @@ class PackageModel(db.Model):
             db.session.delete(object)
             db.session.commit()
             return {"message": "Tak profile deleted successfully"}
+        else:
+            return {"error": "object.not.found"}
+
+
+
+
+
+class RadioModel(db.Model):
+    __tablename__ = "radios"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    platform: Mapped[str] = mapped_column()
+    radioType = Column(String, CheckConstraint("radioType IN ('meshtastic', 'other')"), nullable=False, default="meshtastic")
+    description: Mapped[str] = mapped_column(nullable=True)
+    softwareVersion: Mapped[str] = mapped_column(nullable=True)
+    model: Mapped[int] = mapped_column(nullable=True)
+    vendor: Mapped[int] = mapped_column(nullable=True)
+    shortName: Mapped[str] = mapped_column(nullable=True)
+    longName: Mapped[str] = mapped_column(nullable=True)
+    assignedTo = Column(Integer, ForeignKey('users.id'), nullable=True)
+
+
+    @staticmethod
+    def create(name, platform, radio_type, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None):
+        try:
+            object = RadioModel(name=name, platform=platform, radioType=radio_type, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner)
+            db.session.add(object)
+            db.session.commit()
+            return object
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return {"error": "tak_profile.exists"}
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return {"error": "tak_profile.exists"}
+
+    @staticmethod
+    def get_by_id(id):
+        return RadioModel.query.get(id)
+    
+    @staticmethod
+    def get_by_name(name):
+        return RadioModel.query.filter_by(name=name).first()
+    
+    @staticmethod
+    def get_all():
+        return RadioModel.query.all()
+    
+    @staticmethod
+    def update(object):
+        try:
+            db.session.merge(object)
+            db.session.commit()
+            return {"message": "Updated successfully"}
+        except:
+            return {"error": "object.not.found"}
+    
+    @staticmethod
+    def delete_by_id(id):
+        object = RadioModel.get_by_id(id)
+        if object:
+            db.session.delete(object)
+            db.session.commit()
+            return {"message": "Radio deleted successfully"}
         else:
             return {"error": "object.not.found"}
 

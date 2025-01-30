@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Radios{% endblock %}
+
+
+{% block content %}
+    <section class="features-boxed primary-color" style="background: #e9ecef;">
+        <div class="container">
+            <h1 style="margin-top: 20px;"><strong>Radios</strong></h1>
+            <h4>{{config['BRAND_NAME']}}</h4>
+        </div>
+            
+        <div class="mt-3 container">
+            <div class="row">
+                <div class="mt-2 col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Radios</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for radio in radios %}
+                                    <tr>
+                                        <td>{{ radio.name }}</td>
+                                        <td>{{ radio.description }}</td>
+                                        <td> 
+                                            <a href="radios/edit/{{role.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
+                                            <a href="radios/delete/{{role.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                        </td>
+                                      
+                                    </tr>  
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <a href="radios/add" class="btn btn-sm btn-custom-primary">CREATE NEW Radio</a>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+
+    
+
+
+    </section>
+
+{% endblock %}

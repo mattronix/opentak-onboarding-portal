@@ -1,6 +1,12 @@
 from flask import Flask
 from app.views import routes
 from app.admin_views import admin_routes
+from app.admin_views_onboardingcodes import admin_routes_onboarding
+from app.admin_views_users import admin_routes_users
+from app.admin_views_takprofiles import admin_routes_takprofiles
+from app.admin_views_roles import admin_routes_roles
+from app.admin_views_meshtastic import admin_routes_meshtastic
+from app.admin_views_packages import admin_routes_packages
 from flask import jsonify
 from app.models import db, migrate
 from app.jina_filters import jina2_filters_blueprint
@@ -9,7 +15,6 @@ from flask_menu import Menu
 from app.extensions import mail, jwt_manager
 from app.extensions import scheduler
 import logging 
-from app.jobs import remove_expired_accounts
 from app.extensions import qrcode
 
 def create_app():
@@ -31,6 +36,13 @@ def create_app():
     jwt_manager.init_app(app)
     app.register_blueprint(routes)
     app.register_blueprint(admin_routes)
+    app.register_blueprint(admin_routes_onboarding)
+    app.register_blueprint(admin_routes_users)
+    app.register_blueprint(admin_routes_takprofiles)
+    app.register_blueprint(admin_routes_roles)
+    app.register_blueprint(admin_routes_meshtastic)
+    if app.config['ENABLE_REPO']:
+        app.register_blueprint(admin_routes_packages)
     app.register_blueprint(jina2_filters_blueprint)
     mail.init_app(app)
     with app.app_context():

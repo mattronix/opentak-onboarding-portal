@@ -151,3 +151,12 @@ class EditPackageForm(FlaskForm):
     apkSize = IntegerField('APK Size', validators=[Optional()], default=-1)
     fullPackageName = StringField('Full Package Name', validators=[Optional()])
     submit = SubmitField('Submit')
+
+
+
+class AddRadioForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[Optional()])
+    url = StringField('URL', validators=[DataRequired(), URL()])
+    isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
+    submit = SubmitField('Submit')
