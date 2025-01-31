@@ -7,6 +7,7 @@ from app.admin_views_takprofiles import admin_routes_takprofiles
 from app.admin_views_roles import admin_routes_roles
 from app.admin_views_meshtastic import admin_routes_meshtastic
 from app.admin_views_packages import admin_routes_packages
+from app.admin_views_radios import admin_routes_radios
 from flask import jsonify
 from app.models import db, migrate
 from app.jina_filters import jina2_filters_blueprint
@@ -41,6 +42,7 @@ def create_app():
     app.register_blueprint(admin_routes_takprofiles)
     app.register_blueprint(admin_routes_roles)
     app.register_blueprint(admin_routes_meshtastic)
+    app.register_blueprint(admin_routes_radios)
     if app.config['ENABLE_REPO']:
         app.register_blueprint(admin_routes_packages)
     app.register_blueprint(jina2_filters_blueprint)

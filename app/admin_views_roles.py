@@ -64,7 +64,7 @@ def admin_roles_delete(id):
         if form.areyousure.data != "OK":
             return render_template('form.html', role=role, form=form, error="You must type 'OK' to delete this record", title="Delete Role", formurl=url_for("admin_routes_roles.admin_roles_delete",id=role.id))
         
-        UserRoleModel.delete_role_by_id(role.id)
+        UserRoleModel.delete_by_id(role.id)
         return redirect(url_for('admin_routes_roles.admin_roles_list'))
     return render_template('form.html', role=role, form=form, title="Delete Role", formurl=url_for("admin_routes_roles.admin_roles_delete",id=role.id))
 
@@ -83,7 +83,7 @@ def admin_roles_edit(id):
         role.name = form.name.data
         role.description = form.description.data
         
-        UserRoleModel.update_role(role)
+        UserRoleModel.update(role)
         return redirect(url_for('admin_routes_roles.admin_roles_list'))
     
     return render_template('form.html', role=role, form=form, title="Edit Roles", formurl=url_for("admin_routes_roles.admin_roles_edit",id=role.id))

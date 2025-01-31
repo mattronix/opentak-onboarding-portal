@@ -124,7 +124,7 @@ class UserRoleModel(db.Model):
         return UserRoleModel.query.all()
 
     @staticmethod
-    def update_role(role):
+    def update(role):
         try:
             db.session.merge(role)
             db.session.commit()
@@ -133,7 +133,7 @@ class UserRoleModel(db.Model):
             return {"error": "role.not.exist"}
 
     @staticmethod
-    def delete_role_by_id(role_id):
+    def delete_by_id(role_id):
         role = UserRoleModel.get_by_id(role_id)
         if role:
             db.session.delete(role)
@@ -571,12 +571,13 @@ class RadioModel(db.Model):
     shortName: Mapped[str] = mapped_column(nullable=True)
     longName: Mapped[str] = mapped_column(nullable=True)
     assignedTo = Column(Integer, ForeignKey('users.id'), nullable=True)
+    owner = Column(Integer, ForeignKey('users.id'), nullable=True)
 
 
     @staticmethod
-    def create(name, platform, radio_type, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None):
+    def create(name, platform, radio_type, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None, assignedTo=None):
         try:
-            object = RadioModel(name=name, platform=platform, radioType=radio_type, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner)
+            object = RadioModel(name=name, platform=platform, radioType=radio_type, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner, assignedTo=assignedTo)
             db.session.add(object)
             db.session.commit()
             return object

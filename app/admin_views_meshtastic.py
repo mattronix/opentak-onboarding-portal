@@ -1,15 +1,10 @@
 from flask import render_template, Blueprint, request, session
 from flask import redirect, url_for
-from app.settings import UPDATES_UPLOAD_FOLDER, ENABLE_REPO
 from app.decorators import login_required, role_required
-from app.forms import DeleteForm, MeshtasticForm, AddPackageForm, EditPackageForm
-from app.models import UserModel, UserRoleModel, MeshtasticModel, PackageModel, RadioModel
+from app.forms import DeleteForm, MeshtasticForm
+from app.models import UserModel, UserRoleModel, MeshtasticModel
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
-import os
-import zipfile
 import ast
-import os
-import zipfile
 
 admin_routes_meshtastic = Blueprint('admin_routes_meshtastic', __name__, url_prefix='/admin')
 default_breadcrumb_root(admin_routes_meshtastic, '.',)
@@ -32,7 +27,7 @@ def admin_meshtastic(*args, **kwargs):
 @role_required(role='administrator')
 def home():  
     user = UserModel.get_user_by_username(session['username'])
-    return render_template('admin_index.html', user=user, ENABLE_REPO=ENABLE_REPO)
+    return render_template('admin_index.html', user=user)
 
 
 
