@@ -22,6 +22,9 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>Description</th>
+                                        <th>Radio Type</th>
+                                        <th>Assigned To</th>
+                                        <th>Owner</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -30,6 +33,9 @@
                                     <tr>
                                         <td>{{ radio.name }}</td>
                                         <td>{{ radio.description }}</td>
+                                        <td>{{ radio.radioType }}</td>
+                                        <td>{{resolveUserPropertyByID(radio.assignedTo)}}</td>
+                                        <td>{{resolveUserPropertyByID(radio.owner)}}</td>
                                         <td> 
                                             <a href="radios/edit/{{radio.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
                                             <a href="radios/delete/{{radio.id}}" class="btn btn-sm btn-danger">DELETE</a>

@@ -52,7 +52,7 @@ def admin_radios_add():
 
 
 
-@register_breadcrumb(admin_routes_radios, '.admin.radios.edit', 'Edit radios', dynamic_list_constructor=admin_radios)
+@register_breadcrumb(admin_routes_radios, '.admin.radios.edit', 'Edit Radios', dynamic_list_constructor=admin_radios)
 @admin_routes_radios.route('radios/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(role='administrator')
@@ -83,7 +83,7 @@ def admin_radios_edit(id):
         RadioModel.update(radio)
         return redirect(url_for('admin_routes_radios.admin_radios_list'))
     
-    return render_template('form.html', radio=radio, form=form, title="Edit radios", formurl=url_for("admin_routes_radios.admin_radios_edit",id=radio.id))
+    return render_template('form.html', radio=radio, form=form, title="Edit Radios", formurl=url_for("admin_routes_radios.admin_radios_edit",id=radio.id))
 
 
 @register_breadcrumb(admin_routes_radios, '.admin.radios.delete', 'Delete Role', dynamic_list_constructor=admin_radios)
