@@ -17,3 +17,12 @@ apt-get install sudo curl -y
 curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/refs/heads/main/ubuntu-installer.sh | sudo bash
 
 ```
+
+## Config 
+
+```
+cd /opt/opentak-onboarding-portal
+cp env.dist env
+nano env
+docker compose restart
+```
