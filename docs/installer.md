@@ -10,7 +10,7 @@ curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/re
 
 ```
 
-## Debian 
+## Ubuntu 
 
 ```
 apt-get install sudo curl -y
