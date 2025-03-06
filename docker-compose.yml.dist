@@ -13,3 +13,5 @@ services:
         env_file:
             .env
         command: ["gunicorn", "-w", "1", "-t", "50", "app:app", "-b", "0.0.0.0:5000"]
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
