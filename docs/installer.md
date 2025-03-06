@@ -19,9 +19,11 @@ curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/re
 ```
 
 ## Config 
+This section is needed to be done in order to get the portal to load. 
 
 ```
 cd /opt/opentak-onboarding-portal
+docker compose exec web flask db upgrade
 cp env.dist env
 nano env
 docker compose restart
