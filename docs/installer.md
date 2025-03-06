@@ -26,3 +26,9 @@ cp env.dist env
 nano env
 docker compose restart
 ```
+
+## Error?
+
+```
+docker compose logs -f
+```
