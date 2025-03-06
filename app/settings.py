@@ -11,6 +11,7 @@ OTS_USERNAME=str(environ.get('OTS_USERNAME'))
 OTS_PASSWORD=str(environ.get('OTS_PASSWORD'))
 OTS_URL=str(environ.get('OTS_URL'))
 OTS_HOSTNAME=urlparse(OTS_URL).hostname
+OTS_VERIFY_SSL=strtobool(environ.get('OTS_VERIFY_SSL', 'True'))
 DEBUG=strtobool(environ.get('DEBUG'))
 SQLALCHEMY_DATABASE_URI=str(environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///db.sqlite'))
 GENERATE_ITAK_QR_CODE=strtobool(environ.get('GENERATE_ITAK_QR_CODE', 'True'))

@@ -1,4 +1,4 @@
-from app.settings import OTS_USERNAME, OTS_PASSWORD, OTS_URL
+from app.settings import OTS_USERNAME, OTS_PASSWORD, OTS_URL, OTS_VERIFY_SSL
 import requests
 from .exceptions import AuthenticationError, AuthorizationError, BadRequestError, CSRFError
 
@@ -36,7 +36,7 @@ class OTSClient:
         try:
             url = self.base_url + endpoint
             self.headers["Referer"] = self.base_url+self._data_packages
-            response = self.session.request(method, url, json=body, headers=self.headers, params=params)
+            response = self.session.request(method, url, json=body, headers=self.headers, params=params, verify=OTS_VERIFY_SSL)
             if response_type == "json":    
 
                 try:
