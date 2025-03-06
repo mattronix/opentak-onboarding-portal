@@ -26,7 +26,7 @@ in the env make sure to change OTS_URL in most cases set it to http://127.0.0.1:
 cd /opt/opentak-onboarding-portal
 docker compose exec web flask db upgrade
 nano .env
-docker compose restart
+docker compose up -d
 ```
 
 ## Error?
