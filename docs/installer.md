@@ -21,7 +21,7 @@ curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/re
 ## Config 
 This section is needed to be done in order to get the portal to load. 
 
-in the env make sure to change OTS_URL in most cases set it to https://host.docker.internal if that does 
+in the env make sure to change OTS_URL in most cases set it to https://host.docker.internal Make sure to set OTS_USERNAME and OTS_PASSWORD to an account with admin access inside of OTS.
 ```
 cd /opt/opentak-onboarding-portal
 docker compose exec web flask db upgrade
