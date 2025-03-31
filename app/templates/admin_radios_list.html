@@ -22,7 +22,7 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>MAC</th>
-                                        <th>Radio Type</th>
+                                        <th>PublicKey</th>
                                         <th>Assigned To</th>
                                         <th>Owner</th>
                                         <th>Actions</th>
@@ -33,7 +33,7 @@
                                     <tr>
                                         <td>{{ radio.name }}</td>
                                         <td>{{ radio.mac }}</td>
-                                        <td>{{ radio.radioType }}</td>
+                                        <td>{{ radio.publicKey }}</td>
                                         <td>{{resolveUserPropertyByID(radio.assignedTo)}}</td>
                                         <td>{{resolveUserPropertyByID(radio.owner)}}</td>
                                         <td> 
