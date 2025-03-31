@@ -1,7 +1,8 @@
 from flask import session, redirect, url_for, render_template
 import functools
 from app.models import UserModel
-
+from flask import request, jsonify
+from app.settings import API_KEY
 def login_required(route):
     @functools.wraps(route)
     def route_wrapper(*args, **kwargs):
@@ -13,6 +14,18 @@ def login_required(route):
     return route_wrapper
 
 
+def api_login_required(route):
+    @functools.wraps(route)
+    def route_wrapper(*args, **kwargs):
+        api_key = request.headers.get("X-API-KEY")
+        if not api_key or api_key != API_KEY:
+            response = jsonify({"error": "Unauthorized"})
+            response.headers["Content-Type"] = "application/json"
+            return response, 401
+
+        return route(*args, **kwargs)
+
+    return route_wrapper
 
 def role_required(role):
     def decorator(route):

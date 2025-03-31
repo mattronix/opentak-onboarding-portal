@@ -26,7 +26,7 @@ default_breadcrumb_root(routes, '.',)
 @login_required
 def home():  
     user = UserModel.get_user_by_username(session['username'])
-    user_roles = [role.id for role in user.roles]
+    user_roles = [role.id for role in user.roles] if user and user.roles else []
     public_tak_profiles = TakProfileModel.query.filter_by(isPublic=True).all()
     private_tak_profiles = TakProfileModel.query.filter(TakProfileModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
     tak_profiles = list(set(public_tak_profiles + private_tak_profiles))

@@ -1,41 +1,62 @@
 from flask import Blueprint, request
 from flask_breadcrumbs import default_breadcrumb_root
-from app.models import MeshtasticModel  
-
+from app.models import RadioModel  
+from app.decorators import api_login_required
+import json
 api_routes = Blueprint('api_routes', __name__, url_prefix='/')
 
+
 @api_routes.route('/api/radio', methods=['POST'])
+@api_login_required
 
 def create_or_update_radio():
-    data = request.get_json()
+    data = request.get_json(force=True)
+    data = json.loads(data)
 
+    print(data)
     if not data:
         return {"error": "Invalid input"}, 400
 
-    radio_id = data.get('id')
-    name = data.get('name')
-    frequency = data.get('frequency')
-    description = data.get('description')
+    if not data['user'].get('id'):
+        return {"error": "Mac is required"}, 400
 
-    if not name or not frequency:
-        return {"error": "Name and frequency are required"}, 400
+
+
+
 
     try:
-        if radio_id:
+        if data['user'].get('id'):
             # Update existing radio
-            radio = MeshtasticModel.query.get(radio_id)
-            if not radio:
-                return {"error": "Radio not found"}, 404
+            radio = RadioModel.query.filter_by(mac=data['user'].get('id')).first()
 
-            radio.name = name
-            radio.frequency = frequency
-            radio.description = description
-            MeshtasticModel.update_radio(radio)
+            # Check if the radio exists
+            if not radio:
+                # Create a new radio if it doesn't exist
+
+                RadioModel.create(mac=data['user'].get('id'), 
+                                       name=data['user'].get('longName'),
+                                       shortName=data['user'].get('shortName'),
+                                       longName=data['user'].get('longName'),
+                                       publicKey=data['user'].get('publicKey'),
+                                       role=data['user'].get('role'),
+                                       model=data['user'].get('model'),
+                                       platform="LORA")
+                
+                return {"message": "Radio created successfully"}, 201
+                
+            # Update the radio details
+            radio.mac = data['user'].get('id')
+            radio.name = data['user'].get('longName')
+            radio.short_name = data['user'].get('shortName')
+            radio.long_name = data['user'].get('longName')
+            radio.public_key = data['user'].get('publicKey')
+            radio.role = data['user'].get('role')
+            radio.model = data['user'].get('model')
+            radio.platform = "LORA"
+
+
+            RadioModel.update(radio)
             return {"message": "Radio updated successfully"}, 200
-        else:
-            # Create new radio
-            new_radio = MeshtasticModel(name=name, frequency=frequency, description=description)
-            MeshtasticModel.add_radio(new_radio)
-            return {"message": "Radio created successfully"}, 201
+
     except Exception as e:
         return {"error": str(e)}, 500

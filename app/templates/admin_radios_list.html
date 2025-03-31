@@ -21,7 +21,7 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th>Description</th>
+                                        <th>MAC</th>
                                         <th>Radio Type</th>
                                         <th>Assigned To</th>
                                         <th>Owner</th>
@@ -32,7 +32,7 @@
                                     {% for radio in radios %}
                                     <tr>
                                         <td>{{ radio.name }}</td>
-                                        <td>{{ radio.description }}</td>
+                                        <td>{{ radio.mac }}</td>
                                         <td>{{ radio.radioType }}</td>
                                         <td>{{resolveUserPropertyByID(radio.assignedTo)}}</td>
                                         <td>{{resolveUserPropertyByID(radio.owner)}}</td>

@@ -563,7 +563,7 @@ class RadioModel(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
     platform: Mapped[str] = mapped_column()
-    radioType = Column(String, CheckConstraint("radioType IN ('meshtastic', 'other')"), nullable=False, default="meshtastic")
+    radioType = Column(String, CheckConstraint("radioType IN ('meshtastic', 'other')", name="check_radio_type"), nullable=False, default="meshtastic")
     description: Mapped[str] = mapped_column(nullable=True)
     softwareVersion: Mapped[str] = mapped_column(nullable=True)
     model: Mapped[int] = mapped_column(nullable=True)
@@ -572,13 +572,14 @@ class RadioModel(db.Model):
     longName: Mapped[str] = mapped_column(nullable=True)
     assignedTo = Column(Integer, ForeignKey('users.id'), nullable=True)
     owner = Column(Integer, ForeignKey('users.id'), nullable=True)
-    mac: Mapped[str] = mapped_column(nullable=True)
-
+    mac: Mapped[str] = mapped_column(unique=True, nullable=True)
+    role: Mapped[str] = mapped_column(nullable=True)
+    publicKey: Mapped[str] = mapped_column(nullable=True)
 
     @staticmethod
-    def create(name, platform, radio_type, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None, assignedTo=None):
+    def create(mac, name, platform, radioType=None, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None, assignedTo=None, role=None, publicKey=None):
         try:
-            object = RadioModel(name=name, platform=platform, radioType=radio_type, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner, assignedTo=assignedTo)
+            object = RadioModel(mac=mac, name=name, platform=platform, radioType=radioType, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner, assignedTo=assignedTo, role=role, publicKey=publicKey)
             db.session.add(object)
             db.session.commit()
             return object

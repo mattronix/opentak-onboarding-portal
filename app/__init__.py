@@ -23,7 +23,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_pyfile('settings.py')
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, render_as_batch=False)
     menu = Menu()
     breadcrumbs = Breadcrumbs(init_menu=False)
     menu.init_app(app)
@@ -50,6 +50,7 @@ def create_app():
 
     if app.config['ENABLE_REPO']:
         app.register_blueprint(admin_routes_packages)
+        
     app.register_blueprint(jina2_filters_blueprint)
     mail.init_app(app)
     with app.app_context():

@@ -1,7 +1,10 @@
 import time
 from serial.tools import list_ports
 import meshtastic
+import requests
+import sys
 import meshtastic.serial_interface
+import json
 
 def get_serial_devices():
     """Get a list of connected serial devices."""
@@ -19,6 +22,15 @@ def get_meshtastic_info(port):
         return None
 
 def main():
+
+    # HTTP Request to add the device to the database
+    if len(sys.argv) < 3:
+        print("Usage: python inventory.py <API_ENDPOINT> <API_KEY>")
+        sys.exit(1)
+
+    api_endpoint = sys.argv[1]
+    api_key = sys.argv[2]
+
     print("Monitoring for new serial devices...")
     known_devices = get_serial_devices()
 
@@ -34,11 +46,24 @@ def main():
                 info = get_meshtastic_info(device)
                 if info:
                     print(f"Meshtastic info for {device}:")
-                    for key, value in info.items():
-                        print(f"{key} = {value}")
+                    print(info)
+                    headers = {
+                        "X-API-KEY": api_key,
+                        "Content-Type": "application/json"
+                    }
 
-                    print(f'macaddr = {info["user"]["macaddr"]}')
-        
+                    try:
+                        # Prepare the JSON payload
+                        info.pop('postion', None)  # Remove 'position' if it exists
+                        response = requests.post(api_endpoint, json=json.dumps(info), headers=headers)
+                        if response.status_code == 200:
+                            print(f"Successfully added device to the database: {response.json()}")
+                        else:
+                            print(f"Failed to add device to the database. Status code: {response.status_code}, Response: {response.text}")
+                    except requests.RequestException as e:
+                        print(f"Error making POST request: {e}")
+                    
+            
         known_devices = current_devices
         
 if __name__ == "__main__":

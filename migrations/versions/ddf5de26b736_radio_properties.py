@@ -1,8 +1,8 @@
-"""Radios
+"""radio properties
 
-Revision ID: 0c2701e15b02
+Revision ID: ddf5de26b736
 Revises: 230a3579eadd
-Create Date: 2025-01-31 10:25:48.429473
+Create Date: 2025-03-31 14:00:53.444748
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0c2701e15b02'
+revision = 'ddf5de26b736'
 down_revision = '230a3579eadd'
 branch_labels = None
 depends_on = None
@@ -31,9 +31,11 @@ def upgrade():
     sa.Column('longName', sa.String(), nullable=True),
     sa.Column('assignedTo', sa.Integer(), nullable=True),
     sa.Column('owner', sa.Integer(), nullable=True),
+    sa.Column('mac', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['assignedTo'], ['users.id'], ),
     sa.ForeignKeyConstraint(['owner'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('mac')
     )
     # ### end Alembic commands ###
 
