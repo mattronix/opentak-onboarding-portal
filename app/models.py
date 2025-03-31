@@ -572,6 +572,7 @@ class RadioModel(db.Model):
     longName: Mapped[str] = mapped_column(nullable=True)
     assignedTo = Column(Integer, ForeignKey('users.id'), nullable=True)
     owner = Column(Integer, ForeignKey('users.id'), nullable=True)
+    mac: Mapped[str] = mapped_column(nullable=True)
 
 
     @staticmethod

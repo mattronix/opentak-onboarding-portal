@@ -6,7 +6,7 @@ The script will install Docker and clone the OpenTAK Onboarding Portal repositor
 
 ```
 apt-get install sudo curl -y
-curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/refs/heads/main/debian-installer.sh | sudo bash
+curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/refs/heads/main/scripts/installers/debian-installer.sh | sudo bash
 
 ```
 
@@ -14,7 +14,7 @@ curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/re
 
 ```
 apt-get install sudo curl -y
-curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/refs/heads/main/ubuntu-installer.sh | sudo bash
+curl -s https://raw.githubusercontent.com/mattronix/opentak-onboarding-portal/refs/heads/main/scripts/installers/ubuntu-installer.sh | sudo bash
 
 ```
 

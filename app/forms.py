@@ -166,6 +166,7 @@ class AddRadioForm(FlaskForm):
     longName = StringField('Long Name', validators=[Optional()])
     assignedTo = SelectField('Assigned To', validators=[Optional()])
     owner = SelectField('Owner', validators=[Optional()])
+    mac = StringField('MAC Address', validators=[Optional()])
     submit = SubmitField('Submit')
 
 class EditRadioForm(FlaskForm):
@@ -180,5 +181,6 @@ class EditRadioForm(FlaskForm):
     longName = StringField('Long Name', validators=[Optional()])
     assignedTo = SelectField('Assigned To', validators=[Optional()])
     owner = SelectField('Owner', validators=[Optional()])
+    mac = StringField('MAC Address', validators=[Optional()])
     submit = SubmitField('Submit')
 
