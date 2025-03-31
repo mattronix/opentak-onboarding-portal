@@ -61,6 +61,8 @@ def main():
                         response = requests.post(api_endpoint, json=json.dumps(info), headers=headers)
                         if response.status_code == 201:
                             print(f"Successfully added device to the database: {response.json()}")
+                        if response.status_code == 200:
+                            print(f"Device updated in the database: {response.json()}")
                         else:
                             print(f"Failed to add device to the database. Status code: {response.status_code}, Response: {response.text}")
                     except requests.RequestException as e:
