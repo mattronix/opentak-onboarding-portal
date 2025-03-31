@@ -44,6 +44,10 @@ def main():
             for device in new_devices:
                 print(f"New serial device detected: {device}")
                 info = get_meshtastic_info(device)
+
+                if info['position']:
+                    print("Deleting Position Info")
+                    del info['position']
                 if info:
                     print(f"Meshtastic info for {device}:")
                     print(info)
@@ -54,7 +58,6 @@ def main():
 
                     try:
                         # Prepare the JSON payload
-                        info.pop('postion', None)  # Remove 'position' if it exists
                         response = requests.post(api_endpoint, json=json.dumps(info), headers=headers)
                         if response.status_code == 200:
                             print(f"Successfully added device to the database: {response.json()}")
