@@ -43,3 +43,4 @@ JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
 
 ZEROTIER_ICON = strtobool(environ.get('ZEROTIER_ICON', 'False'))
 ENABLE_REPO = strtobool(environ.get('ENABLE_REPO', 'False'))
+ENABLE_API = strtobool(environ.get('ENABLE_API', 'False'))

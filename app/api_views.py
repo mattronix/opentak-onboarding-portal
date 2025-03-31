@@ -2,10 +2,9 @@ from flask import Blueprint, request
 from flask_breadcrumbs import default_breadcrumb_root
 from app.models import MeshtasticModel  
 
-routes = Blueprint('routes', __name__, url_prefix='/')
-default_breadcrumb_root(routes, '.',)
+api_routes = Blueprint('api_routes', __name__, url_prefix='/')
 
-@routes.route('/api/radio', methods=['POST'])
+@api_routes.route('/api/radio', methods=['POST'])
 
 def create_or_update_radio():
     data = request.get_json()

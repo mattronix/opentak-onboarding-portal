@@ -43,6 +43,11 @@ def create_app():
     app.register_blueprint(admin_routes_roles)
     app.register_blueprint(admin_routes_meshtastic)
     app.register_blueprint(admin_routes_radios)
+
+    if app.config['ENABLE_API']:
+        from app.api_views import api_routes
+        app.register_blueprint(api_routes)
+
     if app.config['ENABLE_REPO']:
         app.register_blueprint(admin_routes_packages)
     app.register_blueprint(jina2_filters_blueprint)
