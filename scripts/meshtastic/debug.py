@@ -58,18 +58,15 @@ def main():
               # user = get_meshtastic_user(device)
                 meshtastic_node = create_meshtastic_interface(device)
 
-              #  if info['position']:
-              #      print("Deleting Position Info")
-              #      del info['position']
-              #  if info:
-              #      print(f"Meshtastic info for {device}:")
-              #      print(info)
-              #  if user:
-              #      print(f"Meshtastic user for {device}:")
-              #      print(user)
-
-                print(f"Meshtastic config for {device}:")
+                print(f"Meshtastic localConfig for {device}:")
                 print(meshtastic_node.localConfig)
+                print("-----------------------")
+                print(f"Meshtastic moduleConfig for {device}:")
+                print(meshtastic_node.moduleConfig)
+                print("-----------------------")
+                print(f"Meshtastic channels for {device}:")
+                print(meshtastic_node.channels)
+
         known_devices = current_devices
         
 if __name__ == "__main__":
