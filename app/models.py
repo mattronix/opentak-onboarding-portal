@@ -438,6 +438,7 @@ class MeshtasticModel(db.Model):
     isPublic: Mapped[bool] = mapped_column(nullable=True, default=True)
     yamlConfig: Mapped[str] = mapped_column(nullable=True)
     defaultRadioConfig: Mapped[bool] = mapped_column(nullable=True, default=False)
+    showOnHomepage: Mapped[bool] = mapped_column(nullable=True, default=True)
 
     @validates('defaultRadioConfig')
     def validate_default_radio_config(self, key, value):
@@ -460,9 +461,9 @@ class MeshtasticModel(db.Model):
     )
     
     @staticmethod
-    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, yamlConfig=None, defaultRadioConfig=None):
+    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, yamlConfig=None, defaultRadioConfig=None, showOnHomepage=None, isPublic=None):
         try:
-            meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users, yamlConfig=yamlConfig, defaultRadioConfig=defaultRadioConfig)
+            meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users, yamlConfig=yamlConfig, defaultRadioConfig=defaultRadioConfig, showOnHomepage=showOnHomepage, isPublic=isPublic)
             db.session.add(meshtastic)
             db.session.commit()
             return meshtastic

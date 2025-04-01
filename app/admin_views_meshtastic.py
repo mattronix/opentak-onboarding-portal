@@ -48,7 +48,7 @@ def admin_meshtastic_add():
     form.roles.choices = [(role.id, role.name) for role in UserRoleModel.get_all_roles()]
 
     if form.validate_on_submit():
-        meshtastic = MeshtasticModel.create_meshtastic(name=form.name.data, description=form.description.data, url=form.url.data, roles=[UserRoleModel.get_by_id(role_id) for role_id in form.roles.data])
+        meshtastic = MeshtasticModel.create_meshtastic(name=form.name.data, description=form.description.data, url=form.url.data, roles=[UserRoleModel.get_by_id(role_id) for role_id in form.roles.data], isPublic=ast.literal_eval(form.isPublic.data), yamlConfig=form.yamlConfig.data, defaultRadioConfig=ast.literal_eval(form.defaultRadioConfig.data), showOnHomepage=ast.literal_eval(form.showOnHomepage.data))
         try:
             e = object.get("error")
             return render_template('form.html', form=form, error=e, title="Add Meshtastic", formurl=url_for("admin_routes_meshtastic.admin_meshtastic_add"))
@@ -80,6 +80,7 @@ def admin_meshtastic_edit(id):
         object.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
         object.isPublic = ast.literal_eval(form.isPublic.data)
         object.yamlConfig = form.yamlConfig.data
+        object.showOnHomepage = ast.literal_eval(form.showOnHomepage.data)
         try:
             object.defaultRadioConfig =  ast.literal_eval(form.defaultRadioConfig.data)
         except:

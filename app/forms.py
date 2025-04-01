@@ -126,6 +126,7 @@ class MeshtasticForm(FlaskForm):
     isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
     yamlConfig = TextAreaField('YAML', validators=[Optional(), validate_yamlConfig], render_kw={"style": "height: 300px;"})
     defaultRadioConfig = SelectField('Default', choices=[('True', 'Yes'), ('False', 'No')], validators=[Optional()], default='False')
+    showOnHomepage = SelectField('Show on Homepage', choices=[('True', 'Yes'), ('False', 'No')], validators=[Optional()], default='False')
     submit = SubmitField('Submit')
 
 class AddPackageForm(FlaskForm):
