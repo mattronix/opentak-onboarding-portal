@@ -46,6 +46,7 @@ def create_or_update_radio():
             radio.shortName = data['info']['user'].get('shortName')
             radio.longName = data['info']['user'].get('longName')
             radio.publicKey = data['info']['user'].get('publicKey')
+            radio.privateKey = data['info']['user'].get('privateKey')
             radio.role = data['info']['user'].get('role')
             radio.model = data['info']['user'].get('model')
             radio.platform = "LORA"
