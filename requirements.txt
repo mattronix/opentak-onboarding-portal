@@ -13,3 +13,4 @@ Flask-JWT-Extended==4.6.0
 Flask-QRcode==3.2.0
 flask_menu==1.0.1
 Flask-WTF==1.2.1
+PyYAML==6.0.2
