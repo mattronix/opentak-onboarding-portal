@@ -1,11 +1,11 @@
 import time
 import meshtastic
-
 import meshtastic.serial_interface
 from meshtastic.util import (
     active_ports_on_supported_devices,
     detect_supported_devices,
     get_unique_vendor_ids,
+    pskToString,
 )
 
 def get_serial_devices():
@@ -28,8 +28,8 @@ def create_meshtastic_interface(port):
     """Get Meshtastic device info using the Meshtastic Python library."""
     try:
         interface = meshtastic.serial_interface.SerialInterface(port)
-        meshtastic_node = interface.getNode('^local')
-        return meshtastic_node
+        return interface
+    
     except Exception as e:
         print(f"Error accessing Meshtastic device on port {port}: {e}")
         return None
@@ -54,10 +54,8 @@ def main():
         if new_devices:
             for device in new_devices:
                 print(f"New serial device detected: {device}")
-               # info = get_meshtastic_info(device)
-              # user = get_meshtastic_user(device)
-                meshtastic_node = create_meshtastic_interface(device)
-
+                meshtastic_interface = create_meshtastic_interface(device)
+                meshtastic_node = meshtastic_interface.getNode('^local')
                 print(f"Meshtastic localConfig for {device}:")
                 print(meshtastic_node.localConfig)
                 print("-----------------------")
@@ -66,6 +64,13 @@ def main():
                 print("-----------------------")
                 print(f"Meshtastic channels for {device}:")
                 print(meshtastic_node.channels)
+                print("-----------------------")
+
+                print(meshtastic_node.localConfig.security)
+                print(f"Parsed PSK: {pskToString(meshtastic_node.localConfig.security.private_key)}")
+                
+                print(f"Parsed Channel PSK: {pskToString(meshtastic_node.channels[0].settings.psk)}")
+                meshtastic_interface.close()
 
         known_devices = current_devices
         

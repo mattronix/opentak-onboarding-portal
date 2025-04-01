@@ -26,16 +26,17 @@ def get_serial_devices():
     return ports
 
 
-def get_meshtastic_info(port):
+
+def create_meshtastic_interface(port):
     """Get Meshtastic device info using the Meshtastic Python library."""
     try:
         interface = meshtastic.serial_interface.SerialInterface(port)
-        device_info = interface.getMyNodeInfo()
-        interface.close()
-        return device_info
+        return interface
+    
     except Exception as e:
         print(f"Error accessing Meshtastic device on port {port}: {e}")
         return None
+
 
 def main():
     # HTTP Request to add the device to the database
@@ -63,7 +64,8 @@ def main():
         if new_devices:
             for device in new_devices:
                 print(f"New serial device detected: {device}")
-                info = get_meshtastic_info(device)
+                meshtastic_interface = create_meshtastic_interface(device)
+                info = meshtastic_interface.getMyNodeInfo()
 
                 if info['position']:
                     print("Deleting Position Info")
@@ -87,7 +89,8 @@ def main():
                     except requests.RequestException as e:
                         print(f"Error making POST request: {e}")
                     
-            
+                meshtastic_interface.close()
+                
         known_devices = current_devices
         
 if __name__ == "__main__":
