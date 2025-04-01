@@ -1,10 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField, DateTimeField, DateField
+from wtforms import StringField, PasswordField, IntegerField, SelectField, FileField, SelectMultipleField, DateTimeField, DateField, TextAreaField
 from wtforms.validators import DataRequired, Email, Optional, ValidationError, Length, EqualTo, URL
 from wtforms import SubmitField
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER, UPDATES_UPLOAD_FOLDER
 import re
 import os
+import yaml
 
 
 def check_username(form, field):
@@ -30,8 +31,14 @@ def check_file_exists(form, field):
 def check_package_exists(form, field):
     if field.data and os.path.exists(UPDATES_UPLOAD_FOLDER + '/' + field.data.filename):
         raise ValidationError('File conflicts with an existing package.')
- 
 
+def validate_yamlConfig(form, field):
+    try:
+        if field.data:
+            yaml.safe_load(field.data)
+    except yaml.YAMLError as e:
+        raise ValidationError(f'Invalid YAML: {e}')
+    
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -117,6 +124,8 @@ class MeshtasticForm(FlaskForm):
     description = StringField('Description', validators=[Optional()])
     url = StringField('URL', validators=[DataRequired(), URL()])
     isPublic = SelectField('Public', choices=[('True', 'Yes'), ('False', 'No')], validators=[DataRequired()])
+    yamlConfig = TextAreaField('YAML', validators=[Optional(), validate_yamlConfig], render_kw={"style": "height: 300px;"})
+    defaultRadioConfig = SelectField('Default', choices=[('True', 'Yes'), ('False', 'No')], validators=[Optional()], default='False')
     submit = SubmitField('Submit')
 
 class AddPackageForm(FlaskForm):

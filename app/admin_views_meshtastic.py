@@ -31,7 +31,7 @@ def home():
 
 
 
-@register_breadcrumb(admin_routes_meshtastic, '.admin.meshtastic', 'Mestastic')
+@register_breadcrumb(admin_routes_meshtastic, '.admin.meshtastic', 'Meshtastic')
 @admin_routes_meshtastic.route('meshtastic')
 @login_required
 @role_required(role='administrator')
@@ -79,7 +79,13 @@ def admin_meshtastic_edit(id):
         object.url = form.url.data
         object.roles = [UserRoleModel.get_by_id(role_id) for role_id in form.roles.data]
         object.isPublic = ast.literal_eval(form.isPublic.data)
+        object.yamlConfig = form.yamlConfig.data
+        try:
+            object.defaultRadioConfig =  ast.literal_eval(form.defaultRadioConfig.data)
+        except:
+            return render_template('form.html', form=form, error="Only one Meshtastic Config can be Default.", title="Edit Meshtastic Config", formurl=url_for("admin_routes_meshtastic.admin_meshtastic_edit",id=object.id))
 
+    
         MeshtasticModel.update_meshtastic(object)
         return redirect(url_for('admin_routes_meshtastic.admin_meshtastic_edit', id=object.id))
 

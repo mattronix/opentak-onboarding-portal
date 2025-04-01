@@ -1,5 +1,5 @@
 from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime, String, CheckConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
@@ -436,6 +436,17 @@ class MeshtasticModel(db.Model):
     name: Mapped[str] = mapped_column(unique=True, nullable=True)
     url: Mapped[str] = mapped_column(unique=False)
     isPublic: Mapped[bool] = mapped_column(nullable=True, default=True)
+    yamlConfig: Mapped[str] = mapped_column(nullable=True)
+    defaultRadioConfig: Mapped[bool] = mapped_column(nullable=True, default=False)
+
+    @validates('defaultRadioConfig')
+    def validate_default_radio_config(self, key, value):
+        if value:
+            # Ensure only one record has defaultRadioConfig set to True
+            existing_default = db.session.query(MeshtasticModel).filter_by(defaultRadioConfig=True).first()
+            if existing_default and existing_default.id != self.id:
+                raise ValueError("Only one radio can have defaultRadioConfig set to True.")
+        return value
 
     roles = relationship(
         "UserRoleModel",
@@ -449,9 +460,9 @@ class MeshtasticModel(db.Model):
     )
     
     @staticmethod
-    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None):
+    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, yamlConfig=None, defaultRadioConfig=None):
         try:
-            meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users)
+            meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users, yamlConfig=yamlConfig, defaultRadioConfig=defaultRadioConfig)
             db.session.add(meshtastic)
             db.session.commit()
             return meshtastic
