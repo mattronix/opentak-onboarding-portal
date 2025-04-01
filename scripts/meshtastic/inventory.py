@@ -1,14 +1,30 @@
 import time
-from serial.tools import list_ports
 import meshtastic
 import requests
 import sys
 import meshtastic.serial_interface
 import json
+from meshtastic.util import (
+    active_ports_on_supported_devices,
+    detect_supported_devices,
+    get_unique_vendor_ids,
+)
 
 def get_serial_devices():
     """Get a list of connected serial devices."""
-    return {port.device for port in list_ports.comports()}
+
+    vids = get_unique_vendor_ids()
+    print(f"Searching for all devices with these vendor ids {vids}")
+
+    sds = detect_supported_devices()
+    if len(sds) > 0:
+        print("Detected possible devices:")
+    for d in sds:
+        print(f" name:{d.name}{d.version} firmware:{d.for_firmware}")
+
+    ports = active_ports_on_supported_devices(sds)
+    return ports
+
 
 def get_meshtastic_info(port):
     """Get Meshtastic device info using the Meshtastic Python library."""
@@ -22,7 +38,6 @@ def get_meshtastic_info(port):
         return None
 
 def main():
-
     # HTTP Request to add the device to the database
     if len(sys.argv) < 3:
         print("Usage: python inventory.py <API_ENDPOINT> <API_KEY>")
@@ -33,11 +48,16 @@ def main():
 
     print("Monitoring for new serial devices...")
     known_devices = get_serial_devices()
-
+    first_run = True
     while True:
         time.sleep(1)  # Poll every 2 seconds
         print("Checking for new devices...")
-        current_devices = get_serial_devices()
+        if first_run:
+            current_devices = set()
+            first_run = False
+        else:
+            current_devices = get_serial_devices()
+     
         new_devices = current_devices - known_devices
 
         if new_devices:
@@ -55,7 +75,6 @@ def main():
                         "X-API-KEY": api_key,
                         "Content-Type": "application/json"
                     }
-
                     try:
                         # Prepare the JSON payload
                         response = requests.post(api_endpoint, json=json.dumps(info), headers=headers)
