@@ -1,10 +1,25 @@
 from flask import Blueprint, request
 from flask_breadcrumbs import default_breadcrumb_root
-from app.models import RadioModel  
+from app.models import RadioModel, MeshtasticModel
 from app.decorators import api_login_required
 import json
 from app import db
+from flask import Response
 api_routes = Blueprint('api_routes', __name__, url_prefix='/')
+
+
+@api_routes.route('/api/meshtastic/defaultconfig', methods=['GET'])
+@api_login_required
+def get_default_config():
+    defaultConfig = MeshtasticModel.query.filter_by(defaultRadioConfig=True).first()
+
+    if defaultConfig and defaultConfig.yamlConfig:
+        return Response(
+            defaultConfig.yamlConfig,
+            mimetype="application/x-yaml",
+            headers={"Content-Disposition": "attachment;filename=default_config.yaml"}
+        )
+    return {"error": "Default configuration not found"}, 404
 
 
 @api_routes.route('/api/radio', methods=['POST'])
