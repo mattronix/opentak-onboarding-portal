@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
+import datetime
 # import datetime
 
 db = SQLAlchemy()
@@ -554,10 +555,6 @@ class PackageModel(db.Model):
         else:
             return {"error": "object.not.found"}
 
-
-
-
-
 class RadioModel(db.Model):
     __tablename__ = "radios"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -575,11 +572,14 @@ class RadioModel(db.Model):
     mac: Mapped[str] = mapped_column(unique=True, nullable=True)
     role: Mapped[str] = mapped_column(nullable=True)
     publicKey: Mapped[str] = mapped_column(nullable=True)
+    privateKey: Mapped[str] = mapped_column(nullable=True)
+    createdAt: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), nullable=True)
+    updatedAt: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), onupdate=db.func.current_timestamp(), nullable=True)
 
     @staticmethod
-    def create(mac, name, platform, radioType=None, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None, assignedTo=None, role=None, publicKey=None):
+    def create(mac, name, platform, radioType=None, description=None, software_version=None, model=None, vendor=None, shortName=None, longName=None, owner=None, assignedTo=None, role=None, publicKey=None, privateKey=None):
         try:
-            object = RadioModel(mac=mac, name=name, platform=platform, radioType=radioType, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner, assignedTo=assignedTo, role=role, publicKey=publicKey)
+            object = RadioModel(mac=mac, name=name, platform=platform, radioType=radioType, description=description, softwareVersion=software_version, model=model, vendor=vendor, shortName=shortName, longName=longName, owner=owner, assignedTo=assignedTo, role=role, publicKey=publicKey, privateKey=privateKey)
             db.session.add(object)
             db.session.commit()
             return object

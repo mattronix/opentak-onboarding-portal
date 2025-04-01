@@ -5,8 +5,10 @@ from meshtastic.util import (
     active_ports_on_supported_devices,
     detect_supported_devices,
     get_unique_vendor_ids,
-    pskToString,
 )
+from google.protobuf.json_format import MessageToDict
+from meshtastic import mt_config
+import json
 
 def get_serial_devices():
     """Get a list of connected serial devices."""
@@ -22,6 +24,68 @@ def get_serial_devices():
 
     ports = active_ports_on_supported_devices(sds)
     return ports
+
+def parse_config(interface) -> str:
+    """used in --export-config"""
+    configObj = {}
+
+    owner = interface.getLongName()
+    owner_short = interface.getShortName()
+    channel_url = interface.localNode.getURL()
+    myinfo = interface.getMyNodeInfo()
+    pos = myinfo.get("position")
+    lat = None
+    lon = None
+    alt = None
+    if pos:
+        lat = pos.get("latitude")
+        lon = pos.get("longitude")
+        alt = pos.get("altitude")
+
+    if owner:
+        configObj["owner"] = owner
+    if owner_short:
+        configObj["owner_short"] = owner_short
+    if channel_url:
+        if mt_config.camel_case:
+            configObj["channelUrl"] = channel_url
+        else:
+            configObj["channel_url"] = channel_url
+    # lat and lon don't make much sense without the other (so fill with 0s), and alt isn't meaningful without both
+    if lat or lon:
+        configObj["location"] = {"lat": lat or float(0), "lon": lon or float(0)}
+        if alt:
+            configObj["location"]["alt"] = alt
+
+    config = MessageToDict(interface.localNode.localConfig)	#checkme - Used as a dictionary here and a string below
+    if config:
+        # Convert inner keys to correct snake/camelCase
+        prefs = {}
+        for pref in config:
+            if mt_config.camel_case:
+                prefs[meshtastic.util.snake_to_camel(pref)] = config[pref]
+            else:
+                prefs[pref] = config[pref]
+        if mt_config.camel_case:
+            configObj["config"] = config		#Identical command here and 2 lines below?
+        else:
+            configObj["config"] = config
+
+    module_config = MessageToDict(interface.localNode.moduleConfig)
+    if module_config:
+        # Convert inner keys to correct snake/camelCase
+        prefs = {}
+        for pref in module_config:
+            if len(module_config[pref]) > 0:
+                prefs[pref] = module_config[pref]
+        if mt_config.camel_case:
+            configObj["module_config"] = prefs
+        else:
+            configObj["module_config"] = prefs
+
+
+    json.dumps(configObj)
+    return configObj
 
 
 def create_meshtastic_interface(port):
@@ -55,21 +119,14 @@ def main():
             for device in new_devices:
                 print(f"New serial device detected: {device}")
                 meshtastic_interface = create_meshtastic_interface(device)
-                meshtastic_node = meshtastic_interface.getNode('^local')
-                print(f"Meshtastic localConfig for {device}:")
-                print(meshtastic_node.localConfig)
-                print("-----------------------")
-                print(f"Meshtastic moduleConfig for {device}:")
-                print(meshtastic_node.moduleConfig)
-                print("-----------------------")
-                print(f"Meshtastic channels for {device}:")
-                print(meshtastic_node.channels)
-                print("-----------------------")
-
-                print(meshtastic_node.localConfig.security)
-                print(f"Parsed PSK: {pskToString(meshtastic_node.localConfig.security.private_key)}")
-                
-                print(f"Parsed Channel PSK: {pskToString(meshtastic_node.channels[0].settings.psk)}")
+                config = parse_config(meshtastic_interface)
+                if config:
+                    print(f"Device config for {device}:")
+                    print(config)
+                    print("-----------------------")
+                    print("Device info:")
+                    print(meshtastic_interface.getMyNodeInfo())
+                    print("-----------------------")
                 meshtastic_interface.close()
 
         known_devices = current_devices
