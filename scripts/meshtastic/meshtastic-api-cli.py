@@ -320,7 +320,7 @@ def create_meshtastic_interface(port):
 
 
 
-def flash(base_url, api_key):
+def configure(base_url, api_key):
     api_endpoint = base_url + "/api/meshtastic/defaultconfig"
 
     print("Monitoring for new serial devices...")
@@ -463,8 +463,8 @@ def main():
     parser = argparse.ArgumentParser(description="Meshtastic API Flasher and Inventory Tool")
     parser.add_argument(
         "action",
-        choices=["flash", "inventory", "debug"],
-        help="Choose an action to perform: 'flash' or 'inventory'."
+        choices=["configure", "inventory", "debug"],
+        help="Choose an action to perform: 'configure' or 'inventory'."
     )
     parser.add_argument(
         "--url",
@@ -478,8 +478,8 @@ def main():
     )
     args = parser.parse_args()
     match args.action:
-        case "flash":
-            flash(args.url, args.apikey)
+        case "configure":
+            configure(args.url, args.apikey)
         case "inventory":
             inventory(args.url, args.apikey)
         case "debug":
