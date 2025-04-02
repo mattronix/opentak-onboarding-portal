@@ -1,21 +1,20 @@
 import time
+import json
+import requests
+import sys
+import argparse
+import yaml
+from typing import List
+import logging
+from google.protobuf.json_format import MessageToDict
 import meshtastic
 import meshtastic.serial_interface
+from meshtastic import mt_config
 from meshtastic.util import (
     active_ports_on_supported_devices,
     detect_supported_devices,
     get_unique_vendor_ids,
 )
-from google.protobuf.json_format import MessageToDict
-from meshtastic import mt_config
-import json
-import requests
-import sys
-import argparse
-from meshtastic import mt_config
-import yaml
-from typing import List, Optional, Union
-import logging
 
 def splitCompoundName(comp_name: str) -> List[str]:
     """Split compound (dot separated) preference name into parts"""
