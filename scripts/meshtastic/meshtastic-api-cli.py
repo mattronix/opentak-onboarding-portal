@@ -427,11 +427,43 @@ def inventory(base_url, api_key):
         
 
 
+def debug():
+    print("Monitoring for new serial devices...")
+    known_devices = get_serial_devices()
+    first_run = True
+    while True:
+        time.sleep(1)  # Poll every 2 seconds
+        print("Checking for new devices...")
+        if first_run:
+            current_devices = set()
+            first_run = False
+        else:
+            current_devices = get_serial_devices()
+     
+        new_devices = current_devices - known_devices
+
+        if new_devices:
+            for device in new_devices:
+                print(f"New serial device detected: {device}")
+                meshtastic_interface = create_meshtastic_interface(device)
+                config = parse_config(meshtastic_interface)
+                if config:
+                    print(f"Device config for {device}:")
+                    print(config)
+                    print("-----------------------")
+                    print("Device info:")
+                    print(meshtastic_interface.getMyNodeInfo())
+                    print("-----------------------")
+                meshtastic_interface.close()
+
+        known_devices = current_devices
+
+
 def main():
     parser = argparse.ArgumentParser(description="Meshtastic API Flasher and Inventory Tool")
     parser.add_argument(
         "action",
-        choices=["flash", "inventory"],
+        choices=["flash", "inventory", "debug"],
         help="Choose an action to perform: 'flash' or 'inventory'."
     )
     parser.add_argument(
@@ -445,11 +477,13 @@ def main():
         help="Specify the API key."
     )
     args = parser.parse_args()
-
-    if args.action == "flash":
-        flash(args.url, args.apikey)
-    elif args.action == "inventory":
-        inventory(args.url, args.apikey)
+    match args.action:
+        case "flash":
+            flash(args.url, args.apikey)
+        case "inventory":
+            inventory(args.url, args.apikey)
+        case "debug":
+            debug()
 
 if __name__ == "__main__":
     main()
