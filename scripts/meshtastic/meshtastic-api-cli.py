@@ -11,6 +11,7 @@ from google.protobuf.json_format import MessageToDict
 import meshtastic
 import meshtastic.serial_interface
 from meshtastic import mt_config
+import platform
 
 def splitCompoundName(comp_name: str) -> List[str]:
     """Split compound (dot separated) preference name into parts"""
@@ -24,13 +25,20 @@ import serial.tools.list_ports
 
 def get_serial_devices():
     """Get a list of connected serial devices on macOS, Windows, or Linux."""
+
     print("Scanning for connected serial devices...")
     ports = serial.tools.list_ports.comports()
     devices = set()
 
     for port in ports:
-        devices.add(port.device)
-        print(f"Detected device: {port.device} - {port.description}")
+        if platform.system() == "Windows":
+            if "COM" in port.device:
+                devices.add(port.device)
+                print(f"Detected Windows device: {port.device} - {port.description}")
+        else:  # macOS and Linux
+            if "/dev/" in port.device:
+                devices.add(port.device)
+                print(f"Detected Unix-based device: {port.device} - {port.description}")
 
     return devices
 
