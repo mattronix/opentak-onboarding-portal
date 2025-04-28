@@ -3,6 +3,7 @@ import json
 import requests
 import sys
 import argparse
+
 import yaml
 from typing import List
 import logging
@@ -10,11 +11,6 @@ from google.protobuf.json_format import MessageToDict
 import meshtastic
 import meshtastic.serial_interface
 from meshtastic import mt_config
-from meshtastic.util import (
-    active_ports_on_supported_devices,
-    detect_supported_devices,
-    get_unique_vendor_ids,
-)
 
 def splitCompoundName(comp_name: str) -> List[str]:
     """Split compound (dot separated) preference name into parts"""
@@ -24,20 +20,19 @@ def splitCompoundName(comp_name: str) -> List[str]:
         name.append(comp_name)
     return name
 
+import serial.tools.list_ports
+
 def get_serial_devices():
-    """Get a list of connected serial devices."""
+    """Get a list of connected serial devices on macOS, Windows, or Linux."""
+    print("Scanning for connected serial devices...")
+    ports = serial.tools.list_ports.comports()
+    devices = set()
 
-    vids = get_unique_vendor_ids()
-    print(f"Searching for all devices with these vendor ids {vids}")
+    for port in ports:
+        devices.add(port.device)
+        print(f"Detected device: {port.device} - {port.description}")
 
-    sds = detect_supported_devices()
-    if len(sds) > 0:
-        print("Detected possible devices:")
-    for d in sds:
-        print(f" name:{d.name}{d.version} firmware:{d.for_firmware}")
-
-    ports = active_ports_on_supported_devices(sds)
-    return ports
+    return devices
 
 def setPref(config, comp_name, raw_val) -> bool:
     """Set a channel or preferences value"""
@@ -229,21 +224,6 @@ def flash_yaml(interface, file):
 
 
 
-def get_serial_devices():
-    """Get a list of connected serial devices."""
-
-    vids = get_unique_vendor_ids()
-    print(f"Searching for all devices with these vendor ids {vids}")
-
-    sds = detect_supported_devices()
-    if len(sds) > 0:
-        print("Detected possible devices:")
-    for d in sds:
-        print(f" name:{d.name}{d.version} firmware:{d.for_firmware}")
-
-    ports = active_ports_on_supported_devices(sds)
-    return ports
-
 def parse_config(interface) -> str:
     """used in --export-config"""
     configObj = {}
@@ -330,7 +310,7 @@ def configure(base_url, api_key):
         time.sleep(1)  # Poll every 2 seconds
         print("Checking for new devices...")
         if first_run:
-            current_devices = set()
+            current_devices = known_devices
             first_run = False
         else:
             current_devices = get_serial_devices()
@@ -385,7 +365,7 @@ def inventory(base_url, api_key):
         time.sleep(1)  # Poll every 2 seconds
         print("Checking for new devices...")
         if first_run:
-            current_devices = set()
+            current_devices = known_devices
             first_run = False
         else:
             current_devices = get_serial_devices()
@@ -434,7 +414,7 @@ def debug():
         time.sleep(1)  # Poll every 2 seconds
         print("Checking for new devices...")
         if first_run:
-            current_devices = set()
+            current_devices = known_devices
             first_run = False
         else:
             current_devices = get_serial_devices()
