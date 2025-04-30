@@ -8,18 +8,41 @@ from flask import Response
 api_routes = Blueprint('api_routes', __name__, url_prefix='/')
 
 
-@api_routes.route('/api/meshtastic/defaultconfig', methods=['GET'])
-@api_login_required
-def get_default_config():
-    defaultConfig = MeshtasticModel.query.filter_by(defaultRadioConfig=True).first()
 
-    if defaultConfig and defaultConfig.yamlConfig:
+@api_routes.route('/api/meshtastic/config/<configid>/<radioid>', methods=['GET'])
+@api_login_required
+def get_radio_config(radioid, configid):
+    radioObject = RadioModel.query.filter_by(mac=radioid).first()
+
+    if not radioObject:
+        return {"error": "Radio not found"}, 404
+
+    if configid == "default":
+        radioConfig = MeshtasticModel.query.filter_by(defaultRadioConfig=True).first()
+    
+    else: 
+        return {"error": "Configuration ID Invalid"}, 404
+
+    if radioConfig and radioConfig.yamlConfig:
+
+        placeholders = {
+            "${longName}": radioObject.longName,
+            "${shortName}": radioObject.shortName
+        }
+        
+        for placeholder, value in placeholders.items():
+            radioConfig.yamlConfig = radioConfig.yamlConfig.replace(placeholder, value)
+
         return Response(
-            defaultConfig.yamlConfig,
+            radioConfig.yamlConfig,
             mimetype="application/x-yaml",
             headers={"Content-Disposition": "attachment;filename=default_config.yaml"}
         )
-    return {"error": "Default configuration not found"}, 404
+    
+    return {"error": "configuration not found"}, 404
+
+
+
 
 
 @api_routes.route('/api/radio', methods=['POST'])

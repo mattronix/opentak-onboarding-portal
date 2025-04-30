@@ -308,7 +308,6 @@ def create_meshtastic_interface(port):
 
 
 def configure(base_url, api_key):
-    api_endpoint = base_url + "/api/meshtastic/defaultconfig"
 
     print("Monitoring for new serial devices...")
     known_devices = get_serial_devices()
@@ -331,6 +330,11 @@ def configure(base_url, api_key):
                 print(f"New serial device detected: {device}")
 
 
+                meshtastic_interface = create_meshtastic_interface(device)
+                info = meshtastic_interface.getMyNodeInfo()
+                
+                api_endpoint = base_url + f"/api/meshtastic/config/default/{info['user']['id']}"
+
                 headers = {
                     "X-API-KEY": api_key,
                     "Content-Type": "application/json"
@@ -345,9 +349,6 @@ def configure(base_url, api_key):
                 except requests.RequestException as e:
                     print(f"Error making POST request: {e}")
 
-
-                meshtastic_interface = create_meshtastic_interface(device)
-                
                 
                 flash_yaml(meshtastic_interface, response.content)
                 
