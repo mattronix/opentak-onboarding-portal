@@ -7,11 +7,14 @@ Using the Admin you can upload YAML config some placeholders are supported to dy
 
 longName = Radio Long Name
 shortName = Radio Short Name
+ChannelURL = Taken from the Meshtastic Config Setting URL
+
 
 Example
 ```
 owner: ${longName}
 owner_short: ${shortName}
+channel_url: ${channelURL}
 ```
 
 Set Default to Yes for now as we dont support multiple profiles yet. 

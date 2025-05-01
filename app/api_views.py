@@ -19,15 +19,18 @@ def get_radio_config(radioid, configid):
 
     if configid == "default":
         radioConfig = MeshtasticModel.query.filter_by(defaultRadioConfig=True).first()
-    
     else: 
         return {"error": "Configuration ID Invalid"}, 404
+
 
     if radioConfig and radioConfig.yamlConfig:
 
         placeholders = {
+            # Radio Vars
             "${longName}": radioObject.longName,
-            "${shortName}": radioObject.shortName
+            "${shortName}": radioObject.shortName,
+            # Meshtastic Vars
+            "${channelURL}": radioConfig.url
         }
         
         for placeholder, value in placeholders.items():
