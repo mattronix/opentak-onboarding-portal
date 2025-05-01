@@ -34,7 +34,8 @@ def home():
     private_meshtastic_configs = MeshtasticModel.query.filter(MeshtasticModel.roles.any(UserRoleModel.id.in_(user_roles))).filter_by(showOnHomepage=True).all()
     meshtastic_configs = list(set(public_meshtastic_configs + private_meshtastic_configs))
     help_link = HELP_LINK
-    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs)
+    assignedRadios = RadioModel.query.filter_by(assignedTo=user.id).all()
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs, assignedRadios=assignedRadios)
 
     
 @routes.route('/logout')

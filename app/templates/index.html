@@ -201,6 +201,21 @@
                             <hr class="mt-4">
                             {% endif %}
 
+
+                            {% if assignedRadios %}
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <h6 class="mb-0">Assigned Radios</h6>
+                                </div>
+                                <div class="col-sm-8 text-secondary">
+                                    {%for radio in assignedRadios%}
+                                        <span class="badge badge-pill badge-dark"> {{radio.longName}} ({{radio.shortName}})</span>
+                                    {%endfor%}
+                                </div>
+                            </div>
+                            <hr class="mt-4">
+                            {% endif %}
+
                             <div class="row">
                                 <div class="col-sm-12">
                                     <a href="{{ url_for('routes.user_profile_edit') }}" class="btn btn-custom-primary">Edit Profile</a>
