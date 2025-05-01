@@ -20,10 +20,10 @@ Set Default to Yes for now as we dont support multiple profiles yet.
 
 # Meshtastic API CLi 
 Make sure the following is set in the ENV File
-
+```
 ENABLE_API=True
 API_KEY="udi1liepuRearuyahquoo9looj0teegh" < Make sure to generate a 32 char password of your own
-
+```
 # Inventory Radio (Meshtastic)
 Will inventory Radio and add to Radios Section of Portal.
 
