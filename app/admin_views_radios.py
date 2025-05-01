@@ -106,3 +106,20 @@ def admin_radios_delete(id):
         return redirect(url_for('admin_routes_radios.admin_radios_list'))
     return render_template('form.html', role=role, form=form, title="Delete Role", formurl=url_for("admin_routes_radios.admin_radios_delete",id=role.id))
 
+
+
+@register_breadcrumb(admin_routes_radios, '.admin.radios.clearassigned', 'Clear Assigned', dynamic_list_constructor=admin_radios)
+@admin_routes_radios.route('radios/clear-assigned/<int:id>', methods=['GET', 'POST'])
+@login_required
+@role_required(role='administrator')
+def admin_radios_clearassigned(id):
+    radio = RadioModel.get_by_id(id)
+
+    if radio is None:
+        return redirect(url_for('admin_routes_radios.admin_radios_list'))
+    
+    radio.assignedTo = None
+    RadioModel.update(radio)
+    return redirect(url_for('admin_routes_radios.admin_radios_list'))
+    
+

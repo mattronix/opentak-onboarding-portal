@@ -1,10 +1,10 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED, ENABLE_REPO
+from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED, ENABLE_REPO, ENABLE_CLAIM_RADIO
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
-from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, db
+from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, RadioModel, db
 from flask_breadcrumbs import register_breadcrumb, default_breadcrumb_root
 from app.email import send_html_email
 from flask import send_file
@@ -25,7 +25,7 @@ default_breadcrumb_root(routes, '.',)
 @routes.route('/')
 @login_required
 def home():  
-    user = UserModel.get_user_by_username(session['username'])
+    user = UserModel.get_user_by_username(session['username']) 
     user_roles = [role.id for role in user.roles] if user and user.roles else []
     public_tak_profiles = TakProfileModel.query.filter_by(isPublic=True).all()
     private_tak_profiles = TakProfileModel.query.filter(TakProfileModel.roles.any(UserRoleModel.id.in_(user_roles))).all()
@@ -350,6 +350,9 @@ def reset_password(token):
 @routes.route('/updates/<filename>', methods=['GET', 'POST'])
 def downloadUpdatePackage(filename):
 
+    if not ENABLE_REPO:
+        return render_template('restricted.html', error="Update Package is disabled.")
+
     filepath = f"{UPDATES_UPLOAD_FOLDER}/{filename}"
     
     if os.path.exists(filepath):
@@ -358,3 +361,34 @@ def downloadUpdatePackage(filename):
 
     
     return render_template('restricted.html', error="Update Package does not exist")
+
+
+
+@routes.route('/radios/<radiomac>', methods=['GET', 'POST'])
+@login_required
+def claimRadio(radiomac):
+
+    if not ENABLE_CLAIM_RADIO:
+        return render_template('restricted.html', error="Claim Radio is disabled in the settings.")
+    
+    user = UserModel.get_user_by_username(session['username'])
+    if user is None:
+        return render_template('restricted.html', error="User not found.")
+    
+    if request.args.get('adopt') == 'true':
+        radio = RadioModel.query.filter_by(mac=radiomac).first()
+        if radio is None:
+            return render_template('restricted.html', error="Radio not found.")
+
+
+        if radio.assignedTo is not None:
+            return render_template('restricted.html', error="Radio is already claimed.")
+
+        radio.assignedTo = user.id
+        db.session.commit()
+
+        return redirect(url_for('routes.home'))
+
+
+
+    return render_template('restricted.html', error="Please provide a valid radio Mac and adopt status.")

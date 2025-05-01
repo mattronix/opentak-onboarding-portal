@@ -43,15 +43,16 @@
                                         <td>{{resolveUserPropertyByID(radio.assignedTo)}}</td>
                                         <td>{{resolveUserPropertyByID(radio.owner)}}</td>
                                         <td> 
-                                            <a href="radios/edit/{{radio.id}}" class="btn btn-sm btn-custom-primary">EDIT</a>
-                                            <a href="radios/delete/{{radio.id}}" class="btn btn-sm btn-danger">DELETE</a>
+                                            <a href="radios/edit/{{radio.id}}" class="btn btn-sm btn-custom-primary" style="font-size: 1rem; width: 150px;">EDIT</a>
+                                            <a href="radios/delete/{{radio.id}}" class="btn btn-sm btn-danger" style="font-size: 1rem; width: 150px;">DELETE</a>
+                                            <a href="radios/clear-assigned/{{radio.id}}" class="btn btn-sm btn-primary" style="font-size: 1rem; width: 150px;">CLEAR ASSIGNE</a>
                                         </td>
                                       
                                     </tr>  
                                     {% endfor %}
                                 </tbody>
                             </table>
-                            <a href="radios/add" class="btn btn-sm btn-custom-primary">CREATE NEW Radio</a>
+                            <a href="radios/add" class="btn btn-sm btn-custom-primary">CREATE NEW RADIO</a>
 
                         </div>
                     </div>

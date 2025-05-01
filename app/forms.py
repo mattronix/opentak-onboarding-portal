@@ -189,8 +189,8 @@ class EditRadioForm(FlaskForm):
     vendor = StringField('Vendor', validators=[Optional()])
     shortName = StringField('Short Name', validators=[Optional()])
     longName = StringField('Long Name', validators=[Optional()])
-    assignedTo = SelectField('Assigned To', validators=[Optional()])
-    owner = SelectField('Owner', validators=[Optional()])
+    assignedTo = SelectField('Assigned To', validators=[Optional()], default=None)
+    owner = SelectField('Owner', validators=[Optional()], default=None)
     mac = StringField('MAC Address', validators=[Optional()])
     submit = SubmitField('Submit')
 

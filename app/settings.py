@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import secrets
 
 load_dotenv()
-
+API_KEY = str(environ.get('API_KEY', secrets.token_hex(32)))
 SECRET_KEY=str(environ.get('SECRET_KEY'))
 OTS_USERNAME=str(environ.get('OTS_USERNAME'))
 OTS_PASSWORD=str(environ.get('OTS_PASSWORD'))
@@ -44,4 +44,4 @@ JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
 ZEROTIER_ICON = strtobool(environ.get('ZEROTIER_ICON', 'False'))
 ENABLE_REPO = strtobool(environ.get('ENABLE_REPO', 'False'))
 ENABLE_API = strtobool(environ.get('ENABLE_API', 'False'))
-API_KEY = str(environ.get('API_KEY', secrets.token_hex(32)))
+ENABLE_CLAIM_RADIO = strtobool(environ.get('ENABLE_CLAIM_RADIO', 'False'))
