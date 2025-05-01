@@ -18,6 +18,10 @@ This project is an Opensource ATAK Portal that works with OpenTak Server to prov
 * Uses OPENTAK Server for authentication
 * Admins in Opentak are Admin's in Portal
 * TAK Update Server Generator/Manager
+* Meshtastic Radio Config via the script meshtastic-api-cli configure 
+* Meshtastic Radio Inventory via the script meshtastic-api-cli inventory 
+* Meshtastic YAML Config Profiles in the Meshtastic Admin Section
+
 
 # Setup
 git clone
