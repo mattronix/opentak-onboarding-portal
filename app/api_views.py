@@ -61,6 +61,7 @@ def create_or_update_radio():
     if not data['info']['user'].get('id'):
         return {"error": "Mac is required"}, 400
     try:
+
         if data['info']['user'].get('id'):
             # Update existing radio
             radio = RadioModel.query.filter_by(mac=data['info']['user'].get('id')).first()
@@ -76,7 +77,7 @@ def create_or_update_radio():
                                        publicKey=data['localConfig']['config']['security'].get('publicKey'),
                                        privateKey=data['localConfig']['config']['security'].get('privateKey'),
                                        role=data['info']['user'].get('role'),
-                                       model=data['info']['user'].get('model'),
+                                       model=data['info']['user'].get('hwModel'),
                                        platform="LORA")
                 
                 return {"message": "Radio created successfully"}, 201
@@ -89,11 +90,11 @@ def create_or_update_radio():
             radio.publicKey = data['localConfig']['config']['security'].get('publicKey')
             radio.privateKey = data['localConfig']['config']['security'].get('privateKey')
             radio.role = data['info']['user'].get('role')
-            radio.model = data['info']['user'].get('model')
+            radio.model = data['info']['user'].get('hwModel')
             radio.platform = "LORA"
             radio.updatedAt = db.func.current_timestamp()
 
-
+    
             print(radio.__dict__)
 
             RadioModel.update(radio)
