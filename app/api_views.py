@@ -84,9 +84,9 @@ def create_or_update_radio():
                 
             # Update the radio details
             radio.mac = data['info']['user'].get('id')
-            radio.name = data['info']['user'].get('longName')
-            radio.shortName = data['info']['user'].get('shortName')
-            radio.longName = data['info']['user'].get('longName')
+           # radio.name = data['info']['user'].get('longName')
+           # radio.shortName = data['info']['user'].get('shortName')
+           # radio.longName = data['info']['user'].get('longName')
             radio.publicKey = data['localConfig']['config']['security'].get('publicKey')
             radio.privateKey = data['localConfig']['config']['security'].get('privateKey')
             radio.role = data['info']['user'].get('role')
