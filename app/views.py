@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, make_response, session
 from app.ots import otsClient, OTSClient
 from flask import redirect, url_for, request
-from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED, ENABLE_REPO, ENABLE_CLAIM_RADIO
+from app.settings import OTS_URL, MAIL_ENABLED, HELP_LINK, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, LOGO_PATH, UPDATES_UPLOAD_FOLDER, FORGOT_PASSWORD_ENABLED, MAIL_ENABLED, ENABLE_REPO, ENABLE_CLAIM_RADIO, ITAK_HOMEPAGE_ICON_ENABLED, TRUSTSTORE_HOMEPAGE_ICON_ENABLED
 from app.decorators import login_required
 from app.forms import LoginForm, RegisterForm, UserProfileEditForm, RegisterForm, ResetPasswordForm, ResetPasswordRequestForm
 from app.models import UserModel, UserRoleModel, OnboardingCodeModel, TakProfileModel, MeshtasticModel, PackageModel, RadioModel, db

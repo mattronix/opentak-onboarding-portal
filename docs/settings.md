@@ -27,7 +27,8 @@ LOGO_PATH: Sets a logo path, if you want to add your own upload it to /app/stati
 
 HELP_EMAIL: Shows who to contact at bottem of email communications.
 
-
+ITAK_HOMEPAGE_ICON_ENABLED: Disables Homepage Icon for ITAK
+TRUSTSTORE_HOMEPAGE_ICON_ENABLED: Disables Homepage Truststore Icon
 GENERATE_ITAK_QR_CODE: (True/False) Generate QR Code for ITAK 
 ITAK_HOSTNAME: set the hostname if the OTS_URL is not the correct hostname, this defaults to hostname from OTS_URL
 

@@ -109,16 +109,20 @@
                                         <h6 class="mb-0">Get ATAK</h6>
                                         <a href="https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en">Android</a>
                                 </div>
+                                {% if config['ITAK_HOMEPAGE_ICON_ENABLED'] %}
                                 <div class="col-sm-4 text-center mb-3">
                                     <img style="width: 100px; height: 100px;" src="/static/img/itak.jpg">
                                     <h6 class="mb-0">Get ITAK</h6>
                                     <a href="https://apps.apple.com/app/itak/id1561656396">iPhone</a>
                                 </div>
+                                {% endif %}
+                                {% if config['TRUSTSTORE_HOMEPAGE_ICON_ENABLED'] %}
                                 <div class="col-sm-4 text-center mb-3">
                                     <img style="width: 100px; height: 100px;" src="/static/img/certificate.png">
                                     <h6 class="mb-0">TrustStore</h6>
                                     <a href="{{OTS_URL}}/api/truststore">Download</a>
                                 </div>
+                                {% endif %}
                                 {% if config['ZEROTIER_ICON'] %}
                                 <div class="col-sm-4 text-center mb-3">
                                     <img style="width: 100px; height: 100px;" src="/static/img/zerotier.png">
