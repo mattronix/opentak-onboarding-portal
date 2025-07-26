@@ -21,6 +21,7 @@ class OTSClient:
     _jobs = _apibase + "/scheduler/jobs"
     _points = _apibase + "/point"
     _reset = _user + "/password/reset"
+    _atak_qr_string = _apibase + "/atak_qr_string"
 
     
     def __init__(self, url, username, password):
@@ -217,5 +218,18 @@ class OTSClient:
     def deactivate_user(self, username):
         body = {'username': username}
         return self.request_handler(method="POST", endpoint=self._user_deactivate, body=body)
+
+
+    def get_atak_qr_string(self, username=None):
+        params = {}
+        if username is not None:
+            params["username"] = username
+        return self.request_handler(method="GET", endpoint=self._atak_qr_string, params=params)
+
+    def create_atak_qr_string(self, username = None):
+        params = {}
+        if username is not None:
+            params["username"] = username
+        return self.request_handler(method="POST", endpoint=self._atak_qr_string, body=params)
 
 otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)

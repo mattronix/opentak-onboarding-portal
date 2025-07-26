@@ -35,7 +35,15 @@ def home():
     meshtastic_configs = list(set(public_meshtastic_configs + private_meshtastic_configs))
     help_link = HELP_LINK
     assignedRadios = RadioModel.query.filter_by(assignedTo=user.id).all()
-    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs, assignedRadios=assignedRadios)
+
+    try:
+        qr_code = otsClient.get_atak_qr_string(user.username)
+        if qr_code is None:
+            qr_code = otsClient.create_atak_qr_string(user.username)
+    except Exception as e:
+            qr_code = otsClient.create_atak_qr_string(user.username)
+
+    return render_template('index.html', user=user, public_tak_profiles=public_tak_profiles, private_tak_profiles=private_tak_profiles, help_link=help_link, OTS_URL=OTS_URL, tak_profiles=tak_profiles, meshtastic_configs=meshtastic_configs, assignedRadios=assignedRadios, qr_code=qr_code)
 
     
 @routes.route('/logout')

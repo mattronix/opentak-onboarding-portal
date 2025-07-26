@@ -61,10 +61,38 @@
                     {% endif %}
 
 
+                    {% if qr_code %}
+                    <h1 class="mb-4">Step 2 - Login to Tak Server</h1>
+                    <div class="row">
+
+
+                        <div class="col-md-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title">{{config.name}}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <img style="width: 100%;" src="{{ qrcode(qr_code.response.qr_string, error_correction='H', icon_img='img/atak.png') }}">
+                                        <hr>
+                                        <p>{{config.description}}</p>
+                                        <hr>
+                                        <p> Cant Scan? <a href="{{qr_code.qr_string}}">Copy/Click Link</a></p>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                    </div>
+                    {% endif %}
+
 
 
                     {% if meshtastic_configs %}
-                    <h1 class="mb-4">Step 2 - Scan this QR Code in The Meshtastic App</h1>
+                    <h1 class="mb-4">Step 3 - Scan this QR Code in The Meshtastic App</h1>
                     <div class="row">
 
                         {% for config in meshtastic_configs %}
@@ -90,6 +118,10 @@
 
                     </div>
                     {% endif %}
+
+
+
+
                 </div>
 
             
