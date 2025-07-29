@@ -29,6 +29,7 @@ class OTSClient:
         self.username = username
         self.password = password
         self.csrf_token = None
+        self.auth_token = None
         self.session = requests.Session()
 
     headers = {"Content-Type": "application/json"}
@@ -57,7 +58,10 @@ class OTSClient:
 
         if not self.csrf_token:
             self.get_csrf_token()
+
+        if not self.auth_token:    
             self.login()
+            
         response = self.execute_request(method, endpoint, body, params, response_type)
 
         if response.get('status_code') == 400: 
@@ -88,10 +92,14 @@ class OTSClient:
         return self.csrf_token   
 
     def login(self):
-        body =  {'username': self.username, 'password': self.password, 'csrf_token': self.csrf_token} 
+        body =  {'username': self.username, 'password': self.password} 
 
-        response = self.execute_request(method="POST", endpoint=self._login, body=body)
-        
+        response = self.execute_request(method="POST", endpoint=self._login, body=body, params={'include_auth_token': ''})
+
+        print(f"Response: {response}")
+
+        self.headers['Authentication-Token'] = response['response']['response']['user']['authentication_token']
+
         if response.get('status_code') == 400: 
             raise AuthenticationError(response)
 
