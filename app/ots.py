@@ -30,9 +30,10 @@ class OTSClient:
         self.password = password
         self.csrf_token = None
         self.auth_token = None
+        self.headers = {"Content-Type": "application/json"}
         self.session = requests.Session()
 
-    headers = {"Content-Type": "application/json"}
+    
     
     def execute_request(self, method, endpoint, body=None, params=None, response_type="json"):
         try:
@@ -53,15 +54,18 @@ class OTSClient:
         except requests.exceptions.RequestException as e:
             print(f"Connection Error: {e}")
             return None
-        
-    def request_handler(self, method, endpoint, body=None, params=None, response_type="json"):
 
-        if not self.csrf_token:
-            self.get_csrf_token()
+    def request_handler(self, method, endpoint, body=None, params={}, response_type="json"):
+
+   #     if not self.csrf_token:
+   #         self.get_csrf_token()
 
         if not self.auth_token:    
             self.login()
-            
+
+        if self.auth_token:
+            params['auth_token'] = self.auth_token
+              
         response = self.execute_request(method, endpoint, body, params, response_type)
 
         if response.get('status_code') == 400: 
@@ -87,6 +91,7 @@ class OTSClient:
         if not self.csrf_token:
             raise Exception(f"Error: Could not get CSRF Token from response: {response}")
 
+    
         self.headers["XSRF-TOKEN"] = self.csrf_token
         self.headers["X-Xsrf-Token"] = self.csrf_token
         return self.csrf_token   
@@ -96,11 +101,16 @@ class OTSClient:
 
         response = self.execute_request(method="POST", endpoint=self._login, body=body, params={'include_auth_token': ''})
 
-        print(f"Response: {response}")
+        # Safely get the authentication token from nested response
+        auth_token = (response.get('response', {})
+                 .get('response', {})
+                 .get('user', {})
+                 .get('authentication_token'))
 
-        self.headers['Authentication-Token'] = response['response']['response']['user']['authentication_token']
+        if auth_token:
+            self.auth_token = auth_token
 
-        if response.get('status_code') == 400: 
+        if response.get('status_code') == 400:
             raise AuthenticationError(response)
 
         if response.get('status_code') == 401: 
