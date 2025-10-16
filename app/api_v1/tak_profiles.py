@@ -91,7 +91,17 @@ def get_tak_profiles():
         profiles = TakProfileModel.get_all_tak_profiles()
     else:
         user = UserModel.get_user_by_id(current_user_id)
-        profiles = user.takprofiles if user else []
+        # Get user's assigned profiles plus all public profiles
+        user_profiles = user.takprofiles if user else []
+        public_profiles = TakProfileModel.query.filter_by(isPublic=True).all()
+
+        # Combine and deduplicate
+        profiles_dict = {p.id: p for p in user_profiles}
+        for p in public_profiles:
+            if p.id not in profiles_dict:
+                profiles_dict[p.id] = p
+
+        profiles = list(profiles_dict.values())
 
     return jsonify({
         'profiles': [{

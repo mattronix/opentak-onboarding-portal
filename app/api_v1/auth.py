@@ -56,8 +56,23 @@ def login():
         ots = OTSClient(current_app.config['OTS_URL'], username, password)
         ots_profile = ots.get_me()
 
+        # DEBUG: Dump the entire OTS profile
+        current_app.logger.info(f"Login: OTS profile for {username}: {ots_profile}")
+
+        # Also write to a temp file for debugging
+        import json
+        import tempfile
+        try:
+            with open('/tmp/ots_profile_debug.json', 'w') as f:
+                json.dump({'username': username, 'profile': ots_profile}, f, indent=2, default=str)
+        except:
+            pass
+
         if not ots_profile:
             return jsonify({'error': 'Invalid username or password'}), 401
+
+        # Extract response data from OTS profile
+        ots_data = ots_profile.get('response', {})
 
         # Get or create local user
         from app.models import db
@@ -66,33 +81,69 @@ def login():
             # Create user if doesn't exist locally
             user = UserModel.create_user(
                 username=username,
-                email=ots_profile.get('email', ''),
-                firstname=ots_profile.get('firstName', ''),
-                lastname=ots_profile.get('lastName', ''),
-                callsign=ots_profile.get('callsign', username)
+                email=ots_data.get('email', ''),
+                firstname=ots_data.get('firstName', ''),
+                lastname=ots_data.get('lastName', ''),
+                callsign=ots_data.get('callsign', username)
             )
 
         # Sync roles from OTS - ADD roles from OTS but keep existing local roles
         # This allows portal-managed roles to persist while still syncing OTS roles
         # IMPORTANT: We only ADD roles from OTS, never remove existing local roles
-        ots_roles = ots_profile.get('roles', [])
+        # OTS returns roles as array of objects with 'name' property
+        ots_roles_data = ots_data.get('roles', [])
+        ots_roles = [role['name'] for role in ots_roles_data if isinstance(role, dict) and 'name' in role]
         current_app.logger.info(f"Login: User {username} - OTS roles: {ots_roles}")
         current_app.logger.info(f"Login: User {username} - Current local roles: {[r.name for r in user.roles]}")
 
         # Add OTS roles if they don't already exist
         for role_name in ots_roles:
             role = UserRoleModel.get_role_by_name(role_name)
+
+            # Create role if it doesn't exist in local database
+            if not role:
+                current_app.logger.info(f"Login: Creating role {role_name} from OTS")
+                role = UserRoleModel.create_role(name=role_name, description=f"Auto-created from OTS")
+
+                # Check if role creation failed
+                if isinstance(role, dict) and 'error' in role:
+                    current_app.logger.error(f"Login: Failed to create role {role_name}: {role['error']}")
+                    continue
+
+                current_app.logger.info(f"Login: Created role {role_name}")
+
+            # Add role to user if not already assigned
             if role and role not in user.roles:
                 user.roles.append(role)
                 db.session.add(user)
                 db.session.commit()
-                current_app.logger.info(f"Login: Added OTS role {role_name} to user {username}")
-            elif not role:
-                current_app.logger.warning(f"Login: Role {role_name} from OTS not found in local database")
+                current_app.logger.info(f"Login: Added role {role_name} to user {username}")
+
+        # Sync TAK profiles and Meshtastic configs from roles
+        current_app.logger.info(f"Login: Syncing TAK profiles and Meshtastic configs for user {username}")
+
+        # Add TAK profiles from all roles
+        for role in user.roles:
+            for tak_profile in role.takprofiles:
+                if tak_profile not in user.takprofiles:
+                    user.takprofiles.append(tak_profile)
+                    current_app.logger.info(f"Login: Added TAK profile {tak_profile.name} to user {username} from role {role.name}")
+
+        # Add Meshtastic configs from all roles
+        for role in user.roles:
+            for meshtastic in role.meshtastic:
+                if meshtastic not in user.meshtastic:
+                    user.meshtastic.append(meshtastic)
+                    current_app.logger.info(f"Login: Added Meshtastic config {meshtastic.name} to user {username} from role {role.name}")
+
+        # Commit the changes
+        db.session.commit()
 
         # Refresh user to get latest state
         db.session.refresh(user)
         current_app.logger.info(f"Login: User {username} final roles after sync: {[r.name for r in user.roles]}")
+        current_app.logger.info(f"Login: User {username} TAK profiles: {[p.name for p in user.takprofiles]}")
+        current_app.logger.info(f"Login: User {username} Meshtastic configs: {[m.name for m in user.meshtastic]}")
 
         # Create JWT tokens (identity must be string for Flask-JWT-Extended)
         access_token = create_access_token(
