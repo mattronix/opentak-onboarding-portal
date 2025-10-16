@@ -48,6 +48,11 @@ JWT_ALGORITHM = 'HS256'
 
 ZEROTIER_ICON = strtobool(environ.get('ZEROTIER_ICON', 'False'))
 ENABLE_REPO = strtobool(environ.get('ENABLE_REPO', 'False'))
-ENABLE_API = strtobool(environ.get('ENABLE_API', 'True'))
 ENABLE_CLAIM_RADIO = strtobool(environ.get('ENABLE_CLAIM_RADIO', 'False'))
 TESTING = strtobool(environ.get('TESTING', 'False'))
+
+# Frontend URL for password reset links
+FRONTEND_URL = str(environ.get('FRONTEND_URL', 'http://localhost:5173'))
+
+# CORS origins for API
+CORS_ORIGINS = str(environ.get('CORS_ORIGINS', '*'))

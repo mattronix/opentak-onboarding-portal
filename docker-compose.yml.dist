@@ -1,18 +1,21 @@
-version: '2'
+version: '3.8'
 services:
     web:
         restart: always
-        volumes:
-          - ./:/app
-           #  Used to export updates to the host
-           # - /var/www/html/opentakserver/update:/app/updates
         build:
             context: .
             dockerfile: Dockerfile
         ports:
             - "5000:5000"
         env_file:
-            .env
-        command: ["gunicorn", "-w", "1", "-t", "50", "app:app", "-b", "0.0.0.0:5000"]
+            - .env
+        volumes:
+            # Mount database for persistence
+            - ./instance:/app/instance
+            # Mount data packages
+            - ./datapackages:/app/data_packages
+        environment:
+            - FRONTEND_URL=http://localhost:5000
+            - CORS_ORIGINS=*
         extra_hosts:
             - "host.docker.internal:host-gateway"
