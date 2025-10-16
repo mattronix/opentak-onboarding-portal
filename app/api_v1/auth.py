@@ -56,18 +56,6 @@ def login():
         ots = OTSClient(current_app.config['OTS_URL'], username, password)
         ots_profile = ots.get_me()
 
-        # DEBUG: Dump the entire OTS profile
-        current_app.logger.info(f"Login: OTS profile for {username}: {ots_profile}")
-
-        # Also write to a temp file for debugging
-        import json
-        import tempfile
-        try:
-            with open('/tmp/ots_profile_debug.json', 'w') as f:
-                json.dump({'username': username, 'profile': ots_profile}, f, indent=2, default=str)
-        except:
-            pass
-
         if not ots_profile:
             return jsonify({'error': 'Invalid username or password'}), 401
 
