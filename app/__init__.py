@@ -49,15 +49,16 @@ def create_app():
         scheduler.init_app(app)
     jwt_manager.init_app(app)
 
-    # Register traditional form-based blueprints
-    app.register_blueprint(routes)
-    app.register_blueprint(admin_routes)
-    app.register_blueprint(admin_routes_onboarding)
-    app.register_blueprint(admin_routes_users)
-    app.register_blueprint(admin_routes_takprofiles)
-    app.register_blueprint(admin_routes_roles)
-    app.register_blueprint(admin_routes_meshtastic)
-    app.register_blueprint(admin_routes_radios)
+    # Register traditional form-based blueprints (unless API-only mode is enabled)
+    if not app.config.get('API_ONLY_MODE', False):
+        app.register_blueprint(routes)
+        app.register_blueprint(admin_routes)
+        app.register_blueprint(admin_routes_onboarding)
+        app.register_blueprint(admin_routes_users)
+        app.register_blueprint(admin_routes_takprofiles)
+        app.register_blueprint(admin_routes_roles)
+        app.register_blueprint(admin_routes_meshtastic)
+        app.register_blueprint(admin_routes_radios)
 
     # Register API blueprints
     if app.config['ENABLE_API']:

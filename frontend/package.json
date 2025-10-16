@@ -12,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.90.3",
     "axios": "^1.12.2",
+    "qrcode.react": "^4.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.4"

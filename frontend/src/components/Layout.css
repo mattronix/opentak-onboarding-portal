@@ -12,6 +12,9 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .navbar-brand a {
@@ -19,6 +22,10 @@
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: bold;
+}
+
+.navbar-brand a:hover {
+  text-decoration: none;
 }
 
 .navbar-menu {
@@ -34,10 +41,12 @@
   border-radius: 4px;
   transition: background-color 0.3s;
   cursor: pointer;
+  display: inline-block;
 }
 
 .nav-link:hover {
   background-color: #555;
+  text-decoration: none;
 }
 
 .nav-dropdown {
@@ -54,11 +63,14 @@
   z-index: 1;
   border-radius: 4px;
   overflow: hidden;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
 }
 
 .dropdown-content a,
 .dropdown-content button {
-  color: black;
+  color: #333;
   padding: 12px 16px;
   text-decoration: none;
   display: block;
@@ -68,11 +80,13 @@
   text-align: left;
   cursor: pointer;
   transition: background-color 0.3s;
+  font-size: 1rem;
 }
 
 .dropdown-content a:hover,
 .dropdown-content button:hover {
   background-color: #f1f1f1;
+  text-decoration: none;
 }
 
 .nav-dropdown:hover .dropdown-content {
@@ -81,22 +95,20 @@
 
 .main-content {
   flex: 1;
-  padding: 2rem;
-  max-width: 1400px;
   width: 100%;
-  margin: 0 auto;
+  background-color: #f5f5f5;
 }
 
 .footer {
-  background-color: #f8f9fa;
+  background-color: #333;
   padding: 1rem 2rem;
   text-align: center;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid #444;
 }
 
 .footer p {
   margin: 0;
-  color: #6c757d;
+  color: #ccc;
 }
 
 .logout-btn {
@@ -108,11 +120,18 @@
   .navbar {
     flex-direction: column;
     gap: 1rem;
+    padding: 1rem;
+    position: relative;
+  }
+
+  .navbar-brand a {
+    font-size: 1.2rem;
   }
 
   .navbar-menu {
     flex-direction: column;
     width: 100%;
+    gap: 0.5rem;
   }
 
   .nav-link {
@@ -120,17 +139,18 @@
     text-align: center;
   }
 
+  .nav-dropdown {
+    width: 100%;
+  }
+
   .dropdown-content {
     position: static;
     display: none;
     width: 100%;
+    margin-top: 0;
   }
 
   .nav-dropdown:hover .dropdown-content {
     display: block;
-  }
-
-  .main-content {
-    padding: 1rem;
   }
 }

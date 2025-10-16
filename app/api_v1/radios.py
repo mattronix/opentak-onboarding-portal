@@ -48,14 +48,8 @@ def get_radios():
             'shortName': r.shortName,
             'longName': r.longName,
             'mac': r.mac,
-            'assignedTo': {
-                'id': r.assigned_user.id,
-                'username': r.assigned_user.username
-            } if r.assigned_user else None,
-            'owner': {
-                'id': r.owner_user.id,
-                'username': r.owner_user.username
-            } if r.owner_user else None,
+            'assignedTo': r.assignedTo,
+            'owner': r.owner,
             'createdAt': r.createdAt.isoformat() if r.createdAt else None,
             'updatedAt': r.updatedAt.isoformat() if r.updatedAt else None
         } for r in radios]
@@ -92,14 +86,8 @@ def get_radio(radio_id):
         'mac': radio.mac,
         'role': radio.role,
         'publicKey': radio.publicKey,
-        'assignedTo': {
-            'id': radio.assigned_user.id,
-            'username': radio.assigned_user.username
-        } if radio.assigned_user else None,
-        'owner': {
-            'id': radio.owner_user.id,
-            'username': radio.owner_user.username
-        } if radio.owner_user else None,
+        'assignedTo': radio.assignedTo,
+        'owner': radio.owner,
         'createdAt': radio.createdAt.isoformat() if radio.createdAt else None,
         'updatedAt': radio.updatedAt.isoformat() if radio.updatedAt else None
     }), 200

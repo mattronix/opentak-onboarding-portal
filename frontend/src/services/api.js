@@ -249,4 +249,10 @@ export const packagesAPI = {
     api.delete(`/packages/${id}`),
 };
 
+// Settings API
+export const settingsAPI = {
+  get: () =>
+    api.get('/settings'),
+};
+
 export default api;

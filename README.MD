@@ -149,6 +149,14 @@ All documentation is in the [`/docs`](./docs/) folder:
 - **[Final Status](./docs/FINAL_STATUS.md)** - Project completion status
 - **[API README](./docs/README_API.md)** - Quick API reference
 
+### Frontend & Configuration
+- **[Frontend Dashboard](./docs/FRONTEND_DASHBOARD.md)** - React dashboard implementation
+- **[Dashboard Mobile Responsive](./docs/DASHBOARD_MOBILE_RESPONSIVE.md)** - Mobile responsive design guide
+- **[Settings API Endpoint](./docs/SETTINGS_API_ENDPOINT.md)** - Configuration API documentation
+- **[Settings Flow Diagram](./docs/SETTINGS_FLOW_DIAGRAM.md)** - Visual settings architecture
+- **[Dashboard Implementation Summary](./docs/DASHBOARD_IMPLEMENTATION_SUMMARY.md)** - Complete implementation overview
+- **[API-Only Mode](./docs/API_ONLY_MODE.md)** - Disable traditional routes
+
 ### Architecture
 - **[Fixes Applied](./docs/FIXES_APPLIED.md)** - Bug fixes and improvements
 
@@ -180,6 +188,36 @@ All endpoints are available at `/api/v1/`:
 - **Meshtastic** (5 endpoints) - Radio configuration
 - **Radios** (7 endpoints) - Device inventory
 - **Packages** (5 endpoints) - ATAK package management
+- **Settings** (1 endpoint) - Public configuration for frontend
+
+### ⚙️ Settings API
+
+The `/api/v1/settings` endpoint exposes backend configuration to the frontend, enabling dynamic UI behavior:
+
+```bash
+# Test the settings endpoint
+curl http://localhost:5000/api/v1/settings
+```
+
+**Response includes:**
+- Branding (portal name, colors, logo)
+- Feature flags (show/hide UI elements)
+- TAK server configuration
+- Help links and support email
+
+**Example configuration in `.env`:**
+```bash
+BRAND_NAME="My TAK Portal"
+PRIMARY_COLOR="#000000"
+ACCENT_COLOR="#ff9800"
+GENERATE_ITAK_QR_CODE=True
+ITAK_HOMEPAGE_ICON_ENABLED=True
+TRUSTSTORE_HOMEPAGE_ICON_ENABLED=True
+ZEROTIER_ICON=False
+FORGOT_PASSWORD_ENABLED=True
+```
+
+See [Settings API Documentation](./docs/SETTINGS_API_ENDPOINT.md) for complete details.
 
 ## 🧪 Testing
 
