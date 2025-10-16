@@ -1,4 +1,3 @@
-version: '3.8'
 services:
     web:
         restart: always
@@ -15,7 +14,9 @@ services:
             # Mount data packages
             - ./datapackages:/app/data_packages
         environment:
-            - FRONTEND_URL=http://localhost:5000
+            # FRONTEND_URL is now auto-detected from request host
+            # Uncomment and set if you need to override (e.g., behind a reverse proxy)
+            # - FRONTEND_URL=https://your-domain.com
             - CORS_ORIGINS=*
         extra_hosts:
             - "host.docker.internal:host-gateway"

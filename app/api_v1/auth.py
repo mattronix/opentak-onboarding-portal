@@ -422,7 +422,13 @@ def forgot_password():
 
         # Send email
         try:
-            reset_link = f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token={token_value}"
+            # Get frontend URL from config, or derive from request
+            frontend_url = current_app.config.get('FRONTEND_URL')
+            if not frontend_url or frontend_url == 'http://localhost:5173':
+                # Derive from request URL (scheme + host)
+                frontend_url = f"{request.scheme}://{request.host}"
+
+            reset_link = f"{frontend_url}/reset-password?token={token_value}"
             message = f"Hello {user.username},\n\nYou have requested to reset your password. Please click the link below to reset your password:\n\n{reset_link}\n\nThis link will expire in 15 minutes and can only be used once.\n\nIf you did not request this, please ignore this email."
 
             send_html_email(
