@@ -489,7 +489,13 @@ def verify_email():
 
         # Send welcome email to new user
         try:
-            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+            frontend_url = current_app.config.get('FRONTEND_URL')
+            if not frontend_url or frontend_url == 'http://localhost:5173':
+                # Auto-detect: use same host as API request
+                if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
+                    frontend_url = 'http://localhost:5173'
+                else:
+                    frontend_url = f"{request.scheme}://{request.host}"
 
             welcome_message = f"""Welcome to OpenTAK, {user.firstName}!
 
