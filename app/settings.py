@@ -52,7 +52,7 @@ ENABLE_CLAIM_RADIO = strtobool(environ.get('ENABLE_CLAIM_RADIO', 'False'))
 TESTING = strtobool(environ.get('TESTING', 'False'))
 
 # Frontend URL for password reset links
-FRONTEND_URL = str(environ.get('FRONTEND_URL', 'http://localhost:5173'))
+FRONTEND_URL = str(environ.get('FRONTEND_URL', 'http://localhost:5000'))
 
 # CORS origins for API
 CORS_ORIGINS = str(environ.get('CORS_ORIGINS', '*'))
