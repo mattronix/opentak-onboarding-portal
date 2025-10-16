@@ -122,6 +122,12 @@ docker compose up -d
 docker compose exec web flask db upgrade
 ```
 
+## If the database goes into read only: 
+
+## Fix ownership - the container uses UID 1000 (appuser)
+sudo chown -R 1000:1000 instance/
+
+
 ## Production Recommendations
 
 1. **Use a reverse proxy** (nginx, Caddy) with SSL
