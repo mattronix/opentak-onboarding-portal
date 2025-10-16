@@ -3,7 +3,7 @@ Users API endpoints
 CRUD operations for user management
 """
 
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt
 from app.api_v1 import api_v1
 from app.models import UserModel, UserRoleModel
@@ -315,7 +315,7 @@ def update_user(user_id):
 @jwt_required()
 def delete_user(user_id):
     """
-    Delete user (admin only)
+    Delete user from both OTS and local database (admin only)
     """
     error = require_admin_role()
     if error:
@@ -325,15 +325,35 @@ def delete_user(user_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
+    # Store username for logging
+    username = user.username
+
     try:
         # Delete from OTS first
+        current_app.logger.info(f"Attempting to delete user '{username}' from OTS")
         ots = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
-        ots.delete_user(user.username)
+
+        try:
+            ots_response = ots.delete_user(username)
+            current_app.logger.info(f"Successfully deleted user '{username}' from OTS: {ots_response}")
+        except Exception as ots_error:
+            current_app.logger.error(f"Failed to delete user '{username}' from OTS: {str(ots_error)}")
+            # Continue with local deletion even if OTS deletion fails
+            # This prevents orphaned users in local DB if OTS user doesn't exist
+            current_app.logger.warning(f"Continuing with local deletion for user '{username}'")
 
         # Delete from local database
-        UserModel.delete_user_by_id(user_id)
+        current_app.logger.info(f"Deleting user '{username}' from local database")
+        result = UserModel.delete_user_by_id(user_id)
 
-        return jsonify({'message': 'User deleted successfully'}), 200
+        if isinstance(result, dict) and 'error' in result:
+            return jsonify({'error': result['error']}), 400
+
+        current_app.logger.info(f"Successfully deleted user '{username}' from local database")
+        return jsonify({
+            'message': f'User {username} deleted successfully from both OTS and local database'
+        }), 200
 
     except Exception as e:
+        current_app.logger.error(f"Failed to delete user '{username}': {str(e)}")
         return jsonify({'error': f'Failed to delete user: {str(e)}'}), 400

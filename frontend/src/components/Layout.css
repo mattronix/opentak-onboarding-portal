@@ -17,15 +17,6 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  transition: transform 0.3s ease-in-out;
-}
-
-.navbar-visible {
-  transform: translateY(0);
-}
-
-.navbar-hidden {
-  transform: translateY(-100%);
 }
 
 .navbar-brand a {
@@ -150,15 +141,6 @@
   left: 0;
   right: 0;
   z-index: 999;
-  transition: transform 0.3s ease-in-out;
-}
-
-.footer-visible {
-  transform: translateY(0);
-}
-
-.footer-hidden {
-  transform: translateY(100%);
 }
 
 .footer p {

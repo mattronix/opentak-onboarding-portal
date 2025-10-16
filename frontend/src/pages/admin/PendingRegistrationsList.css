@@ -1,0 +1,229 @@
+.pending-registrations-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pending-registrations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.pending-registrations-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #c33;
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  color: #666;
+}
+
+.no-data .hint {
+  font-size: 0.9rem;
+  color: #999;
+  margin-top: 0.5rem;
+}
+
+.pending-registrations-table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pending-registrations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pending-registrations-table thead {
+  background-color: #f5f5f5;
+}
+
+.pending-registrations-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.pending-registrations-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pending-registrations-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.pending-registrations-table tbody tr.expired-row {
+  background-color: #fff3f3;
+}
+
+.pending-registrations-table tbody tr.expired-row:hover {
+  background-color: #ffe8e8;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.expired {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.btn-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: #138496;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  color: #000;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.pending-registrations-stats {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  text-align: center;
+  color: #666;
+}
+
+.pending-registrations-stats strong {
+  color: #333;
+  font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+  .pending-registrations-table {
+    font-size: 0.9rem;
+  }
+
+  .pending-registrations-table th,
+  .pending-registrations-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .pending-registrations-container {
+    padding: 1rem;
+  }
+
+  .pending-registrations-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
+
+  .pending-registrations-table-container {
+    overflow-x: scroll;
+  }
+
+  .pending-registrations-table {
+    min-width: 900px;
+  }
+}

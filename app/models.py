@@ -156,7 +156,8 @@ class UserModel(db.Model):
     callsign: Mapped[str] = mapped_column(nullable=True)
     onboardedBy = Column(ForeignKey("users.id"))
     onboarContactFor = relationship("OnboardingCodeModel", backref="user")
-    expiryDate = mapped_column(DateTime, nullable=True) 
+    expiryDate = mapped_column(DateTime, nullable=True)
+    emailVerified: Mapped[bool] = mapped_column(default=False, nullable=True) 
     
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
@@ -370,12 +371,12 @@ class OnboardingCodeModel(db.Model):
     onboardingCode: Mapped[str] = mapped_column(unique=True)
     uses: Mapped[int] = mapped_column(nullable=True, default=0)
     maxUses: Mapped[int] = mapped_column(nullable=True)
-    onboardContact = Column(Integer, ForeignKey('users.id'), nullable=True)
+    onboardContactId = Column(Integer, ForeignKey('users.id'), nullable=True)
     expiryDate = mapped_column(DateTime, nullable=True)
     userExpiryDate = mapped_column(DateTime, nullable=True)
 
     # Relationship to UserModel for onboard contact
-    onboardContact_user = relationship("UserModel", foreign_keys=[onboardContact])
+    onboardContact = relationship("UserModel", foreign_keys=[onboardContactId])
 
     roles = relationship(
         "UserRoleModel",
@@ -391,7 +392,7 @@ class OnboardingCodeModel(db.Model):
     @staticmethod
     def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None, userexpirydate=None, expirydate=None):
         try:
-            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContact=onboardcontact, maxUses=maxuses, userExpiryDate=userexpirydate, expiryDate=expirydate)
+            onboarding_code = OnboardingCodeModel(description=description, name=name, onboardingCode=onboardingcode, users=users, roles=roles, onboardContactId=onboardcontact, maxUses=maxuses, userExpiryDate=userexpirydate, expiryDate=expirydate)
             db.session.add(onboarding_code)
             db.session.commit()
             return onboarding_code
@@ -641,6 +642,82 @@ class RadioModel(db.Model):
             return {"message": "Radio deleted successfully"}
         else:
             return {"error": "object.not.found"}
+
+
+class PendingRegistrationModel(db.Model):
+    """
+    Model for pending user registrations awaiting email verification
+    """
+    __tablename__ = "pending_registrations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(nullable=False)  # Store temporarily for OTS creation
+    firstName: Mapped[str] = mapped_column(nullable=True)
+    lastName: Mapped[str] = mapped_column(nullable=True)
+    callsign: Mapped[str] = mapped_column(nullable=True)
+    onboarding_code_id: Mapped[int] = mapped_column(ForeignKey('onboardingcodes.id'), nullable=False)
+    verification_token: Mapped[str] = mapped_column(unique=True, nullable=False)
+    expires_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), nullable=False)
+
+    onboarding_code = relationship("OnboardingCodeModel")
+
+    @staticmethod
+    def create_pending_registration(username, email, password, first_name, last_name, callsign, onboarding_code_id, verification_token, expires_at):
+        try:
+            pending = PendingRegistrationModel(
+                username=username.lower(),
+                email=email,
+                password=password,
+                firstName=first_name,
+                lastName=last_name,
+                callsign=callsign,
+                onboarding_code_id=onboarding_code_id,
+                verification_token=verification_token,
+                expires_at=expires_at
+            )
+            db.session.add(pending)
+            db.session.commit()
+            return pending
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"IntegrityError: {e}")
+            return None
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            return None
+
+    @staticmethod
+    def get_by_token(token):
+        return PendingRegistrationModel.query.filter_by(verification_token=token).first()
+
+    @staticmethod
+    def delete_by_id(pending_id):
+        pending = PendingRegistrationModel.query.get(pending_id)
+        if pending:
+            db.session.delete(pending)
+            db.session.commit()
+            return True
+        return False
+
+    @staticmethod
+    def cleanup_expired():
+        """Delete expired pending registrations"""
+        try:
+            expired = PendingRegistrationModel.query.filter(
+                PendingRegistrationModel.expires_at < datetime.datetime.now()
+            ).all()
+            for pending in expired:
+                db.session.delete(pending)
+            db.session.commit()
+            return len(expired)
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error cleaning up expired registrations: {e}")
+            return 0
 
 
 class OneTimeTokenModel(db.Model):

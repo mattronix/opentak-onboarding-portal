@@ -13,7 +13,7 @@ from flask_jwt_extended import (
 )
 from datetime import timedelta, datetime
 from app.api_v1 import api_v1
-from app.models import UserModel, UserRoleModel, OneTimeTokenModel
+from app.models import UserModel, UserRoleModel, OneTimeTokenModel, PendingRegistrationModel, OnboardingCodeModel
 from app.ots import OTSClient
 from app.email import send_html_email
 import secrets
@@ -238,7 +238,7 @@ def get_current_user():
 @api_v1.route('/auth/register', methods=['POST'])
 def register():
     """
-    Register a new user with onboarding code
+    Register a new user with onboarding code (creates pending registration and sends verification email)
 
     Request body:
     {
@@ -251,7 +251,7 @@ def register():
         "onboardingCode": "string"
     }
     """
-    from app.models import OnboardingCodeModel
+    from app.models import OnboardingCodeModel, PendingRegistrationModel
     from datetime import datetime
 
     data = request.get_json()
@@ -261,6 +261,29 @@ def register():
     for field in required_fields:
         if not data.get(field):
             return jsonify({'error': f'{field} is required'}), 400
+
+    # Validate email format (basic check)
+    if '@' not in data['email'] or '.' not in data['email']:
+        return jsonify({'error': 'Invalid email format'}), 400
+
+    # Check for duplicate username in existing users
+    existing_user = UserModel.get_user_by_username(data['username'])
+    if existing_user:
+        return jsonify({'error': 'Username already exists'}), 409
+
+    # Check for duplicate email in existing users
+    existing_email = UserModel.query.filter_by(email=data['email']).first()
+    if existing_email:
+        return jsonify({'error': 'Email already registered'}), 409
+
+    # Check for duplicate in pending registrations
+    pending_username = PendingRegistrationModel.query.filter_by(username=data['username'].lower()).first()
+    if pending_username:
+        return jsonify({'error': 'Username already pending verification'}), 409
+
+    pending_email = PendingRegistrationModel.query.filter_by(email=data['email']).first()
+    if pending_email:
+        return jsonify({'error': 'Email already pending verification'}), 409
 
     # Validate onboarding code
     onboarding_code = OnboardingCodeModel.get_onboarding_code_by_code(data['onboardingCode'])
@@ -276,6 +299,133 @@ def register():
         return jsonify({'error': 'Onboarding code has reached maximum uses'}), 400
 
     try:
+        # Generate verification token (64 characters)
+        verification_token = secrets.token_urlsafe(48)
+
+        # Set expiration (24 hours from now)
+        expires_at = datetime.now() + timedelta(hours=24)
+
+        # Create pending registration
+        pending = PendingRegistrationModel.create_pending_registration(
+            username=data['username'],
+            email=data['email'],
+            password=data['password'],  # Store temporarily
+            first_name=data['firstName'],
+            last_name=data['lastName'],
+            callsign=data['callsign'],
+            onboarding_code_id=onboarding_code.id,
+            verification_token=verification_token,
+            expires_at=expires_at
+        )
+
+        if not pending:
+            return jsonify({'error': 'Failed to create pending registration'}), 500
+
+        # Send verification email to user
+        try:
+            # Get frontend URL from config or use default frontend port
+            frontend_url = current_app.config.get('FRONTEND_URL')
+            if not frontend_url or frontend_url == 'http://localhost:5173':
+                # Default to frontend on port 5173 for local development
+                if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
+                    frontend_url = 'http://localhost:5173'
+                else:
+                    # For production, use the same host as the API
+                    frontend_url = f"{request.scheme}://{request.host}"
+
+            verification_link = f"{frontend_url}/verify-email?token={verification_token}"
+
+            welcome_message = f"""Hello {data['firstName']} {data['lastName']},
+
+Thank you for registering with OpenTAK Onboarding Portal!
+
+To complete your registration, please verify your email address by clicking the link below:
+
+{verification_link}
+
+This link will expire in 24 hours.
+
+Your registration details:
+- Username: {data['username']}
+- Callsign: {data['callsign']}
+- Email: {data['email']}
+
+If you did not request this registration, please ignore this email.
+
+Welcome to the team!"""
+
+            send_html_email(
+                subject='Verify Your Email - OpenTAK Portal',
+                recipients=[data['email']],
+                message=welcome_message,
+                title='Welcome! Please Verify Your Email',
+                link_url=verification_link,
+                link_title='Verify Email Address'
+            )
+
+            current_app.logger.info(f"Verification email sent to {data['email']} for user {data['username']}")
+
+        except Exception as e:
+            current_app.logger.error(f"Failed to send verification email: {str(e)}")
+            # Delete pending registration if email fails
+            PendingRegistrationModel.delete_by_id(pending.id)
+            return jsonify({'error': f'Failed to send verification email: {str(e)}'}), 500
+
+        return jsonify({
+            'message': 'Registration initiated. Please check your email to verify your account.',
+            'email': data['email']
+        }), 201
+
+    except Exception as e:
+        current_app.logger.error(f"Registration failed: {str(e)}")
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 400
+
+
+@api_v1.route('/auth/verify-email', methods=['POST'])
+def verify_email():
+    """
+    Verify email and complete user registration
+
+    Request body:
+    {
+        "token": "string"
+    }
+    """
+    from app.models import PendingRegistrationModel, OnboardingCodeModel
+    from datetime import datetime
+
+    data = request.get_json()
+    token = data.get('token')
+
+    if not token:
+        return jsonify({'error': 'Verification token is required'}), 400
+
+    try:
+        # Find pending registration
+        pending = PendingRegistrationModel.get_by_token(token)
+
+        if not pending:
+            return jsonify({'error': 'Invalid verification token'}), 400
+
+        # Check if expired
+        if pending.expires_at < datetime.now():
+            PendingRegistrationModel.delete_by_id(pending.id)
+            return jsonify({'error': 'Verification link has expired. Please register again.'}), 400
+
+        # Get onboarding code
+        onboarding_code = OnboardingCodeModel.get_onboarding_code_by_id(pending.onboarding_code_id)
+        if not onboarding_code:
+            return jsonify({'error': 'Onboarding code no longer valid'}), 400
+
+        # Double-check for duplicates before creating
+        if UserModel.get_user_by_username(pending.username):
+            PendingRegistrationModel.delete_by_id(pending.id)
+            return jsonify({'error': 'Username already exists'}), 409
+
+        if UserModel.query.filter_by(email=pending.email).first():
+            PendingRegistrationModel.delete_by_id(pending.id)
+            return jsonify({'error': 'Email already registered'}), 409
+
         # Create user in OTS
         ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
 
@@ -286,8 +436,8 @@ def register():
 
         # Create user in OTS with username, password, and roles
         ots_response = ots.create_user(
-            username=data['username'],
-            password=data['password'],
+            username=pending.username,
+            password=pending.password,
             roles=ots_roles
         )
 
@@ -295,18 +445,21 @@ def register():
         expiry_date = onboarding_code.userExpiryDate if onboarding_code.userExpiryDate else None
 
         user = UserModel.create_user(
-            username=data['username'],
-            email=data['email'],
-            firstname=data['firstName'],
-            lastname=data['lastName'],
-            callsign=data['callsign'],
+            username=pending.username,
+            email=pending.email,
+            firstname=pending.firstName,
+            lastname=pending.lastName,
+            callsign=pending.callsign,
             expirydate=expiry_date,
             onboardedby=onboarding_code.onboardContact.username if onboarding_code.onboardContact else None
         )
 
         # Check if user creation failed
         if isinstance(user, dict) and 'error' in user:
-            return jsonify({'error': f'User already exists in local database'}), 409
+            return jsonify({'error': f'User already exists'}), 409
+
+        # Mark email as verified
+        user.emailVerified = True
 
         # Add roles from onboarding code
         for role in onboarding_code.roles:
@@ -327,46 +480,88 @@ def register():
         # Increment onboarding code uses
         onboarding_code.uses += 1
 
-        # Commit all changes (roles, TAK profiles, Meshtastic, code usage)
+        # Commit all changes
         from app.models import db
         db.session.commit()
+
+        # Delete pending registration
+        PendingRegistrationModel.delete_by_id(pending.id)
+
+        # Send welcome email to new user
+        try:
+            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+
+            welcome_message = f"""Welcome to OpenTAK, {user.firstName}!
+
+Your account has been successfully created and verified. You can now start using the OpenTAK Portal.
+
+Your Account Details:
+- Username: {user.username}
+- Email: {user.email}
+- Callsign: {user.callsign}
+
+Getting Started:
+1. Login to the portal at {frontend_url}/login
+2. Download your TAK certificates from your dashboard
+3. Configure your TAK devices with your certificates
+4. Join the network and start collaborating!
+
+Need Help?
+If you have any questions or need assistance, please contact your onboard coordinator or visit our help center.
+
+Welcome aboard!
+The OpenTAK Team"""
+
+            send_html_email(
+                subject='Welcome to OpenTAK Portal!',
+                recipients=[user.email],
+                message=welcome_message,
+                title='Welcome to OpenTAK!',
+                link_url=f"{frontend_url}/login",
+                link_title='Login to Portal'
+            )
+
+            current_app.logger.info(f"Welcome email sent to {user.email}")
+        except Exception as e:
+            current_app.logger.error(f"Failed to send welcome email: {str(e)}")
+            # Don't fail verification if email fails
 
         # Send email notification to onboard contact
         if onboarding_code.onboardContact:
             try:
-                onboard_contact = UserModel.get_user_by_id(onboarding_code.onboardContact)
+                onboard_contact = onboarding_code.onboardContact
                 if onboard_contact and onboard_contact.email:
                     notification_message = (
                         f"Using your Onboarding Code '{onboarding_code.name}' ({onboarding_code.onboardingCode}), "
-                        f"a new registration has been made:\n\n"
+                        f"a new registration has been completed:\n\n"
                         f"Username: {user.username}\n"
                         f"Callsign: {user.callsign}\n"
                         f"Email: {user.email}\n\n"
                         f"If this is not who you expect, please contact your administrator."
                     )
                     send_html_email(
-                        subject='New User Registration',
+                        subject='New User Registration Completed',
                         recipients=[onboard_contact.email],
                         message=notification_message,
-                        title='New Registration Using Your Link'
+                        title='New Registration Completed'
                     )
             except Exception as e:
                 current_app.logger.error(f"Failed to send onboard contact notification: {str(e)}")
-                # Don't fail registration if email fails
+                # Don't fail verification if email fails
 
         return jsonify({
-            'message': 'User registered successfully',
+            'message': 'Email verified successfully! Your account is now active.',
             'user': {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
                 'callsign': user.callsign
             }
-        }), 201
+        }), 200
 
     except Exception as e:
-        current_app.logger.error(f"Registration failed: {str(e)}")
-        return jsonify({'error': f'Registration failed: {str(e)}'}), 400
+        current_app.logger.error(f"Email verification failed: {str(e)}")
+        return jsonify({'error': f'Email verification failed: {str(e)}'}), 400
 
 
 @api_v1.route('/auth/forgot-password', methods=['POST'])

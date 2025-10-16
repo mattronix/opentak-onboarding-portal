@@ -1,7 +1,7 @@
 .python-version
 *.pyc
 .env
-instance/db.sqlite
+instance/
 .DS_Store
 datapackages/*
 updates/*

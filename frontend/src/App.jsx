@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 // Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
+import RegistrationSuccess from './pages/RegistrationSuccess';
 import Dashboard from './pages/Dashboard';
 import EditProfile from './pages/EditProfile';
 import ChangePassword from './pages/ChangePassword';
@@ -12,6 +14,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersList from './pages/admin/UsersList';
 import RolesList from './pages/admin/RolesList';
 import OnboardingCodesList from './pages/admin/OnboardingCodesList';
+import PendingRegistrationsList from './pages/admin/PendingRegistrationsList';
 import TakProfilesList from './pages/admin/TakProfilesList';
 import MeshtasticList from './pages/admin/MeshtasticList';
 import RadiosList from './pages/admin/RadiosList';
@@ -97,6 +100,8 @@ function App() {
                 </PublicRoute>
               }
             />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/registration-success" element={<RegistrationSuccess />} />
 
             {/* Protected routes */}
             <Route
@@ -143,6 +148,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <OnboardingCodesList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/pending-registrations"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <PendingRegistrationsList />
                   </ProtectedRoute>
                 }
               />
