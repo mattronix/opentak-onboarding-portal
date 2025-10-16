@@ -16,11 +16,11 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
-# Copy minimal git info for version script
-COPY .git/HEAD .git/HEAD
-COPY .git/refs .git/refs
+# Set git info as environment variables for generate-version.js
+ENV GIT_COMMIT=${GIT_COMMIT}
+ENV GIT_DATE=${GIT_DATE}
 
-# Build frontend (generate-version.js will create version.json)
+# Build frontend (generate-version.js will use env vars)
 RUN npm run build
 
 # Stage 2: Python application

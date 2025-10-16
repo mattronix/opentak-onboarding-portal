@@ -3,6 +3,14 @@
 
 set -e
 
+# Check for --no-cache flag
+NO_CACHE=""
+if [ "$1" == "--no-cache" ]; then
+  NO_CACHE="--no-cache"
+  echo "Building with --no-cache flag (clean build)"
+  echo ""
+fi
+
 # Get git commit hash (short 12 chars)
 GIT_COMMIT=$(git rev-parse --short=12 HEAD 2>/dev/null || echo "dev")
 
@@ -15,7 +23,7 @@ echo "  Date:   ${GIT_DATE}"
 echo ""
 
 # Build with docker compose
-docker compose build \
+docker compose build ${NO_CACHE} \
   --build-arg GIT_COMMIT="${GIT_COMMIT}" \
   --build-arg GIT_DATE="${GIT_DATE}"
 
