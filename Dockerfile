@@ -16,13 +16,12 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
-# Create version.json manually using build args
-RUN mkdir -p public && \
-    echo "{\"commit\":\"${GIT_COMMIT}\",\"date\":\"${GIT_DATE}\",\"buildTime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/version.json && \
-    cat public/version.json
+# Copy minimal git info for version script
+COPY .git/HEAD .git/HEAD
+COPY .git/refs .git/refs
 
-# Build frontend
-RUN npm run build || (echo "Build failed, but continuing..." && npm run build:fallback)
+# Build frontend (generate-version.js will create version.json)
+RUN npm run build
 
 # Stage 2: Python application
 FROM python:3.11-slim
