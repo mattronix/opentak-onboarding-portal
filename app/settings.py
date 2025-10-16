@@ -42,8 +42,12 @@ BRAND_NAME = str(environ.get('BRAND_NAME', 'My OTS Portal'))
 FORGOT_PASSWORD_ENABLED = strtobool(environ.get('FORGOT_PASSWORD_ENABLED', 'True'))
 
 JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
+# Allow JWT identity to be any JSON-serializable type (not just string)
+JWT_IDENTITY_CLAIM = 'sub'
+JWT_ALGORITHM = 'HS256'
 
 ZEROTIER_ICON = strtobool(environ.get('ZEROTIER_ICON', 'False'))
 ENABLE_REPO = strtobool(environ.get('ENABLE_REPO', 'False'))
 ENABLE_API = strtobool(environ.get('ENABLE_API', 'False'))
 ENABLE_CLAIM_RADIO = strtobool(environ.get('ENABLE_CLAIM_RADIO', 'False'))
+TESTING = strtobool(environ.get('TESTING', 'False'))

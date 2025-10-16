@@ -406,6 +406,10 @@ class OnboardingCodeModel(db.Model):
         return OnboardingCodeModel.query.get(onboarding_code_id)
 
     @staticmethod
+    def get_onboarding_code_by_code(code):
+        return OnboardingCodeModel.query.filter_by(onboardingCode=code).first()
+
+    @staticmethod
     def get_all_onboarding_codes():
         return OnboardingCodeModel.query.all()
 
