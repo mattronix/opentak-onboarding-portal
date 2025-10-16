@@ -113,14 +113,32 @@ def create_app():
     @app.route('/<path:path>')
     def serve_spa(path):
         """Serve the React SPA for all non-API routes"""
+        # Skip API routes and static files
+        if path.startswith('api/') or path.startswith('static/'):
+            return None  # Let Flask handle it normally
+
         # Get the project root directory (parent of app/)
         app_dir = os.path.dirname(__file__)  # app/
         project_root = os.path.dirname(app_dir)  # project root
         static_folder = os.path.join(project_root, 'frontend', 'dist')
 
+        # Log the path for debugging
+        app.logger.debug(f"SPA route: path={path}, static_folder={static_folder}")
+
+        # Check if static folder exists
+        if not os.path.exists(static_folder):
+            app.logger.error(f"Frontend dist folder not found: {static_folder}")
+            return jsonify({'error': 'Frontend not built. Run: cd frontend && npm run build'}), 404
+
         # If path exists as a file, serve it
         if path and os.path.exists(os.path.join(static_folder, path)):
             return send_from_directory(static_folder, path)
+
+        # Check if index.html exists
+        index_path = os.path.join(static_folder, 'index.html')
+        if not os.path.exists(index_path):
+            app.logger.error(f"index.html not found in: {static_folder}")
+            return jsonify({'error': 'Frontend index.html not found'}), 404
 
         # Otherwise serve index.html (for client-side routing)
         return send_from_directory(static_folder, 'index.html')
