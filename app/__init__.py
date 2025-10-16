@@ -49,18 +49,7 @@ def create_app():
         scheduler.init_app(app)
     jwt_manager.init_app(app)
 
-    # Register traditional form-based blueprints (unless API-only mode is enabled)
-    if not app.config.get('API_ONLY_MODE', False):
-        app.register_blueprint(routes)
-        app.register_blueprint(admin_routes)
-        app.register_blueprint(admin_routes_onboarding)
-        app.register_blueprint(admin_routes_users)
-        app.register_blueprint(admin_routes_takprofiles)
-        app.register_blueprint(admin_routes_roles)
-        app.register_blueprint(admin_routes_meshtastic)
-        app.register_blueprint(admin_routes_radios)
-
-    # Register API blueprints
+    # Register API blueprints (if enabled)
     if app.config['ENABLE_API']:
         from app.api_views import api_routes
         app.register_blueprint(api_routes)
@@ -103,6 +92,31 @@ def create_app():
         )
 
         app.register_blueprint(swaggerui_blueprint)
+
+        # Serve React SPA
+        @app.route('/', defaults={'path': ''})
+        @app.route('/<path:path>')
+        def serve_spa(path):
+            """Serve the React SPA for all non-API routes"""
+            static_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
+
+            # If path exists as a file, serve it
+            if path and os.path.exists(os.path.join(static_folder, path)):
+                return send_from_directory(static_folder, path)
+
+            # Otherwise serve index.html (for client-side routing)
+            return send_from_directory(static_folder, 'index.html')
+
+    # Register traditional form-based blueprints (if API is disabled)
+    if not app.config['ENABLE_API']:
+        app.register_blueprint(routes)
+        app.register_blueprint(admin_routes)
+        app.register_blueprint(admin_routes_onboarding)
+        app.register_blueprint(admin_routes_users)
+        app.register_blueprint(admin_routes_takprofiles)
+        app.register_blueprint(admin_routes_roles)
+        app.register_blueprint(admin_routes_meshtastic)
+        app.register_blueprint(admin_routes_radios)
 
     if app.config['ENABLE_REPO']:
         app.register_blueprint(admin_routes_packages)
