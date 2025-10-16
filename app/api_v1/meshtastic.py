@@ -173,9 +173,9 @@ def update_meshtastic_config(config_id):
             yaml.safe_load(data['yamlConfig'])
             config.yamlConfig = data['yamlConfig']
 
-        # Update roles
-        if 'roleIds' in data:
-            config.roles = []
+        # Update roles - always clear and set, even if empty
+        config.roles = []
+        if data.get('roleIds'):
             for role_id in data['roleIds']:
                 role = UserRoleModel.get_by_id(role_id)
                 if role:

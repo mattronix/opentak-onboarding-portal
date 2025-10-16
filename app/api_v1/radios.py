@@ -125,7 +125,7 @@ def create_radio():
             platform=data.get('platform', ''),
             radioType=data.get('radioType', 'other'),
             description=data.get('description', ''),
-            softwareVersion=data.get('softwareVersion', ''),
+            software_version=data.get('softwareVersion', ''),
             model=data.get('model', ''),
             vendor=data.get('vendor', ''),
             shortName=data.get('shortName', ''),
@@ -134,8 +134,8 @@ def create_radio():
             role=data.get('role', ''),
             publicKey=data.get('publicKey', ''),
             privateKey=data.get('privateKey', ''),
-            assignedTo=data.get('assignedToId'),
-            owner=data.get('ownerId')
+            assignedTo=data.get('assignedTo'),
+            owner=data.get('owner')
         )
 
         return jsonify({

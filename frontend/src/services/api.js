@@ -155,6 +155,9 @@ export const takProfilesAPI = {
   getById: (id) =>
     api.get(`/tak-profiles/${id}`),
 
+  getFiles: (id) =>
+    api.get(`/tak-profiles/${id}/files`),
+
   download: (id) => {
     const token = localStorage.getItem('access_token');
     window.open(

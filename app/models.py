@@ -639,3 +639,89 @@ class RadioModel(db.Model):
         else:
             return {"error": "object.not.found"}
 
+
+class OneTimeTokenModel(db.Model):
+    """
+    Model for one-time use tokens for password reset and email verification
+    """
+    __tablename__ = "one_time_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token: Mapped[str] = mapped_column(unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    token_type: Mapped[str] = mapped_column(nullable=False)  # 'password_reset', 'email_verification', etc.
+    is_used: Mapped[bool] = mapped_column(default=False, nullable=False)
+    expires_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), nullable=False)
+    used_at: Mapped[datetime.datetime] = mapped_column(nullable=True)
+
+    user = relationship("UserModel", backref="tokens")
+
+    @staticmethod
+    def create_token(user_id, token, token_type, expires_at):
+        """Create a new one-time use token"""
+        try:
+            new_token = OneTimeTokenModel(
+                user_id=user_id,
+                token=token,
+                token_type=token_type,
+                expires_at=expires_at
+            )
+            db.session.add(new_token)
+            db.session.commit()
+            return new_token
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating token: {e}")
+            return None
+
+    @staticmethod
+    def get_token(token, token_type):
+        """Get a token by value and type"""
+        return OneTimeTokenModel.query.filter_by(
+            token=token,
+            token_type=token_type
+        ).first()
+
+    @staticmethod
+    def validate_and_use_token(token, token_type):
+        """
+        Validate a token and mark it as used
+        Returns the user_id if valid, None otherwise
+        """
+        token_obj = OneTimeTokenModel.get_token(token, token_type)
+
+        if not token_obj:
+            return None
+
+        # Check if already used
+        if token_obj.is_used:
+            return None
+
+        # Check if expired
+        if datetime.datetime.now() > token_obj.expires_at:
+            return None
+
+        # Mark as used
+        token_obj.is_used = True
+        token_obj.used_at = datetime.datetime.now()
+        db.session.commit()
+
+        return token_obj.user_id
+
+    @staticmethod
+    def cleanup_expired_tokens():
+        """Delete expired tokens (for maintenance)"""
+        try:
+            expired = OneTimeTokenModel.query.filter(
+                OneTimeTokenModel.expires_at < datetime.datetime.now()
+            ).all()
+            for token in expired:
+                db.session.delete(token)
+            db.session.commit()
+            return len(expired)
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error cleaning up tokens: {e}")
+            return 0
+

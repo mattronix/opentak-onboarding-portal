@@ -135,13 +135,13 @@ def create_onboarding_code():
         onboard_contact_id = data.get('onboardContactId')
 
         code = OnboardingCodeModel.create_onboarding_code(
+            onboardingcode=data['onboardingCode'],
             name=data['name'],
             description=data.get('description', ''),
-            onboardingCode=data['onboardingCode'],
-            maxUses=data.get('maxUses'),
-            onboardContact=onboard_contact_id,
-            expiryDate=expiry_date,
-            userExpiryDate=user_expiry_date
+            maxuses=data.get('maxUses'),
+            onboardcontact=onboard_contact_id,
+            expirydate=expiry_date,
+            userexpirydate=user_expiry_date
         )
 
         # Add roles
@@ -200,9 +200,9 @@ def update_onboarding_code(code_id):
             else:
                 code.userExpiryDate = None
 
-        # Update roles
-        if 'roleIds' in data:
-            code.roles = []
+        # Update roles - always clear and set, even if empty
+        code.roles = []
+        if data.get('roleIds'):
             for role_id in data['roleIds']:
                 role = UserRoleModel.get_by_id(role_id)
                 if role:

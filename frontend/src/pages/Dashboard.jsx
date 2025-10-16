@@ -116,17 +116,6 @@ function Dashboard() {
       </div>
 
       <div className="welcome-section">
-        <div className="profile-header">
-          <div className="profile-avatar">
-            {(user?.callsign || user?.username)?.charAt(0).toUpperCase()}
-          </div>
-          <div className="profile-info">
-            <h2>{user?.firstName} {user?.lastName}</h2>
-            <p className="profile-detail"><strong>Callsign:</strong> {user?.callsign || 'N/A'}</p>
-            <p className="profile-detail"><strong>Email:</strong> {user?.email || 'N/A'}</p>
-            <p className="profile-detail"><strong>Username:</strong> {user?.username}</p>
-          </div>
-        </div>
         <div className="welcome-text">
           <p>
             This portal is designed to help you get your ATAK client setup and ready to use.

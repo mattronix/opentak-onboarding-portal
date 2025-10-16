@@ -267,9 +267,9 @@ def create_tak_profile():
         profile = TakProfileModel.create_tak_profile(
             name=name,
             description=description,
-            isPublic=is_public,
-            takTemplateFolderLocation=folder_name,
-            takPrefFileLocation=tak_pref_file
+            is_public=is_public,
+            template_folder_location=folder_name,
+            pref_file_location=tak_pref_file
         )
 
         # Add roles
@@ -326,8 +326,9 @@ def update_tak_profile(profile_id):
         if 'takPrefFileLocation' in request.form:
             profile.takPrefFileLocation = request.form.get('takPrefFileLocation')
 
-        # Update roles
-        if 'roleIds[]' in request.form:
+        # Update roles - always clear and set, even if empty
+        # Check if roleIds[] is present OR if any form fields are present (indicating an update)
+        if request.form:
             profile.roles = []
             role_ids = request.form.getlist('roleIds[]')
             for role_id in role_ids:
@@ -341,6 +342,54 @@ def update_tak_profile(profile_id):
 
     except Exception as e:
         return jsonify({'error': f'Failed to update TAK profile: {str(e)}'}), 400
+
+
+@api_v1.route('/tak-profiles/<int:profile_id>/files', methods=['GET'])
+@jwt_required()
+def get_tak_profile_files(profile_id):
+    """Get file tree structure for TAK profile (admin only)"""
+    error = require_admin_role()
+    if error:
+        return error
+
+    profile = TakProfileModel.get_tak_profile_by_id(profile_id)
+    if not profile:
+        return jsonify({'error': 'TAK profile not found'}), 404
+
+    def make_tree(path, base_path=''):
+        """Recursively build file tree structure"""
+        tree = {'name': os.path.basename(path), 'path': base_path, 'children': [], 'isDir': True}
+        try:
+            items = os.listdir(path)
+            for name in sorted(items):
+                full_path = os.path.join(path, name)
+                relative_path = os.path.join(base_path, name) if base_path else name
+
+                if os.path.isdir(full_path):
+                    tree['children'].append(make_tree(full_path, relative_path))
+                else:
+                    tree['children'].append({
+                        'name': name,
+                        'path': relative_path,
+                        'isDir': False
+                    })
+        except OSError:
+            pass
+        return tree
+
+    try:
+        if profile.takTemplateFolderLocation:
+            folder_path = os.path.join(DATAPACKAGE_UPLOAD_FOLDER, profile.takTemplateFolderLocation)
+            if os.path.exists(folder_path):
+                file_tree = make_tree(folder_path)
+                return jsonify({'fileTree': file_tree}), 200
+            else:
+                return jsonify({'error': 'Profile folder not found'}), 404
+        else:
+            return jsonify({'error': 'No folder location specified'}), 404
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to get file tree: {str(e)}'}), 400
 
 
 @api_v1.route('/tak-profiles/<int:profile_id>', methods=['DELETE'])

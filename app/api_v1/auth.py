@@ -11,11 +11,12 @@ from flask_jwt_extended import (
     get_jwt_identity,
     get_jwt
 )
-from datetime import timedelta
+from datetime import timedelta, datetime
 from app.api_v1 import api_v1
-from app.models import UserModel, UserRoleModel
+from app.models import UserModel, UserRoleModel, OneTimeTokenModel
 from app.ots import OTSClient
 from app.email import send_html_email
+import secrets
 
 
 @api_v1.route('/auth/login', methods=['POST'])
@@ -56,26 +57,42 @@ def login():
         ots_profile = ots.get_me()
 
         if not ots_profile:
-            return jsonify({'error': 'Invalid credentials'}), 401
+            return jsonify({'error': 'Invalid username or password'}), 401
 
         # Get or create local user
+        from app.models import db
         user = UserModel.get_user_by_username(username)
         if not user:
             # Create user if doesn't exist locally
             user = UserModel.create_user(
                 username=username,
                 email=ots_profile.get('email', ''),
-                firstName=ots_profile.get('firstName', ''),
-                lastName=ots_profile.get('lastName', ''),
+                firstname=ots_profile.get('firstName', ''),
+                lastname=ots_profile.get('lastName', ''),
                 callsign=ots_profile.get('callsign', username)
             )
 
-        # Sync roles from OTS
+        # Sync roles from OTS - ADD roles from OTS but keep existing local roles
+        # This allows portal-managed roles to persist while still syncing OTS roles
+        # IMPORTANT: We only ADD roles from OTS, never remove existing local roles
         ots_roles = ots_profile.get('roles', [])
+        current_app.logger.info(f"Login: User {username} - OTS roles: {ots_roles}")
+        current_app.logger.info(f"Login: User {username} - Current local roles: {[r.name for r in user.roles]}")
+
+        # Add OTS roles if they don't already exist
         for role_name in ots_roles:
             role = UserRoleModel.get_role_by_name(role_name)
             if role and role not in user.roles:
                 user.roles.append(role)
+                db.session.add(user)
+                db.session.commit()
+                current_app.logger.info(f"Login: Added OTS role {role_name} to user {username}")
+            elif not role:
+                current_app.logger.warning(f"Login: Role {role_name} from OTS not found in local database")
+
+        # Refresh user to get latest state
+        db.session.refresh(user)
+        current_app.logger.info(f"Login: User {username} final roles after sync: {[r.name for r in user.roles]}")
 
         # Create JWT tokens (identity must be string for Flask-JWT-Extended)
         access_token = create_access_token(
@@ -108,7 +125,9 @@ def login():
         }), 200
 
     except Exception as e:
-        return jsonify({'error': f'Authentication failed: {str(e)}'}), 401
+        current_app.logger.error(f"Login error: {str(e)}")
+        # Return user-friendly error message
+        return jsonify({'error': 'Invalid username or password'}), 401
 
 
 @api_v1.route('/auth/refresh', methods=['POST'])
@@ -221,22 +240,17 @@ def register():
         # Create user in OTS
         ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
 
-        # Prepare user data for OTS
-        user_data = {
-            'username': data['username'],
-            'password': data['password'],
-            'email': data['email'],
-            'firstName': data['firstName'],
-            'lastName': data['lastName'],
-            'callsign': data['callsign']
-        }
-
-        # Add roles from onboarding code
+        # Prepare roles from onboarding code
+        ots_roles = ['user']  # Default role
         if onboarding_code.roles:
-            user_data['roles'] = [role.name for role in onboarding_code.roles]
+            ots_roles = [role.name for role in onboarding_code.roles]
 
-        # Create user in OTS
-        ots_response = ots.create_user(user_data)
+        # Create user in OTS with username, password, and roles
+        ots_response = ots.create_user(
+            username=data['username'],
+            password=data['password'],
+            roles=ots_roles
+        )
 
         # Create user in local database
         expiry_date = onboarding_code.userExpiryDate if onboarding_code.userExpiryDate else None
@@ -244,12 +258,16 @@ def register():
         user = UserModel.create_user(
             username=data['username'],
             email=data['email'],
-            firstName=data['firstName'],
-            lastName=data['lastName'],
+            firstname=data['firstName'],
+            lastname=data['lastName'],
             callsign=data['callsign'],
-            expiryDate=expiry_date,
-            onboardedBy=onboarding_code.onboardContact.username if onboarding_code.onboardContact else None
+            expirydate=expiry_date,
+            onboardedby=onboarding_code.onboardContact.username if onboarding_code.onboardContact else None
         )
+
+        # Check if user creation failed
+        if isinstance(user, dict) and 'error' in user:
+            return jsonify({'error': f'User already exists in local database'}), 409
 
         # Add roles from onboarding code
         for role in onboarding_code.roles:
@@ -270,6 +288,33 @@ def register():
         # Increment onboarding code uses
         onboarding_code.uses += 1
 
+        # Commit all changes (roles, TAK profiles, Meshtastic, code usage)
+        from app.models import db
+        db.session.commit()
+
+        # Send email notification to onboard contact
+        if onboarding_code.onboardContact:
+            try:
+                onboard_contact = UserModel.get_user_by_id(onboarding_code.onboardContact)
+                if onboard_contact and onboard_contact.email:
+                    notification_message = (
+                        f"Using your Onboarding Code '{onboarding_code.name}' ({onboarding_code.onboardingCode}), "
+                        f"a new registration has been made:\n\n"
+                        f"Username: {user.username}\n"
+                        f"Callsign: {user.callsign}\n"
+                        f"Email: {user.email}\n\n"
+                        f"If this is not who you expect, please contact your administrator."
+                    )
+                    send_html_email(
+                        subject='New User Registration',
+                        recipients=[onboard_contact.email],
+                        message=notification_message,
+                        title='New Registration Using Your Link'
+                    )
+            except Exception as e:
+                current_app.logger.error(f"Failed to send onboard contact notification: {str(e)}")
+                # Don't fail registration if email fails
+
         return jsonify({
             'message': 'User registered successfully',
             'user': {
@@ -281,13 +326,14 @@ def register():
         }), 201
 
     except Exception as e:
+        current_app.logger.error(f"Registration failed: {str(e)}")
         return jsonify({'error': f'Registration failed: {str(e)}'}), 400
 
 
 @api_v1.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
     """
-    Request password reset email
+    Request password reset email with one-time use token
 
     Request body:
     {
@@ -306,16 +352,27 @@ def forgot_password():
     user = UserModel.query.filter_by(email=email).first()
 
     if user:
-        # Generate reset token
-        reset_token = create_access_token(
-            identity=str(user.id),
-            expires_delta=timedelta(minutes=15)
+        # Generate unique one-time use token (32 bytes = 64 hex characters)
+        token_value = secrets.token_urlsafe(32)
+
+        # Create token expiry (15 minutes from now)
+        expires_at = datetime.now() + timedelta(minutes=15)
+
+        # Store token in database
+        token_obj = OneTimeTokenModel.create_token(
+            user_id=user.id,
+            token=token_value,
+            token_type='password_reset',
+            expires_at=expires_at
         )
+
+        if not token_obj:
+            return jsonify({'error': 'Failed to generate reset token'}), 500
 
         # Send email
         try:
-            reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
-            message = f"Hello {user.username},\n\nYou have requested to reset your password. Please click the link below to reset your password:\n\n{reset_link}\n\nThis link will expire in 15 minutes.\n\nIf you did not request this, please ignore this email."
+            reset_link = f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token={token_value}"
+            message = f"Hello {user.username},\n\nYou have requested to reset your password. Please click the link below to reset your password:\n\n{reset_link}\n\nThis link will expire in 15 minutes and can only be used once.\n\nIf you did not request this, please ignore this email."
 
             send_html_email(
                 subject='Password Reset Request',
@@ -324,6 +381,7 @@ def forgot_password():
                 title='Password Reset Request'
             )
         except Exception as e:
+            current_app.logger.error(f"Failed to send password reset email: {str(e)}")
             return jsonify({'error': f'Failed to send email: {str(e)}'}), 500
 
     # Always return success to prevent email enumeration
@@ -333,7 +391,7 @@ def forgot_password():
 @api_v1.route('/auth/reset-password', methods=['POST'])
 def reset_password():
     """
-    Reset password with token
+    Reset password with one-time use token
 
     Request body:
     {
@@ -349,14 +407,15 @@ def reset_password():
         return jsonify({'error': 'Token and new password are required'}), 400
 
     try:
-        # Verify token
-        from flask_jwt_extended import decode_token
-        decoded = decode_token(token)
-        user_id = decoded['sub']
-        # Convert to int since JWT identity is stored as string
-        user = UserModel.get_user_by_id(int(user_id))
+        # Validate and consume one-time token
+        user_id = OneTimeTokenModel.validate_and_use_token(token, 'password_reset')
+
+        if not user_id:
+            return jsonify({'error': 'Invalid, expired, or already used token'}), 400
+
+        user = UserModel.get_user_by_id(user_id)
         if not user:
-            return jsonify({'error': 'Invalid token'}), 400
+            return jsonify({'error': 'User not found'}), 404
 
         # Reset password in OTS
         ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
@@ -365,6 +424,7 @@ def reset_password():
         return jsonify({'message': 'Password reset successfully'}), 200
 
     except Exception as e:
+        current_app.logger.error(f"Password reset failed: {str(e)}")
         return jsonify({'error': f'Password reset failed: {str(e)}'}), 400
 
 

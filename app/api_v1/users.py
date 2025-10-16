@@ -274,10 +274,9 @@ def update_user(user_id):
 
     # Admin-only fields
     if is_admin:
-        if 'roleIds' in data:
-            # Clear existing roles
-            user.roles = []
-            # Add new roles
+        # Update roles - always clear and set, even if empty
+        user.roles = []
+        if data.get('roleIds'):
             for role_id in data['roleIds']:
                 role = UserRoleModel.get_by_id(role_id)
                 if role:
