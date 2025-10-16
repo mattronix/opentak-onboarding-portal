@@ -117,18 +117,27 @@ def create_app():
         if path.startswith('api/') or path.startswith('static/'):
             return None  # Let Flask handle it normally
 
-        # Get the project root directory (parent of app/)
+        # Determine static folder path
+        # In Docker: /app/frontend/dist
+        # In local dev: <project_root>/frontend/dist
         app_dir = os.path.dirname(__file__)  # app/
-        project_root = os.path.dirname(app_dir)  # project root
-        static_folder = os.path.join(project_root, 'frontend', 'dist')
 
-        # Log the path for debugging
-        app.logger.debug(f"SPA route: path={path}, static_folder={static_folder}")
+        # Try Docker path first (when running from /app)
+        docker_static_folder = os.path.join(app_dir, '..', 'frontend', 'dist')
+        # Try local dev path (when app/ is subdirectory)
+        project_root = os.path.dirname(app_dir)
+        local_static_folder = os.path.join(project_root, 'frontend', 'dist')
 
-        # Check if static folder exists
-        if not os.path.exists(static_folder):
-            app.logger.error(f"Frontend dist folder not found: {static_folder}")
+        # Use whichever path exists
+        if os.path.exists(docker_static_folder):
+            static_folder = os.path.abspath(docker_static_folder)
+        elif os.path.exists(local_static_folder):
+            static_folder = local_static_folder
+        else:
+            app.logger.error(f"Frontend dist folder not found. Tried: {docker_static_folder} and {local_static_folder}")
             return jsonify({'error': 'Frontend not built. Run: cd frontend && npm run build'}), 404
+
+        app.logger.debug(f"SPA route: path={path}, static_folder={static_folder}")
 
         # If path exists as a file, serve it
         if path and os.path.exists(os.path.join(static_folder, path)):
