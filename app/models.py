@@ -371,8 +371,11 @@ class OnboardingCodeModel(db.Model):
     uses: Mapped[int] = mapped_column(nullable=True, default=0)
     maxUses: Mapped[int] = mapped_column(nullable=True)
     onboardContact = Column(Integer, ForeignKey('users.id'), nullable=True)
-    expiryDate = mapped_column(DateTime, nullable=True) 
-    userExpiryDate = mapped_column(DateTime, nullable=True) 
+    expiryDate = mapped_column(DateTime, nullable=True)
+    userExpiryDate = mapped_column(DateTime, nullable=True)
+
+    # Relationship to UserModel for onboard contact
+    onboardContact_user = relationship("UserModel", foreign_keys=[onboardContact])
 
     roles = relationship(
         "UserRoleModel",

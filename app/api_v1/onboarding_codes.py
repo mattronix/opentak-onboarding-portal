@@ -38,9 +38,9 @@ def get_onboarding_codes():
             'uses': code.uses,
             'maxUses': code.maxUses,
             'onboardContact': {
-                'id': code.onboardContact.id,
-                'username': code.onboardContact.username
-            } if code.onboardContact else None,
+                'id': code.onboardContact_user.id,
+                'username': code.onboardContact_user.username
+            } if code.onboardContact_user else None,
             'expiryDate': code.expiryDate.isoformat() if code.expiryDate else None,
             'userExpiryDate': code.userExpiryDate.isoformat() if code.userExpiryDate else None,
             'roles': [{'id': r.id, 'name': r.name} for r in code.roles]
@@ -68,9 +68,9 @@ def get_onboarding_code(code_id):
         'uses': code.uses,
         'maxUses': code.maxUses,
         'onboardContact': {
-            'id': code.onboardContact.id,
-            'username': code.onboardContact.username
-        } if code.onboardContact else None,
+            'id': code.onboardContact_user.id,
+            'username': code.onboardContact_user.username
+        } if code.onboardContact_user else None,
         'expiryDate': code.expiryDate.isoformat() if code.expiryDate else None,
         'userExpiryDate': code.userExpiryDate.isoformat() if code.userExpiryDate else None,
         'roles': [{'id': r.id, 'name': r.name} for r in code.roles],
