@@ -31,9 +31,17 @@ def get_meshtastic_configs():
         configs = MeshtasticModel.get_all_meshtastic()
     else:
         user = UserModel.get_user_by_id(current_user_id)
-        # Include public configs + user-assigned configs
-        configs = [m for m in MeshtasticModel.get_all_meshtastic()
-                   if m.isPublic or (user and m in user.meshtastic)]
+        # Get user's assigned configs plus all public configs
+        user_configs = user.meshtastic if user else []
+        public_configs = MeshtasticModel.query.filter_by(isPublic=True).all()
+
+        # Combine and deduplicate
+        configs_dict = {c.id: c for c in user_configs}
+        for c in public_configs:
+            if c.id not in configs_dict:
+                configs_dict[c.id] = c
+
+        configs = list(configs_dict.values())
 
     return jsonify({
         'configs': [{
