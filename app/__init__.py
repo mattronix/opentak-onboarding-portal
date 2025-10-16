@@ -37,17 +37,28 @@ def create_app():
     @jwt_manager.invalid_token_loader
     def invalid_token_callback(error):
         app.logger.error(f"Invalid token: {error}")
-        return jsonify({'error': 'Invalid token', 'message': str(error)}), 401
+        return jsonify({
+            'error': 'Invalid or expired token. Please log in again.',
+            'message': 'Session expired',
+            'code': 'TOKEN_INVALID'
+        }), 401
 
     @jwt_manager.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         app.logger.error(f"Expired token")
-        return jsonify({'error': 'Token has expired'}), 401
+        return jsonify({
+            'error': 'Token has expired. Please log in again.',
+            'code': 'TOKEN_EXPIRED'
+        }), 401
 
     @jwt_manager.unauthorized_loader
     def unauthorized_callback(error):
         app.logger.error(f"Unauthorized: {error}")
-        return jsonify({'error': 'Authorization required', 'message': str(error)}), 401
+        return jsonify({
+            'error': 'Authorization required. Please log in.',
+            'message': str(error),
+            'code': 'AUTH_REQUIRED'
+        }), 401
 
     # Register API blueprints (always enabled - API is the only mode)
     from app.api_views import api_routes
