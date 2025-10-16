@@ -3,8 +3,8 @@ TAK Profiles API endpoints
 CRUD operations and download for TAK profile management
 """
 
-from flask import request, jsonify, send_file
-from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
+from flask import request, jsonify, send_file, g
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity, verify_jwt_in_request, decode_token
 from app.api_v1 import api_v1
 from app.models import TakProfileModel, UserRoleModel, UserModel
 from werkzeug.utils import secure_filename
@@ -12,6 +12,62 @@ import os
 import zipfile
 import shutil
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
+from functools import wraps
+
+
+def get_jwt_identity_custom():
+    """Get JWT identity from either query parameter or standard header"""
+    if hasattr(g, 'jwt_identity'):
+        return g.jwt_identity
+    return get_jwt_identity()
+
+
+def get_jwt_custom():
+    """Get JWT claims from either query parameter or standard header"""
+    if hasattr(g, 'jwt_claims'):
+        return g.jwt_claims
+    return get_jwt()
+
+
+def jwt_required_with_query():
+    """
+    Custom JWT decorator that accepts token from query parameter or header.
+    Useful for download endpoints that are accessed via browser/direct links.
+    """
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            # First try to get token from query parameter
+            token = request.args.get('token')
+            if token:
+                try:
+                    # Manually verify and decode the token
+                    from flask import current_app
+                    import jwt as pyjwt
+
+                    # Decode and verify the token
+                    decoded = pyjwt.decode(
+                        token,
+                        current_app.config['JWT_SECRET_KEY'],
+                        algorithms=['HS256']
+                    )
+
+                    # Store the decoded token in g for get_jwt_identity() to use
+                    g.jwt_identity = decoded['sub']
+                    g.jwt_claims = decoded
+
+                except Exception as e:
+                    return jsonify({'error': f'Invalid token: {str(e)}'}), 401
+            else:
+                # Fall back to standard header authentication
+                try:
+                    verify_jwt_in_request()
+                except Exception as e:
+                    return jsonify({'error': 'Missing or invalid token'}), 401
+
+            return fn(*args, **kwargs)
+        return decorator
+    return wrapper
 
 
 def require_admin_role():
@@ -27,7 +83,7 @@ def require_admin_role():
 @jwt_required()
 def get_tak_profiles():
     """Get all TAK profiles (filter by user access)"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
     claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
 
@@ -56,7 +112,7 @@ def get_tak_profile(profile_id):
         return jsonify({'error': 'TAK profile not found'}), 404
 
     # Check access
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
     claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
 
@@ -77,10 +133,15 @@ def get_tak_profile(profile_id):
 
 
 @api_v1.route('/tak-profiles/<int:profile_id>/download', methods=['GET'])
-@jwt_required()
+@jwt_required_with_query()
 def download_tak_profile(profile_id):
-    """Download TAK profile as ZIP with callsign injection"""
-    current_user_id = get_jwt_identity()
+    """Download TAK profile as ZIP with callsign injection
+
+    Supports JWT token from:
+    - Authorization header: Authorization: Bearer <token>
+    - Query parameter: ?token=<token> (for browser/direct link downloads)
+    """
+    current_user_id = int(get_jwt_identity_custom())  # Convert string to int
     user = UserModel.get_user_by_id(current_user_id)
 
     profile = TakProfileModel.get_tak_profile_by_id(profile_id)
@@ -88,7 +149,7 @@ def download_tak_profile(profile_id):
         return jsonify({'error': 'TAK profile not found'}), 404
 
     # Check access
-    claims = get_jwt()
+    claims = get_jwt_custom()
     is_admin = 'administrator' in claims.get('roles', [])
     if not is_admin and not profile.isPublic and profile not in user.takprofiles:
         return jsonify({'error': 'Access denied'}), 403
@@ -98,9 +159,22 @@ def download_tak_profile(profile_id):
         import tempfile
         temp_dir = tempfile.mkdtemp()
 
+        # Get user callsign or use username as fallback
+        callsign = user.callsign if user.callsign else user.username
+
         # Copy and customize the datapackage
-        source_path = os.path.join(DATAPACKAGE_UPLOAD_FOLDER, profile.takTemplateFolderLocation)
+        # Check if takTemplateFolderLocation already includes the base folder
+        if profile.takTemplateFolderLocation.startswith(DATAPACKAGE_UPLOAD_FOLDER):
+            # Path already includes the folder, use as-is
+            source_path = profile.takTemplateFolderLocation
+        else:
+            # Path is relative, prepend the base folder
+            source_path = os.path.join(DATAPACKAGE_UPLOAD_FOLDER, profile.takTemplateFolderLocation)
+
         dest_path = os.path.join(temp_dir, 'package')
+
+        if not os.path.exists(source_path):
+            return jsonify({'error': f'TAK profile files not found at: {source_path}'}), 404
 
         shutil.copytree(source_path, dest_path)
 
@@ -110,22 +184,43 @@ def download_tak_profile(profile_id):
             if os.path.exists(pref_file):
                 with open(pref_file, 'r') as f:
                     content = f.read()
-                content = content.replace('${callsign}', user.callsign)
+                # Replace ${callsign} placeholder with actual callsign
+                content = content.replace('${callsign}', callsign)
                 with open(pref_file, 'w') as f:
                     f.write(content)
 
-        # Create ZIP file
-        zip_path = os.path.join(temp_dir, f'{profile.name}_{user.callsign}.zip')
+        # Create ZIP file with sanitized filename
+        safe_profile_name = "".join(c for c in profile.name if c.isalnum() or c in (' ', '-', '_')).strip()
+        safe_callsign = "".join(c for c in callsign if c.isalnum() or c in ('-', '_')).strip()
+        zip_filename = f'{safe_profile_name}_{safe_callsign}.zip'
+        zip_path = os.path.join(temp_dir, zip_filename)
         shutil.make_archive(zip_path.replace('.zip', ''), 'zip', dest_path)
 
-        return send_file(
+        # Send file and cleanup temp directory after sending
+        response = send_file(
             zip_path,
             as_attachment=True,
-            download_name=f'{profile.name}_{user.callsign}.zip',
+            download_name=zip_filename,
             mimetype='application/zip'
         )
 
+        # Register cleanup function to run after response is sent
+        @response.call_on_close
+        def cleanup():
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+
+        return response
+
     except Exception as e:
+        # Clean up temp directory on error
+        try:
+            if 'temp_dir' in locals():
+                shutil.rmtree(temp_dir)
+        except:
+            pass
         return jsonify({'error': f'Failed to download profile: {str(e)}'}), 500
 
 

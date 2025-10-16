@@ -23,7 +23,7 @@ def require_admin_role():
 @jwt_required()
 def get_meshtastic_configs():
     """Get all Meshtastic configs (filter by user access)"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
     claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
 
@@ -57,7 +57,7 @@ def get_meshtastic_config(config_id):
         return jsonify({'error': 'Meshtastic config not found'}), 404
 
     # Check access
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
     claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
 

@@ -178,14 +178,21 @@ def sample_user(db):
     """Create a sample user for testing"""
     from app.models import UserModel
 
-    user = UserModel.create_user(
-        username='sampleuser',
-        email='sample@example.com',
-        firstname='Sample',
-        lastname='User',
-        callsign='SAMPLE'
-    )
-    db.session.commit()
+    # Get or create user
+    user = UserModel.query.filter_by(username='sampleuser').first()
+    if not user:
+        user = UserModel.create_user(
+            username='sampleuser',
+            email='sample@example.com',
+            firstname='Sample',
+            lastname='User',
+            callsign='SAMPLE'
+        )
+        # Check if create returned an error dict
+        if isinstance(user, dict):
+            user = UserModel.query.filter_by(username='sampleuser').first()
+        else:
+            db.session.commit()
     return user
 
 
@@ -194,9 +201,16 @@ def sample_role(db):
     """Create a sample role for testing"""
     from app.models import UserRoleModel
 
-    role = UserRoleModel.create_role(
-        name='test_role',
-        description='Test role for testing'
-    )
-    db.session.commit()
+    # Get or create role
+    role = UserRoleModel.query.filter_by(name='test_role').first()
+    if not role:
+        role = UserRoleModel.create_role(
+            name='test_role',
+            description='Test role for testing'
+        )
+        # Check if create returned an error dict
+        if isinstance(role, dict):
+            role = UserRoleModel.query.filter_by(name='test_role').first()
+        else:
+            db.session.commit()
     return role

@@ -23,7 +23,7 @@ def require_admin_role():
 @jwt_required()
 def get_radios():
     """Get all radios (admin) or user's radios"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
     claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
 
@@ -71,7 +71,7 @@ def get_radio(radio_id):
         return jsonify({'error': 'Radio not found'}), 404
 
     # Check access
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
     claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
 
@@ -262,7 +262,7 @@ def assign_radio(radio_id):
 @jwt_required()
 def claim_radio(radio_id):
     """Claim ownership of a radio (user can claim unowned radio)"""
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Convert string to int
 
     radio = RadioModel.get_by_id(radio_id)
     if not radio:
