@@ -360,7 +360,7 @@ def reset_password():
 
         # Reset password in OTS
         ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
-        ots.reset_password(user.username, new_password)
+        ots.reset_user_password(user.username, new_password)
 
         return jsonify({'message': 'Password reset successfully'}), 200
 
@@ -380,31 +380,45 @@ def change_password():
         "newPassword": "string"
     }
     """
-    data = request.get_json()
-    current_password = data.get('currentPassword')
-    new_password = data.get('newPassword')
-
-    if not current_password or not new_password:
-        return jsonify({'error': 'Current and new password are required'}), 400
-
-    current_user_id = get_jwt_identity()
-    # Convert to int since JWT identity is stored as string
-    user = UserModel.get_user_by_id(int(current_user_id))
-
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+
+        current_password = data.get('currentPassword')
+        new_password = data.get('newPassword')
+
+        if not current_password or not new_password:
+            return jsonify({'error': 'Current and new password are required'}), 400
+
+        current_user_id = get_jwt_identity()
+        # Convert to int since JWT identity is stored as string
+        user = UserModel.get_user_by_id(int(current_user_id))
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
         # Verify current password with OTS
-        ots_test = OTSClient(current_app.config['OTS_URL'], user.username, current_password)
-        if not ots_test.get_me():
+        try:
+            ots_test = OTSClient(current_app.config['OTS_URL'], user.username, current_password)
+            test_result = ots_test.get_me()
+            if not test_result:
+                return jsonify({'error': 'Current password is incorrect'}), 401
+        except Exception as e:
+            current_app.logger.error(f"Password verification failed: {str(e)}")
             return jsonify({'error': 'Current password is incorrect'}), 401
 
         # Change password in OTS
-        ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
-        ots.reset_password(user.username, new_password)
+        try:
+            ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
+            result = ots.reset_user_password(user.username, new_password)
+            current_app.logger.info(f"Password reset result: {result}")
+        except Exception as e:
+            current_app.logger.error(f"Password reset failed: {str(e)}")
+            return jsonify({'error': f'Failed to reset password: {str(e)}'}), 400
 
         return jsonify({'message': 'Password changed successfully'}), 200
 
     except Exception as e:
+        current_app.logger.error(f"Change password error: {str(e)}")
         return jsonify({'error': f'Password change failed: {str(e)}'}), 400

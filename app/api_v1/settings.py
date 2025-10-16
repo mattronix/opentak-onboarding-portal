@@ -43,16 +43,16 @@ def get_settings():
         'logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png'),
         'help_link': current_app.config.get('HELP_LINK', 'https://www.google.com'),
         'help_email': current_app.config.get('HELP_EMAIL', 'help@example.nl'),
-        'generate_itak_qr_code': current_app.config.get('GENERATE_ITAK_QR_CODE', True),
+        'generate_itak_qr_code': bool(current_app.config.get('GENERATE_ITAK_QR_CODE', True)),
         'itak_hostname': current_app.config.get('ITAK_HOSTNAME', ''),
         'ots_hostname': current_app.config.get('OTS_HOSTNAME', ''),
         'ots_url': current_app.config.get('OTS_URL', ''),
-        'itak_homepage_icon_enabled': current_app.config.get('ITAK_HOMEPAGE_ICON_ENABLED', True),
-        'truststore_homepage_icon_enabled': current_app.config.get('TRUSTSTORE_HOMEPAGE_ICON_ENABLED', True),
-        'zerotier_icon': current_app.config.get('ZEROTIER_ICON', False),
-        'enable_repo': current_app.config.get('ENABLE_REPO', False),
-        'enable_claim_radio': current_app.config.get('ENABLE_CLAIM_RADIO', False),
-        'forgot_password_enabled': current_app.config.get('FORGOT_PASSWORD_ENABLED', True),
+        'itak_homepage_icon_enabled': bool(current_app.config.get('ITAK_HOMEPAGE_ICON_ENABLED', True)),
+        'truststore_homepage_icon_enabled': bool(current_app.config.get('TRUSTSTORE_HOMEPAGE_ICON_ENABLED', True)),
+        'zerotier_icon': bool(current_app.config.get('ZEROTIER_ICON', False)),
+        'enable_repo': bool(current_app.config.get('ENABLE_REPO', False)),
+        'enable_claim_radio': bool(current_app.config.get('ENABLE_CLAIM_RADIO', False)),
+        'forgot_password_enabled': bool(current_app.config.get('FORGOT_PASSWORD_ENABLED', True)),
     }
 
     return jsonify(settings), 200

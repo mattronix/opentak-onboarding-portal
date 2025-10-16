@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { takProfilesAPI, meshtasticAPI, radiosAPI, settingsAPI } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
@@ -6,6 +7,7 @@ import './Dashboard.css';
 
 function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
   // Fetch settings
@@ -109,17 +111,29 @@ function Dashboard() {
   return (
     <div className="dashboard" style={{ '--accent-color': accentColor }}>
       <div className="dashboard-header">
-        <h1>Welcome {user?.username}</h1>
+        <h1>Welcome, {user?.callsign || user?.username}</h1>
         <p className="portal-name" style={{ color: accentColor }}>{brandName}</p>
       </div>
 
       <div className="welcome-section">
-        <h2>Welcome</h2>
-        <p>
-          This portal is designed to help you get your ATAK client setup and ready to use.
-          If you do not have ATAK you can download it using the icons on the right, once you
-          have ATAK you can download and import the profiles below.
-        </p>
+        <div className="profile-header">
+          <div className="profile-avatar">
+            {(user?.callsign || user?.username)?.charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-info">
+            <h2>{user?.firstName} {user?.lastName}</h2>
+            <p className="profile-detail"><strong>Callsign:</strong> {user?.callsign || 'N/A'}</p>
+            <p className="profile-detail"><strong>Email:</strong> {user?.email || 'N/A'}</p>
+            <p className="profile-detail"><strong>Username:</strong> {user?.username}</p>
+          </div>
+        </div>
+        <div className="welcome-text">
+          <p>
+            This portal is designed to help you get your ATAK client setup and ready to use.
+            If you do not have ATAK you can download it using the icons below, once you
+            have ATAK you can download and import the profiles.
+          </p>
+        </div>
       </div>
 
       <div className="get-started-section">
@@ -167,7 +181,7 @@ function Dashboard() {
               </div>
 
               {/* iTAK - only show if enabled */}
-              {settings?.itak_homepage_icon_enabled && (
+              {settings && settings.itak_homepage_icon_enabled === true && (
                 <div className="install-item">
                   <img
                     src={`${API_BASE_URL}/static/img/itak.jpg`}
@@ -186,7 +200,7 @@ function Dashboard() {
               )}
 
               {/* TrustStore - only show if enabled */}
-              {settings?.truststore_homepage_icon_enabled && (
+              {settings && settings.truststore_homepage_icon_enabled === true && (
                 <div className="install-item">
                   <img
                     src={`${API_BASE_URL}/static/img/certificate.png`}
@@ -205,7 +219,7 @@ function Dashboard() {
               )}
 
               {/* ZeroTier - only show if enabled */}
-              {settings?.zerotier_icon && (
+              {settings && settings.zerotier_icon === true && (
                 <div className="install-item">
                   <img
                     src={`${API_BASE_URL}/static/img/zerotier.png`}
@@ -226,24 +240,16 @@ function Dashboard() {
               )}
 
               {/* QR Code in Step 1 - only show if both settings are enabled */}
-              {settings?.generate_itak_qr_code && settings?.itak_homepage_icon_enabled && (
+              {settings && settings.generate_itak_qr_code === true && settings.itak_homepage_icon_enabled === true && getItakQRCodeURL() && (
                 <div className="install-item qr-section">
-                  {getItakQRCodeURL() && (
-                    <>
-                      <img
-                        src={getItakQRCodeURL()}
-                        alt="iTAK QR Code"
-                        className="qr-code"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'block';
-                        }}
-                      />
-                      <div style={{display: 'none'}}>
-                        <p>QR Code unavailable</p>
-                      </div>
-                    </>
-                  )}
+                  <img
+                    src={getItakQRCodeURL()}
+                    alt="iTAK QR Code"
+                    className="qr-code"
+                    onError={(e) => {
+                      e.target.parentElement.remove();
+                    }}
+                  />
                   <p>Scan this QR code in iTAK</p>
                 </div>
               )}
@@ -384,6 +390,7 @@ function Dashboard() {
             <button
               className="action-btn edit-profile"
               style={{ background: accentColor }}
+              onClick={() => navigate('/edit-profile')}
             >
               EDIT PROFILE
             </button>
@@ -391,6 +398,7 @@ function Dashboard() {
               <button
                 className="action-btn change-password"
                 style={{ background: accentColor }}
+                onClick={() => navigate('/change-password')}
               >
                 CHANGE PASSWORD
               </button>

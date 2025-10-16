@@ -49,6 +49,22 @@ def create_app():
         scheduler.init_app(app)
     jwt_manager.init_app(app)
 
+    # JWT error handlers
+    @jwt_manager.invalid_token_loader
+    def invalid_token_callback(error):
+        app.logger.error(f"Invalid token: {error}")
+        return jsonify({'error': 'Invalid token', 'message': str(error)}), 401
+
+    @jwt_manager.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        app.logger.error(f"Expired token")
+        return jsonify({'error': 'Token has expired'}), 401
+
+    @jwt_manager.unauthorized_loader
+    def unauthorized_callback(error):
+        app.logger.error(f"Unauthorized: {error}")
+        return jsonify({'error': 'Authorization required', 'message': str(error)}), 401
+
     # Register API blueprints (if enabled)
     if app.config['ENABLE_API']:
         from app.api_views import api_routes
@@ -134,7 +150,13 @@ app = create_app()
 def not_authorised(e):
     return jsonify(error="Not authorized"), 403
 
+@app.errorhandler(422)
+def unprocessable_entity(e):
+    app.logger.error(f"422 Error: {str(e)}")
+    return jsonify(error=str(e)), 422
+
 @app.errorhandler(500)
 def internal_server_error(e):
+    app.logger.error(f"500 Error: {str(e)}")
     return jsonify(error="Internal server error"), 500
     

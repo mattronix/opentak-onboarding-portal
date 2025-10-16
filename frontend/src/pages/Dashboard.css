@@ -43,20 +43,92 @@
 
 .welcome-section {
   background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
+  padding: 2rem;
+  border-radius: 12px;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.welcome-section h2 {
-  margin-top: 0;
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  margin-top: 0.25rem;
+}
+
+.profile-info {
+  flex: 1;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profile-info h2 {
+  margin: 0;
   color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.welcome-section p {
+.profile-detail {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: baseline;
+  line-height: 1.5;
+}
+
+.profile-detail strong {
+  color: #333;
+  min-width: 90px;
+  font-weight: 600;
+}
+
+.welcome-text {
+  margin-top: 1rem;
+}
+
+.welcome-text p {
   color: #666;
   line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .profile-info h2 {
+    font-size: 1.2rem;
+  }
 }
 
 .get-started-section {

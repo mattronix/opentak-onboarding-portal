@@ -12,9 +12,20 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+}
+
+.navbar-visible {
+  transform: translateY(0);
+}
+
+.navbar-hidden {
+  transform: translateY(-100%);
 }
 
 .navbar-brand a {
@@ -54,18 +65,37 @@
   display: inline-block;
 }
 
+/* Add padding to the top of dropdown to create hover bridge */
 .dropdown-content {
   display: none;
   position: absolute;
   background-color: white;
   min-width: 200px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  z-index: 1001;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
   top: 100%;
   left: 0;
-  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  margin-top: 0;
+}
+
+/* Add invisible bridge above dropdown */
+.dropdown-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5rem;
+  background: transparent;
+}
+
+/* Container for actual dropdown items */
+.dropdown-content > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dropdown-content a,
@@ -75,12 +105,21 @@
   text-decoration: none;
   display: block;
   border: none;
-  background: none;
+  background: white;
   width: 100%;
   text-align: left;
   cursor: pointer;
   transition: background-color 0.3s;
   font-size: 1rem;
+}
+
+.dropdown-content a:first-child {
+  border-radius: 4px 4px 0 0;
+}
+
+.dropdown-content a:last-child,
+.dropdown-content button:last-child {
+  border-radius: 0 0 4px 4px;
 }
 
 .dropdown-content a:hover,
@@ -97,6 +136,8 @@
   flex: 1;
   width: 100%;
   background-color: #f5f5f5;
+  margin-top: 70px; /* Height of navbar */
+  margin-bottom: 60px; /* Height of footer */
 }
 
 .footer {
@@ -104,6 +145,20 @@
   padding: 1rem 2rem;
   text-align: center;
   border-top: 1px solid #444;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  transition: transform 0.3s ease-in-out;
+}
+
+.footer-visible {
+  transform: translateY(0);
+}
+
+.footer-hidden {
+  transform: translateY(100%);
 }
 
 .footer p {
@@ -121,7 +176,6 @@
     flex-direction: column;
     gap: 1rem;
     padding: 1rem;
-    position: relative;
   }
 
   .navbar-brand a {
@@ -152,5 +206,10 @@
 
   .nav-dropdown:hover .dropdown-content {
     display: block;
+  }
+
+  .main-content {
+    margin-top: 150px; /* Larger navbar on mobile */
+    margin-bottom: 60px;
   }
 }

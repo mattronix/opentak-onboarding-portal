@@ -48,10 +48,6 @@ JWT_ALGORITHM = 'HS256'
 
 ZEROTIER_ICON = strtobool(environ.get('ZEROTIER_ICON', 'False'))
 ENABLE_REPO = strtobool(environ.get('ENABLE_REPO', 'False'))
-ENABLE_API = strtobool(environ.get('ENABLE_API', 'False'))
+ENABLE_API = strtobool(environ.get('ENABLE_API', 'True'))
 ENABLE_CLAIM_RADIO = strtobool(environ.get('ENABLE_CLAIM_RADIO', 'False'))
 TESTING = strtobool(environ.get('TESTING', 'False'))
-
-# API-Only Mode: Disable traditional form-based routes (defaults to enabled for backward compatibility)
-# Set to True to run API-only mode (SPA frontend), False to enable traditional Flask routes
-API_ONLY_MODE = strtobool(environ.get('API_ONLY_MODE', 'True'))
