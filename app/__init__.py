@@ -114,7 +114,10 @@ def create_app():
         @app.route('/<path:path>')
         def serve_spa(path):
             """Serve the React SPA for all non-API routes"""
-            static_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
+            # Get the project root directory (parent of app/)
+            app_dir = os.path.dirname(__file__)  # app/
+            project_root = os.path.dirname(app_dir)  # project root
+            static_folder = os.path.join(project_root, 'frontend', 'dist')
 
             # If path exists as a file, serve it
             if path and os.path.exists(os.path.join(static_folder, path)):
