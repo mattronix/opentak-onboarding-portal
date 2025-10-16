@@ -3,8 +3,15 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /frontend
 
+# Install git for version generation
+RUN apk add --no-cache git
+
+# Copy .git folder for version generation
+COPY .git/ ../.git/
+
 # Copy frontend package files
 COPY frontend/package*.json ./
+COPY frontend/generate-version.js ./
 
 # Install dependencies
 RUN npm ci
@@ -12,13 +19,18 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
-# Build frontend
+# Build frontend (includes version generation)
 RUN npm run build
 
 # Stage 2: Python application
 FROM python:3.11-slim
 
 WORKDIR /app
+
+# Install git for version generation
+RUN apt-get update && \
+    apt-get install -y git && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy Python requirements and install dependencies
 COPY requirements.txt .
@@ -29,6 +41,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY app/ ./app/
 COPY migrations/ ./migrations/
 COPY .env.example ./.env
+
+# Copy and run version generator for backend
+COPY generate_version.py ./
+RUN python generate_version.py || echo "Warning: Could not generate backend version"
 
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /frontend/dist ./frontend/dist
