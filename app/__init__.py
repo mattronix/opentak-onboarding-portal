@@ -120,21 +120,24 @@ def create_app():
         # Determine static folder path
         # In Docker: /app/frontend/dist
         # In local dev: <project_root>/frontend/dist
-        app_dir = os.path.dirname(__file__)  # app/
+        app_dir = os.path.dirname(os.path.abspath(__file__))  # /app/app
+        project_root = os.path.dirname(app_dir)  # /app
 
-        # Try Docker path first (when running from /app)
-        docker_static_folder = os.path.join(app_dir, '..', 'frontend', 'dist')
-        # Try local dev path (when app/ is subdirectory)
-        project_root = os.path.dirname(app_dir)
-        local_static_folder = os.path.join(project_root, 'frontend', 'dist')
+        # Try multiple possible paths
+        possible_paths = [
+            os.path.join(project_root, 'frontend', 'dist'),  # /app/frontend/dist (Docker)
+            os.path.join(os.path.dirname(project_root), 'frontend', 'dist'),  # Local dev
+        ]
 
-        # Use whichever path exists
-        if os.path.exists(docker_static_folder):
-            static_folder = os.path.abspath(docker_static_folder)
-        elif os.path.exists(local_static_folder):
-            static_folder = local_static_folder
-        else:
-            app.logger.error(f"Frontend dist folder not found. Tried: {docker_static_folder} and {local_static_folder}")
+        static_folder = None
+        for path_candidate in possible_paths:
+            abs_path = os.path.abspath(path_candidate)
+            if os.path.exists(abs_path) and os.path.isdir(abs_path):
+                static_folder = abs_path
+                break
+
+        if not static_folder:
+            app.logger.error(f"Frontend dist folder not found. Tried: {possible_paths}")
             return jsonify({'error': 'Frontend not built. Run: cd frontend && npm run build'}), 404
 
         app.logger.debug(f"SPA route: path={path}, static_folder={static_folder}")
