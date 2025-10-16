@@ -18,7 +18,6 @@ import PendingRegistrationsList from './pages/admin/PendingRegistrationsList';
 import TakProfilesList from './pages/admin/TakProfilesList';
 import MeshtasticList from './pages/admin/MeshtasticList';
 import RadiosList from './pages/admin/RadiosList';
-import PackagesList from './pages/admin/PackagesList';
 import Profile from './pages/Profile';
 
 // Layout
@@ -180,14 +179,6 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <RadiosList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="admin/packages"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <PackagesList />
                   </ProtectedRoute>
                 }
               />

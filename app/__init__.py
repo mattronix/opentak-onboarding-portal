@@ -1,19 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
-from app.views import routes
-from app.admin_views import admin_routes
-from app.admin_views_onboardingcodes import admin_routes_onboarding
-from app.admin_views_users import admin_routes_users
-from app.admin_views_takprofiles import admin_routes_takprofiles
-from app.admin_views_roles import admin_routes_roles
-from app.admin_views_meshtastic import admin_routes_meshtastic
-from app.admin_views_packages import admin_routes_packages
-from app.admin_views_radios import admin_routes_radios
 from flask import jsonify
 from app.models import db, migrate
-from app.jina_filters import jina2_filters_blueprint
-from flask_breadcrumbs import Breadcrumbs
-from flask_menu import Menu
 from app.extensions import mail, jwt_manager
 from app.extensions import scheduler
 import logging
@@ -36,10 +24,6 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db, render_as_batch=False)
-    menu = Menu()
-    breadcrumbs = Breadcrumbs(init_menu=False)
-    menu.init_app(app)
-    breadcrumbs.init_app(app)
     qrcode.init_app(app)
     # initialize scheduler (skip in testing mode)
     if not app.config.get('TESTING'):
@@ -155,7 +139,6 @@ def create_app():
         # Otherwise serve index.html (for client-side routing)
         return send_from_directory(static_folder, 'index.html')
 
-    app.register_blueprint(jina2_filters_blueprint)
     mail.init_app(app)
     if not app.config.get('TESTING'):
         with app.app_context():

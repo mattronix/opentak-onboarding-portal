@@ -31,11 +31,10 @@ function Layout() {
                 <Link to="/admin/users">Users</Link>
                 <Link to="/admin/roles">Roles</Link>
                 <Link to="/admin/onboarding-codes">Onboarding Codes</Link>
-                <Link to="/admin/pending-registrations">Pending Registrations</Link>
+                <Link to="/admin/pending-registrations">Registrations</Link>
                 <Link to="/admin/tak-profiles">TAK Profiles</Link>
                 <Link to="/admin/meshtastic">Meshtastic</Link>
                 <Link to="/admin/radios">Radios</Link>
-                <Link to="/admin/packages">Packages</Link>
               </div>
             </div>
           )}
