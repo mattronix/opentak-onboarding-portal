@@ -1,10 +1,20 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useState, useEffect } from 'react';
 import './Layout.css';
 
 function Layout() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [version, setVersion] = useState(null);
+
+  useEffect(() => {
+    // Fetch version info
+    fetch('/version.json')
+      .then(res => res.json())
+      .then(data => setVersion(data))
+      .catch(() => setVersion({ commit: 'dev', date: 'unknown' }));
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -58,7 +68,13 @@ function Layout() {
       </main>
 
       <footer className="footer">
-        <p>&copy; 2024 OpenTAK Onboarding Portal. All rights reserved.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <span style={{ fontSize: '0.85rem', color: '#999' }}>
+            {version && `v${version.commit}`}
+          </span>
+          <p style={{ margin: 0 }}>&copy; 2024 OpenTAK Onboarding Portal. All rights reserved.</p>
+          <span style={{ fontSize: '0.85rem', color: 'transparent' }}>spacer</span>
+        </div>
       </footer>
     </div>
   );

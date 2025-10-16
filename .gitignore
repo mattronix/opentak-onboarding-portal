@@ -10,3 +10,7 @@ app/static/img/custom/*.jpeg
 app/static/img/custom/*.jpeg
 app/static/img/custom/*.webp
 docker-compose.yml
+
+# Version files (auto-generated)
+app/version.py
+frontend/public/version.json
