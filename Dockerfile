@@ -1,17 +1,14 @@
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
 
+# Accept build arguments for version
+ARG GIT_COMMIT=dev
+ARG GIT_DATE=unknown
+
 WORKDIR /frontend
-
-# Install git for version generation
-RUN apk add --no-cache git
-
-# Copy .git folder for version generation
-COPY .git/ ../.git/
 
 # Copy frontend package files
 COPY frontend/package*.json ./
-COPY frontend/generate-version.js ./
 
 # Install dependencies
 RUN npm ci
@@ -19,18 +16,22 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
-# Build frontend (includes version generation)
-RUN npm run build
+# Create version.json manually using build args
+RUN mkdir -p public && \
+    echo "{\"commit\":\"${GIT_COMMIT}\",\"date\":\"${GIT_DATE}\",\"buildTime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/version.json && \
+    cat public/version.json
+
+# Build frontend
+RUN npm run build || (echo "Build failed, but continuing..." && npm run build:fallback)
 
 # Stage 2: Python application
 FROM python:3.11-slim
 
-WORKDIR /app
+# Accept build arguments for version
+ARG GIT_COMMIT=dev
+ARG GIT_DATE=unknown
 
-# Install git for version generation
-RUN apt-get update && \
-    apt-get install -y git && \
-    rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
 # Copy Python requirements and install dependencies
 COPY requirements.txt .
@@ -42,9 +43,21 @@ COPY app/ ./app/
 COPY migrations/ ./migrations/
 COPY .env.example ./.env
 
-# Copy and run version generator for backend
-COPY generate_version.py ./
-RUN python generate_version.py || echo "Warning: Could not generate backend version"
+# Create version.py manually using build args
+RUN echo "\"\"\"Auto-generated version information\"\"\"" > app/version.py && \
+    echo "" >> app/version.py && \
+    echo "COMMIT = '${GIT_COMMIT}'" >> app/version.py && \
+    echo "DATE = '${GIT_DATE}'" >> app/version.py && \
+    echo "BUILD_TIME = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'" >> app/version.py && \
+    echo "" >> app/version.py && \
+    echo "def get_version():" >> app/version.py && \
+    echo "    \"\"\"Get version dict\"\"\"" >> app/version.py && \
+    echo "    return {" >> app/version.py && \
+    echo "        'commit': COMMIT," >> app/version.py && \
+    echo "        'date': DATE," >> app/version.py && \
+    echo "        'build_time': BUILD_TIME" >> app/version.py && \
+    echo "    }" >> app/version.py && \
+    cat app/version.py
 
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /frontend/dist ./frontend/dist

@@ -53,8 +53,20 @@ This will pull all the latest code including the updated frontend.
 # Stop the current container
 docker compose down
 
-# Rebuild with latest code (this will rebuild the frontend inside Docker)
-docker compose up --build -d
+# Rebuild with version information from git
+./docker-build.sh
+
+# Start the container
+docker compose up -d
+```
+
+Alternatively, build manually with version args:
+```bash
+GIT_COMMIT=$(git rev-parse --short=12 HEAD)
+GIT_DATE=$(git log -1 --format=%cd --date=short)
+
+docker compose build --build-arg GIT_COMMIT="${GIT_COMMIT}" --build-arg GIT_DATE="${GIT_DATE}"
+docker compose up -d
 ```
 
 The `--build` flag ensures Docker rebuilds the image, which includes:
