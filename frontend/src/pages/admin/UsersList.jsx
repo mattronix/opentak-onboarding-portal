@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersAPI, rolesAPI } from '../../services/api';
 import '../../components/AdminTable.css';
@@ -7,6 +7,7 @@ function UsersList() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -21,11 +22,21 @@ function UsersList() {
   });
   const [error, setError] = useState('');
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // Reset to page 1 when search changes
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   // Fetch users
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ['users', page, search],
+    queryKey: ['users', page, debouncedSearch],
     queryFn: async () => {
-      const response = await usersAPI.getAll({ page, per_page: 20, search });
+      const response = await usersAPI.getAll({ page, per_page: 20, search: debouncedSearch });
       return response.data;
     },
   });
@@ -171,10 +182,7 @@ function UsersList() {
             className="search-box"
             placeholder="Search users..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
           />
           <button className="btn btn-primary" onClick={handleCreate}>
             + Add User

@@ -376,7 +376,7 @@ class OnboardingCodeModel(db.Model):
     userExpiryDate = mapped_column(DateTime, nullable=True)
 
     # Relationship to UserModel for onboard contact
-    onboardContact = relationship("UserModel", foreign_keys=[onboardContactId])
+    onboardContact = relationship("UserModel", foreign_keys=[onboardContactId], overlaps="onboarContactFor,user")
 
     roles = relationship(
         "UserRoleModel",
