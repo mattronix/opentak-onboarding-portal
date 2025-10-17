@@ -34,12 +34,12 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/opentak-portal:${{ steps.version.outputs.commit }}
-            ${{ secrets.DOCKER_USERNAME }}/opentak-portal:latest
+            ${{ secrets.DOCKER_USERNAME }}/atak-onboarding-portal:${{ steps.version.outputs.commit }}
+            ${{ secrets.DOCKER_USERNAME }}/atak-onboarding-portal:latest
           build-args: |
             GIT_COMMIT=${{ steps.version.outputs.commit }}
             GIT_DATE=${{ steps.version.outputs.date }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/opentak-portal:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/atak-onboarding-portal:latest
           cache-to: type=inline
 
   deploy:
