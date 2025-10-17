@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import './ChangePassword.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+// Import the centralized API helper
+import api from '../services/api';
+
+const API_BASE_URL = window.location.origin;
 
 export default function ChangePassword() {
   const navigate = useNavigate();
