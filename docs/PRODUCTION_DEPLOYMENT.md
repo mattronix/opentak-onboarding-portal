@@ -49,40 +49,68 @@ This will pull all the latest code including the updated frontend.
 
 ### 5. Rebuild Docker Container
 
+**Option A: Standard Rebuild (Recommended)**
+
 ```bash
-# Stop the current container
+# Build and restart with version information
+./docker-build.sh --no-cache
+docker compose up -d
+```
+
+**Option B: Force Complete Rebuild (If Standard Fails)**
+
+Use this if the standard rebuild doesn't update properly:
+
+```bash
+# Nuclear option - clears all caches and rebuilds from scratch
+./docker-rebuild-force.sh
+```
+
+**Option C: Manual Rebuild**
+
+```bash
+# Export version info
+export GIT_COMMIT=$(git rev-parse --short=12 HEAD)
+export GIT_DATE=$(git log -1 --format=%cd --date=short)
+
+# Stop container
 docker compose down
 
-# Rebuild with version information from git
-./docker-build.sh
+# Build with no cache
+docker compose build --no-cache
 
-# Start the container
+# Start container
 docker compose up -d
 ```
 
-Alternatively, build manually with version args:
-```bash
-GIT_COMMIT=$(git rev-parse --short=12 HEAD)
-GIT_DATE=$(git log -1 --format=%cd --date=short)
-
-docker compose build --build-arg GIT_COMMIT="${GIT_COMMIT}" --build-arg GIT_DATE="${GIT_DATE}"
-docker compose up -d
-```
-
-The `--build` flag ensures Docker rebuilds the image, which includes:
-- Rebuilding the frontend with `npm run build`
-- Installing any new dependencies
-- Applying database migrations
+The rebuild process:
+- Rebuilds the frontend with `npm run build`
+- Installs any new dependencies
+- Embeds git version information
+- Applies database migrations on startup
 
 ### 6. Verify Deployment
 
-Check that the container is running:
+**Check container is running:**
 
 ```bash
 docker compose ps
 ```
 
-Check the logs for any errors:
+**Verify the version was updated:**
+
+```bash
+# Check backend version
+docker compose exec web cat app/version.py
+
+# Check frontend version
+docker compose exec web cat frontend/dist/version.json
+
+# Or check via the web interface at:
+# https://portal.kggdutchies.nl (look for version in footer/admin panel)
+```
+
+**Check logs for errors:**
 
 ```bash
 docker compose logs -f web
@@ -106,12 +134,20 @@ Test the following:
 
 If you're already on the production server:
 
+**Standard quick deploy:**
 ```bash
 cd /path/to/opentak-onboarding-portal && \
 git pull origin main && \
-docker compose down && \
-docker compose up --build -d && \
-docker compose logs -f web
+./docker-build.sh --no-cache && \
+docker compose up -d && \
+docker compose logs --tail=50 web
+```
+
+**Force rebuild (if updates aren't applying):**
+```bash
+cd /path/to/opentak-onboarding-portal && \
+git pull origin main && \
+./docker-rebuild-force.sh
 ```
 
 ## Rollback (If Something Goes Wrong)
@@ -155,16 +191,41 @@ docker compose exec web cat .env | head -10
 
 ## Troubleshooting
 
-### Frontend Not Updating
+### Frontend/Backend Not Updating
 
-**Symptom:** Changes to frontend components (like Meshtastic edit buttons) don't appear.
+**Symptom:** Changes don't appear even after rebuild, or version stays the same.
 
-**Cause:** Docker container not rebuilt, or browser cache.
+**Cause:** Docker caching, image not updating, or browser cache.
 
 **Solution:**
-1. Rebuild Docker container: `docker compose up --build -d`
-2. Clear browser cache or hard refresh: `Ctrl+Shift+R` / `Cmd+Shift+R`
-3. Check browser DevTools → Network tab → Disable cache checkbox
+
+1. **Verify what's actually running:**
+   ```bash
+   # Check the version inside the container
+   docker compose exec web cat app/version.py
+   docker compose exec web cat frontend/dist/version.json
+
+   # Compare with git
+   git rev-parse --short=12 HEAD
+   ```
+
+2. **If versions don't match, force complete rebuild:**
+   ```bash
+   ./docker-rebuild-force.sh
+   ```
+
+3. **If versions match but changes still don't appear:**
+   - Clear browser cache: `Ctrl+Shift+R` / `Cmd+Shift+R`
+   - Check DevTools → Network tab → Disable cache
+   - Try incognito/private browsing window
+
+4. **Nuclear option - complete cleanup:**
+   ```bash
+   docker compose down -v
+   docker system prune -af
+   git pull origin main
+   ./docker-rebuild-force.sh
+   ```
 
 ### Database Migration Errors
 
