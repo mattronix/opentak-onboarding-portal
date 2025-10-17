@@ -5,34 +5,6 @@ on:
     branches:
       - main
 jobs:
-  build-and-push:
-    runs-on: docker:dind
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Get version info
-        id: version
-        run: |
-          echo "commit=$(git rev-parse --short=12 HEAD)" >> $GITEA_OUTPUT
-          echo "date=$(git log -1 --format=%cd --date=short)" >> $GITEA_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/atak-onboarding-portal:${{ steps.version.outputs.commit }}
-            ${{ secrets.DOCKER_USERNAME }}/atak-onboarding-portal:latest
-          build-args: |
-            GIT_COMMIT=${{ steps.version.outputs.commit }}
-            GIT_DATE=${{ steps.version.outputs.date }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/atak-onboarding-portal:latest
-          cache-to: type=inline
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest

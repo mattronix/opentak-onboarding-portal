@@ -56,15 +56,18 @@ function Register() {
     e.preventDefault();
     setError('');
 
-    // Validate username format
-    const usernamePattern = /^[a-zA-Z0-9._-]+$/;
-    if (!usernamePattern.test(formData.username)) {
-      setError('Username can only contain letters, numbers, underscores, periods, and hyphens');
+    // Convert username to lowercase and remove spaces
+    const username = formData.username.toLowerCase().trim();
+
+    // Validate username format (only letters and numbers, no spaces, underscores, or periods)
+    const usernamePattern = /^[a-z0-9]+$/;
+    if (!usernamePattern.test(username)) {
+      setError('Username can only contain letters and numbers (no spaces, underscores, or periods)');
       return;
     }
 
     // Validate username length
-    if (formData.username.length < 3 || formData.username.length > 32) {
+    if (username.length < 3 || username.length > 32) {
       setError('Username must be between 3 and 32 characters');
       return;
     }
@@ -76,7 +79,10 @@ function Register() {
 
     setLoading(true);
 
-    const result = await registerUser(formData);
+    const result = await registerUser({
+      ...formData,
+      username: username
+    });
 
     if (result.success) {
       navigate('/login');
@@ -133,13 +139,13 @@ function Register() {
               onChange={handleChange}
               required
               placeholder="Choose a username"
-              pattern="[a-zA-Z0-9._-]+"
-              title="Username can only contain letters, numbers, underscores, periods, and hyphens"
+              pattern="[a-zA-Z0-9]+"
+              title="Username can only contain letters and numbers"
               minLength="3"
               maxLength="32"
             />
             <small style={{ color: '#666', fontSize: '0.85em' }}>
-              Only letters, numbers, underscores, periods, and hyphens (3-32 characters)
+              Only letters and numbers (3-32 characters). Will be converted to lowercase.
             </small>
           </div>
 

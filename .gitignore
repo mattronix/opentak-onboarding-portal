@@ -3,6 +3,7 @@
 .env
 frontend/.env
 frontend/.env.local
+frontend/dist/
 instance/
 .DS_Store
 datapackages/*

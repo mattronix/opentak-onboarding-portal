@@ -12,7 +12,6 @@ export default function ChangePassword() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -41,7 +40,6 @@ export default function ChangePassword() {
       setSuccess('Password changed successfully!');
       setError('');
       setFormData({
-        currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
@@ -68,7 +66,7 @@ export default function ChangePassword() {
     setSuccess('');
 
     // Validation
-    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+    if (!formData.newPassword || !formData.confirmPassword) {
       setError('All fields are required');
       return;
     }
@@ -83,13 +81,7 @@ export default function ChangePassword() {
       return;
     }
 
-    if (formData.currentPassword === formData.newPassword) {
-      setError('New password must be different from current password');
-      return;
-    }
-
     changeMutation.mutate({
-      currentPassword: formData.currentPassword,
       newPassword: formData.newPassword
     });
   };
@@ -107,19 +99,6 @@ export default function ChangePassword() {
         {success && <div className="success-message">{success}</div>}
 
         <form onSubmit={handleSubmit} className="change-password-form">
-          <div className="form-group">
-            <label htmlFor="currentPassword">Current Password *</label>
-            <input
-              type="password"
-              id="currentPassword"
-              name="currentPassword"
-              value={formData.currentPassword}
-              onChange={handleChange}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
           <div className="form-group">
             <label htmlFor="newPassword">New Password *</label>
             <input

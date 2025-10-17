@@ -262,14 +262,17 @@ def register():
         if not data.get(field):
             return jsonify({'error': f'{field} is required'}), 400
 
-    # Validate username format (only letters, numbers, underscores, periods, and hyphens)
+    # Convert username to lowercase and remove spaces
+    username = data['username'].lower().strip()
+
+    # Validate username format (only letters and numbers - no spaces, underscores, periods, or hyphens)
     import re
-    username_pattern = r'^[a-zA-Z0-9._-]+$'
-    if not re.match(username_pattern, data['username']):
-        return jsonify({'error': 'Username can only contain letters, numbers, underscores, periods, and hyphens'}), 400
+    username_pattern = r'^[a-z0-9]+$'
+    if not re.match(username_pattern, username):
+        return jsonify({'error': 'Username can only contain letters and numbers (no spaces, underscores, or periods)'}), 400
 
     # Validate username length
-    if len(data['username']) < 3 or len(data['username']) > 32:
+    if len(username) < 3 or len(username) > 32:
         return jsonify({'error': 'Username must be between 3 and 32 characters'}), 400
 
     # Validate email format (basic check)
@@ -277,7 +280,7 @@ def register():
         return jsonify({'error': 'Invalid email format'}), 400
 
     # Check for duplicate username in existing users
-    existing_user = UserModel.get_user_by_username(data['username'])
+    existing_user = UserModel.get_user_by_username(username)
     if existing_user:
         return jsonify({'error': 'Username already exists'}), 409
 
@@ -287,7 +290,7 @@ def register():
         return jsonify({'error': 'Email already registered'}), 409
 
     # Check for duplicate in pending registrations
-    pending_username = PendingRegistrationModel.query.filter_by(username=data['username'].lower()).first()
+    pending_username = PendingRegistrationModel.query.filter_by(username=username).first()
     if pending_username:
         return jsonify({'error': 'Username already pending verification'}), 409
 
@@ -317,7 +320,7 @@ def register():
 
         # Create pending registration
         pending = PendingRegistrationModel.create_pending_registration(
-            username=data['username'],
+            username=username,
             email=data['email'],
             password=data['password'],  # Store temporarily
             first_name=data['firstName'],
@@ -457,7 +460,7 @@ def verify_email():
             if 'can contain only' in error_msg.lower() or 'username' in error_msg.lower():
                 PendingRegistrationModel.delete_by_id(pending.id)
                 return jsonify({
-                    'error': 'Username contains invalid characters. Username can only contain letters, numbers, underscores, periods, and hyphens. Please register again with a valid username.'
+                    'error': 'Username contains invalid characters. Username can only contain letters and numbers (no spaces, underscores, or periods). Please register again with a valid username.'
                 }), 400
             # Re-raise other errors
             raise
@@ -705,11 +708,10 @@ def reset_password():
 @jwt_required()
 def change_password():
     """
-    Change password for authenticated user
+    Change password for authenticated user (does not require current password)
 
     Request body:
     {
-        "currentPassword": "string",
         "newPassword": "string"
     }
     """
@@ -718,11 +720,10 @@ def change_password():
         if not data:
             return jsonify({'error': 'Request body is required'}), 400
 
-        current_password = data.get('currentPassword')
         new_password = data.get('newPassword')
 
-        if not current_password or not new_password:
-            return jsonify({'error': 'Current and new password are required'}), 400
+        if not new_password:
+            return jsonify({'error': 'New password is required'}), 400
 
         current_user_id = get_jwt_identity()
         # Convert to int since JWT identity is stored as string
@@ -731,17 +732,7 @@ def change_password():
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Verify current password with OTS
-        try:
-            ots_test = OTSClient(current_app.config['OTS_URL'], user.username, current_password)
-            test_result = ots_test.get_me()
-            if not test_result:
-                return jsonify({'error': 'Current password is incorrect'}), 401
-        except Exception as e:
-            current_app.logger.error(f"Password verification failed: {str(e)}")
-            return jsonify({'error': 'Current password is incorrect'}), 401
-
-        # Change password in OTS
+        # Change password in OTS (no current password verification required)
         try:
             ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
             result = ots.reset_user_password(user.username, new_password)
