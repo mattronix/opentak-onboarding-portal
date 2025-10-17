@@ -6,8 +6,11 @@
 # Environment files
 .env
 .env.*
+frontend/.env
+frontend/.env.*
 !.env.example
 !.env.example.frontend
+!frontend/.env.example
 
 # Python cache
 __pycache__
