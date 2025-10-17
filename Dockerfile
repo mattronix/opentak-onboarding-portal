@@ -61,15 +61,19 @@ RUN echo "\"\"\"Auto-generated version information\"\"\"" > app/version.py && \
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+
 # Create necessary directories and set permissions
 RUN mkdir -p /app/data_packages /app/instance && \
     useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    chmod +x /app/docker-entrypoint.sh
 
 # Switch to non-root user
 USER appuser
 
 EXPOSE 5000
 
-# Run with gunicorn - app:app refers to app/__init__.py:app
-CMD ["gunicorn", "-w", "1", "-t", "50", "app:app", "-b", "0.0.0.0:5000"]
+# Run with entrypoint script that handles migrations
+CMD ["/app/docker-entrypoint.sh"]
