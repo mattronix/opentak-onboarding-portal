@@ -274,16 +274,36 @@ docker compose logs web
 3. Rebuild container
 4. All users need to log out and log back in
 
-## Current Production Issues Fixed
+## Version Information System
 
-These issues were fixed in the latest deployment:
+The application now embeds git version information during build:
 
-1. ✅ **Registrations card missing** - Now visible in admin dashboard
-2. ✅ **Meshtastic edit buttons missing** - Fixed with frontend rebuild
-3. ✅ **Search box refreshing** - Now debounced (500ms delay)
-4. ✅ **SQLAlchemy warnings** - Relationship overlap fixed
-5. ✅ **JWT error messages** - Now user-friendly
-6. ✅ **Legacy views removed** - Cleaned up unused code
+- **Backend**: Version stored in `app/version.py`
+- **Frontend**: Version stored in `frontend/dist/version.json`
+- **How it works**:
+  - `docker-build.sh` extracts git commit hash and date
+  - Passes them as build args to Docker
+  - Both frontend and backend embed this info during build
+  - Displayed in the web interface for easy verification
+
+**Checking version:**
+```bash
+# Via container
+docker compose exec web cat app/version.py
+
+# Via web interface
+# Look for version info in footer or admin panel
+```
+
+## Recent Issues Fixed
+
+1. ✅ **Docker caching issues** - Added force rebuild script
+2. ✅ **Version not updating** - Fixed docker-compose.yml build args
+3. ✅ **Registrations card missing** - Now visible in admin dashboard
+4. ✅ **Meshtastic edit buttons missing** - Fixed with frontend rebuild
+5. ✅ **Search box refreshing** - Now debounced (500ms delay)
+6. ✅ **SQLAlchemy warnings** - Relationship overlap fixed
+7. ✅ **JWT error messages** - Now user-friendly
 
 ## Deployment Checklist
 
