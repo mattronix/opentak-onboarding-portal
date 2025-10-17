@@ -208,6 +208,20 @@ Welcome to the team!"""
 
         current_app.logger.info(f"Admin created pending registration for {username} ({data['email']})")
 
+        # Send notification to admins about pending registration
+        try:
+            from app.notifications import notify_admin_pending_registration
+            notify_admin_pending_registration(
+                username=username,
+                email=data['email'],
+                first_name=data['firstName'],
+                last_name=data['lastName'],
+                callsign=data['callsign']
+            )
+        except Exception as e:
+            current_app.logger.error(f"Failed to send admin notification: {str(e)}")
+            # Don't fail creation if notification fails
+
         return jsonify({
             'message': 'Pending registration created successfully',
             'id': pending.id,

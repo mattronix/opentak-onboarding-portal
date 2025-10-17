@@ -378,6 +378,16 @@ Welcome to the team!"""
 
             current_app.logger.info(f"Verification email sent to {data['email']} for user {data['username']}")
 
+            # Send notification to admins about pending registration
+            from app.notifications import notify_admin_pending_registration
+            notify_admin_pending_registration(
+                username=username,
+                email=data['email'],
+                first_name=data['firstName'],
+                last_name=data['lastName'],
+                callsign=data['callsign']
+            )
+
         except Exception as e:
             current_app.logger.error(f"Failed to send verification email: {str(e)}")
             # Delete pending registration if email fails
@@ -568,6 +578,20 @@ The OpenTAK Team"""
         except Exception as e:
             current_app.logger.error(f"Failed to send welcome email: {str(e)}")
             # Don't fail verification if email fails
+
+        # Send notification to admins about new completed registration
+        try:
+            from app.notifications import notify_admin_new_registration
+            notify_admin_new_registration(
+                username=user.username,
+                email=user.email,
+                first_name=user.firstName,
+                last_name=user.lastName,
+                callsign=user.callsign
+            )
+        except Exception as e:
+            current_app.logger.error(f"Failed to send admin notification: {str(e)}")
+            # Don't fail verification if notification fails
 
         # Send email notification to onboard contact
         if onboarding_code.onboardContact:
