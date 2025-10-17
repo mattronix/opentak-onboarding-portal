@@ -45,6 +45,7 @@ function Layout() {
                 <Link to="/admin/tak-profiles">TAK Profiles</Link>
                 <Link to="/admin/meshtastic">Meshtastic</Link>
                 <Link to="/admin/radios">Radios</Link>
+                <Link to="/admin/settings">Settings</Link>
               </div>
             </div>
           )}
