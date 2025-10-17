@@ -1,7 +1,7 @@
 services:
     web:
         restart: always
-        image: ${DOCKER_USERNAME:-mattronix}/opentak-portal:latest
+        image: mattronix/atak-onboarding-portal
         # Uncomment below to build locally instead of using Docker Hub
         # build:
         #     context: .
