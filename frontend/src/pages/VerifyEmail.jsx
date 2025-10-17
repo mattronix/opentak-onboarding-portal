@@ -22,8 +22,7 @@ function VerifyEmail() {
     // Verify the email
     const verifyEmail = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await axios.post(`${API_URL}/api/v1/auth/verify-email`, { token });
+        const response = await axios.post(`${window.location.origin}/api/v1/auth/verify-email`, { token });
 
         setStatus('success');
         setMessage(response.data.message);
