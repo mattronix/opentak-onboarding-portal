@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Auth.css';
 
@@ -72,6 +72,12 @@ function Login() {
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
+
+          <div className="auth-links">
+            <p>
+              <Link to="/forgot-password">forgot your password?</Link>
+            </p>
+          </div>
         </form>
 
         <div className="auth-footer">

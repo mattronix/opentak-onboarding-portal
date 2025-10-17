@@ -13,7 +13,7 @@ from flask_jwt_extended import (
 )
 from datetime import timedelta, datetime
 from app.api_v1 import api_v1
-from app.models import UserModel, UserRoleModel, OneTimeTokenModel, PendingRegistrationModel, OnboardingCodeModel
+from app.models import UserModel, UserRoleModel, PendingRegistrationModel, OnboardingCodeModel, OneTimeTokenModel
 from app.ots import OTSClient
 from app.email import send_html_email
 import secrets
@@ -607,114 +607,6 @@ The OpenTAK Team"""
         return jsonify({'error': f'Email verification failed: {str(e)}'}), 400
 
 
-@api_v1.route('/auth/forgot-password', methods=['POST'])
-def forgot_password():
-    """
-    Request password reset email with one-time use token
-
-    Request body:
-    {
-        "email": "string"
-    }
-    """
-    if not current_app.config.get('FORGOT_PASSWORD_ENABLED', True):
-        return jsonify({'error': 'Password reset is disabled'}), 403
-
-    data = request.get_json()
-    email = data.get('email')
-
-    if not email:
-        return jsonify({'error': 'Email is required'}), 400
-
-    user = UserModel.query.filter_by(email=email).first()
-
-    if user:
-        # Generate unique one-time use token (32 bytes = 64 hex characters)
-        token_value = secrets.token_urlsafe(32)
-
-        # Create token expiry (15 minutes from now)
-        expires_at = datetime.now() + timedelta(minutes=15)
-
-        # Store token in database
-        token_obj = OneTimeTokenModel.create_token(
-            user_id=user.id,
-            token=token_value,
-            token_type='password_reset',
-            expires_at=expires_at
-        )
-
-        if not token_obj:
-            return jsonify({'error': 'Failed to generate reset token'}), 500
-
-        # Send email
-        try:
-            # Get frontend URL from config
-            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
-
-            # Auto-detect production URL if FRONTEND_URL is not set or is a localhost value
-            if frontend_url.startswith('http://localhost') or frontend_url.startswith('http://127.0.0.1'):
-                # Only use localhost if the request is actually from localhost
-                if not (request.host.startswith('localhost') or request.host.startswith('127.0.0.1')):
-                    # For production, use the same host as the API
-                    frontend_url = f"{request.scheme}://{request.host}"
-
-            reset_link = f"{frontend_url}/reset-password?token={token_value}"
-            message = f"Hello {user.username},\n\nYou have requested to reset your password. Please click the link below to reset your password:\n\n{reset_link}\n\nThis link will expire in 15 minutes and can only be used once.\n\nIf you did not request this, please ignore this email."
-
-            send_html_email(
-                subject='Password Reset Request',
-                recipients=[user.email],
-                message=message,
-                title='Password Reset Request'
-            )
-        except Exception as e:
-            current_app.logger.error(f"Failed to send password reset email: {str(e)}")
-            return jsonify({'error': f'Failed to send email: {str(e)}'}), 500
-
-    # Always return success to prevent email enumeration
-    return jsonify({'message': 'If the email exists, a password reset link has been sent'}), 200
-
-
-@api_v1.route('/auth/reset-password', methods=['POST'])
-def reset_password():
-    """
-    Reset password with one-time use token
-
-    Request body:
-    {
-        "token": "string",
-        "newPassword": "string"
-    }
-    """
-    data = request.get_json()
-    token = data.get('token')
-    new_password = data.get('newPassword')
-
-    if not token or not new_password:
-        return jsonify({'error': 'Token and new password are required'}), 400
-
-    try:
-        # Validate and consume one-time token
-        user_id = OneTimeTokenModel.validate_and_use_token(token, 'password_reset')
-
-        if not user_id:
-            return jsonify({'error': 'Invalid, expired, or already used token'}), 400
-
-        user = UserModel.get_user_by_id(user_id)
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-
-        # Reset password in OTS
-        ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
-        ots.reset_user_password(user.username, new_password)
-
-        return jsonify({'message': 'Password reset successfully'}), 200
-
-    except Exception as e:
-        current_app.logger.error(f"Password reset failed: {str(e)}")
-        return jsonify({'error': f'Password reset failed: {str(e)}'}), 400
-
-
 @api_v1.route('/auth/change-password', methods=['POST'])
 @jwt_required()
 def change_password():
@@ -757,3 +649,159 @@ def change_password():
     except Exception as e:
         current_app.logger.error(f"Change password error: {str(e)}")
         return jsonify({'error': f'Password change failed: {str(e)}'}), 400
+
+
+@api_v1.route('/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    """
+    Request a password reset token
+
+    Request body:
+    {
+        "email": "string"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+
+        email = data.get('email')
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+
+        # Find user by email
+        user = UserModel.query.filter_by(email=email).first()
+
+        # Always return success even if user not found (security best practice)
+        if not user:
+            current_app.logger.info(f"Password reset requested for non-existent email: {email}")
+            return jsonify({'message': 'If an account exists with that email, you will receive reset instructions'}), 200
+
+        # Delete any existing tokens for this user
+        OneTimeTokenModel.query.filter_by(user_id=user.id).delete()
+
+        # Create new reset token
+        token = secrets.token_urlsafe(48)
+        reset_token = OneTimeTokenModel(
+            user_id=user.id,
+            token=token,
+            token_type='password_reset',
+            expires_at=datetime.utcnow() + timedelta(hours=1)
+        )
+
+        from app import db
+        db.session.add(reset_token)
+        db.session.commit()
+
+        # Send reset email
+        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
+
+        # Auto-detect production URL if FRONTEND_URL is not set or is a localhost value
+        if frontend_url.startswith('http://localhost') or frontend_url.startswith('http://127.0.0.1'):
+            # Only use localhost if the request is actually from localhost
+            if not (request.host.startswith('localhost') or request.host.startswith('127.0.0.1')):
+                # For production, use the same host as the API
+                frontend_url = f"{request.scheme}://{request.host}"
+
+        reset_url = f"{frontend_url}/reset-password?token={token}"
+
+        reset_message = f"""Hello {user.username},
+
+We received a request to reset your password. Click the button below to reset it:
+
+{reset_url}
+
+This link will expire in 1 hour.
+
+If you didn't request this password reset, you can safely ignore this email.
+
+Best regards,
+OpenTAK Onboarding Portal Team"""
+
+        send_html_email(
+            subject='Password Reset Request',
+            recipients=[user.email],
+            message=reset_message,
+            title='Reset Your Password',
+            link_url=reset_url,
+            link_title='Reset Password'
+        )
+
+        current_app.logger.info(f"Password reset email sent to {user.email}")
+        return jsonify({'message': 'If an account exists with that email, you will receive reset instructions'}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Forgot password error: {str(e)}")
+        return jsonify({'error': 'An error occurred processing your request'}), 500
+
+
+@api_v1.route('/auth/reset-password', methods=['POST'])
+def reset_password():
+    """
+    Reset password using a token
+
+    Request body:
+    {
+        "token": "string",
+        "new_password": "string"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+
+        token = data.get('token')
+        new_password = data.get('new_password')
+
+        if not token or not new_password:
+            return jsonify({'error': 'Token and new password are required'}), 400
+
+        if len(new_password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+
+        # Find and validate token
+        reset_token = OneTimeTokenModel.query.filter_by(
+            token=token,
+            token_type='password_reset',
+            is_used=False
+        ).first()
+
+        if not reset_token:
+            return jsonify({'error': 'Invalid or expired reset token'}), 400
+
+        # Check if token is expired
+        if reset_token.expires_at < datetime.utcnow():
+            return jsonify({'error': 'Reset token has expired'}), 400
+
+        # Get user
+        user = UserModel.query.get(reset_token.user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Reset password in OTS
+        try:
+            ots = OTSClient(
+                current_app.config['OTS_URL'],
+                current_app.config['OTS_USERNAME'],
+                current_app.config['OTS_PASSWORD']
+            )
+            result = ots.reset_user_password(user.username, new_password)
+            current_app.logger.info(f"Password reset in OTS: {result}")
+        except Exception as e:
+            current_app.logger.error(f"OTS password reset failed: {str(e)}")
+            return jsonify({'error': 'Failed to reset password in OTS'}), 500
+
+        # Mark token as used
+        reset_token.is_used = True
+        reset_token.used_at = datetime.utcnow()
+        from app import db
+        db.session.commit()
+
+        current_app.logger.info(f"Password successfully reset for user: {user.username}")
+        return jsonify({'message': 'Password reset successfully'}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Reset password error: {str(e)}")
+        return jsonify({'error': 'An error occurred resetting your password'}), 500
