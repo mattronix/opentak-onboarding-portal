@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import './EditProfile.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+const API_BASE_URL = window.location.origin;
 
 export default function EditProfile() {
   const navigate = useNavigate();
