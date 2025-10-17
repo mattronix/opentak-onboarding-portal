@@ -277,7 +277,19 @@ export const packagesAPI = {
 // Settings API
 export const settingsAPI = {
   get: () =>
-    api.get('/settings'),
+    axios.get(`${API_BASE_URL}/api/v1/settings`),
+
+  // Admin settings endpoints (require authentication)
+  admin: {
+    getAll: () =>
+      api.get('/admin/settings'),
+
+    updateById: (settingId, value) =>
+      api.put(`/admin/settings/${settingId}`, { value }),
+
+    updateByKey: (key, value) =>
+      api.put(`/admin/settings/key/${key}`, { value }),
+  },
 };
 
 export default api;

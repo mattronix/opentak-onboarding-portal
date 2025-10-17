@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { settingsAPI } from '../../services/api';
 import './Admin.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 function Settings() {
   const [settings, setSettings] = useState({});
@@ -18,10 +16,7 @@ function Settings() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      const response = await axios.get(`${API_BASE_URL}/api/v1/admin/settings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await settingsAPI.admin.getAll();
       setSettings(response.data);
       setError('');
     } catch (err) {
@@ -38,14 +33,8 @@ function Settings() {
       setError('');
       setSuccess('');
 
-      const token = localStorage.getItem('access_token');
       const newValue = currentValue === 'true' ? 'false' : 'true';
-
-      await axios.put(
-        `${API_BASE_URL}/api/v1/admin/settings/${settingId}`,
-        { value: newValue },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await settingsAPI.admin.updateById(settingId, newValue);
 
       setSuccess('Setting updated successfully');
       fetchSettings();
