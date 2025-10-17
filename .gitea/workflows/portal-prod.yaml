@@ -1,16 +1,54 @@
-name: Deploy powerbar.ti Frontend Portal
-run-name: ${{ gitea.actor }} is deploying the frontend.
+name: Build and Deploy OpenTAK Portal
+run-name: ${{ gitea.actor }} is building and deploying OpenTAK Portal
 on:
   push:
     branches:
       - main
 jobs:
-  Deploy-Tinance2-Frontend-Portal-Production:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Gitea Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: git.mattronix.nl
+          username: ${{ gitea.actor }}
+          password: ${{ secrets.GITEA_TOKEN }}
+
+      - name: Get version info
+        id: version
+        run: |
+          echo "commit=$(git rev-parse --short=12 HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(git log -1 --format=%cd --date=short)" >> $GITHUB_OUTPUT
+          echo "tag=git.mattronix.nl/${{ gitea.repository }}:$(git rev-parse --short=12 HEAD)" >> $GITHUB_OUTPUT
+          echo "latest=git.mattronix.nl/${{ gitea.repository }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.version.outputs.tag }}
+            ${{ steps.version.outputs.latest }}
+          build-args: |
+            GIT_COMMIT=${{ steps.version.outputs.commit }}
+            GIT_DATE=${{ steps.version.outputs.date }}
+          cache-from: type=registry,ref=${{ steps.version.outputs.latest }}
+          cache-to: type=inline
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
@@ -18,14 +56,27 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           cat >>~/.ssh/config <<END
           Host production
-            HostName 10.209.60.143
+            HostName tak.kggdutchies.nl
             User root
             StrictHostKeyChecking no
           END
-          cat ~/.ssh/config
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
 
-      - name: Production Update Portal
-        run: ssh production 'bash /root/deploy_portal_script.sh'
+      - name: Deploy to production
+        run: |
+          ssh production << 'EOF'
+            cd /root/services/opentak-onboarding-portal
+
+            # Pull latest code for docker-compose.yml
+            git pull origin main
+
+            # Pull new image from registry
+            docker compose pull
+
+            # Restart with new image
+            docker compose down
+            docker compose up -d
+
+            # Show status
+            docker compose ps
+            docker compose logs --tail=20 web
+          EOF

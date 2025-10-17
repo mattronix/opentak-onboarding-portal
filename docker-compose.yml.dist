@@ -1,12 +1,14 @@
 services:
     web:
         restart: always
-        build:
-            context: .
-            dockerfile: Dockerfile
-            args:
-                GIT_COMMIT: ${GIT_COMMIT:-dev}
-                GIT_DATE: ${GIT_DATE:-unknown}
+        image: git.mattronix.nl/a-stsc/opentak-onboarding-portal:latest
+        # Uncomment below to build locally instead of using registry
+        # build:
+        #     context: .
+        #     dockerfile: Dockerfile
+        #     args:
+        #         GIT_COMMIT: ${GIT_COMMIT:-dev}
+        #         GIT_DATE: ${GIT_DATE:-unknown}
         ports:
             - "5000:5000"
         env_file:
