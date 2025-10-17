@@ -301,6 +301,102 @@ When creating users in OTS, roles are mapped:
 
 This ensures compatibility with OTS's two-role system while maintaining flexible role management in the portal database.
 
+### Settings API (`/api/v1/admin/settings/`)
+
+Admin-only endpoints for managing system settings.
+
+#### `GET /api/v1/admin/settings`
+Get all system settings grouped by category.
+
+**Authentication:** Required (admin only)
+
+**Response:** `200 OK`
+```json
+{
+  "notifications": [
+    {
+      "id": 1,
+      "key": "notify_admin_pending_registration",
+      "value": "true",
+      "description": "Send notification to admin when a new pending registration is created"
+    },
+    {
+      "id": 2,
+      "key": "notify_admin_new_registration",
+      "value": "true",
+      "description": "Send notification to admin when a new user completes registration"
+    }
+  ],
+  "email": [],
+  "security": [],
+  "general": []
+}
+```
+
+**Features:**
+- Returns settings organized by category (notifications, email, security, general)
+- Automatically initializes default settings if they don't exist
+- Admin-only access required
+
+#### `PUT /api/v1/admin/settings/<id>`
+Update a system setting by ID.
+
+**Authentication:** Required (admin only)
+
+**Request Body:**
+```json
+{
+  "value": "false"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Setting updated successfully",
+  "setting": {
+    "id": 1,
+    "key": "notify_admin_pending_registration",
+    "value": "false",
+    "description": "Send notification to admin when a new pending registration is created"
+  }
+}
+```
+
+#### `PUT /api/v1/admin/settings/key/<key>`
+Update a system setting by key name.
+
+**Authentication:** Required (admin only)
+
+**Request Body:**
+```json
+{
+  "value": true
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Setting updated successfully",
+  "setting": {
+    "id": 1,
+    "key": "notify_admin_pending_registration",
+    "value": "true",
+    "description": "Send notification to admin when a new pending registration is created"
+  }
+}
+```
+
+**Available Settings:**
+- `notify_admin_pending_registration` (default: true) - Send notification when new pending registration created
+- `notify_admin_new_registration` (default: true) - Send notification when user completes registration
+
+**Notes:**
+- Boolean values are stored as strings ("true"/"false")
+- Settings are automatically created with defaults on first access
+- Only administrators can view or modify settings
+
 ## Documentation
 - API v1 Swagger docs: http://localhost:5000/api/docs
 - OpenAPI spec: http://localhost:5000/api/v1/swagger.json

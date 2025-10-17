@@ -41,6 +41,8 @@ tags:
     description: Radio device inventory management
   - name: Packages
     description: ATAK package management
+  - name: Settings
+    description: System settings management (admin only)
 
 components:
   securitySchemes:
@@ -187,6 +189,24 @@ components:
           type: string
         version:
           type: string
+
+    Setting:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+          description: Unique identifier for the setting
+        value:
+          type: string
+          description: The value of the setting (string representation)
+        category:
+          type: string
+          description: Category grouping (e.g., "notifications", "email", "security")
+        description:
+          type: string
+          description: Human-readable description of what this setting does
 
 paths:
   /auth/login:
@@ -815,3 +835,238 @@ paths:
                 format: binary
         '404':
           description: Package not found
+
+  /settings:
+    get:
+      tags:
+        - Settings
+      summary: Get public application settings
+      description: |
+        Returns configuration that the frontend needs to know about,
+        such as feature flags, branding, and display settings.
+        This endpoint does not require authentication.
+      responses:
+        '200':
+          description: Application settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  brand_name:
+                    type: string
+                    example: My OTS Portal
+                  primary_color:
+                    type: string
+                    example: '#000000'
+                  secondary_color:
+                    type: string
+                    example: orange
+                  accent_color:
+                    type: string
+                    example: orange
+                  logo_path:
+                    type: string
+                    example: /static/img/logo.png
+                  help_link:
+                    type: string
+                    example: https://www.google.com
+                  help_email:
+                    type: string
+                    example: help@example.nl
+                  generate_itak_qr_code:
+                    type: boolean
+                  itak_hostname:
+                    type: string
+                  ots_hostname:
+                    type: string
+                  ots_url:
+                    type: string
+                  itak_homepage_icon_enabled:
+                    type: boolean
+                  truststore_homepage_icon_enabled:
+                    type: boolean
+                  zerotier_icon:
+                    type: boolean
+                  enable_repo:
+                    type: boolean
+                  enable_claim_radio:
+                    type: boolean
+                  forgot_password_enabled:
+                    type: boolean
+
+  /admin/settings:
+    get:
+      tags:
+        - Settings
+      summary: Get all system settings
+      description: Retrieve all system settings grouped by category (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System settings grouped by category
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Setting'
+              example:
+                notifications:
+                  - id: 1
+                    key: "notify_admin_pending_registration"
+                    value: "true"
+                    category: "notifications"
+                    description: "Send notification to admin when a new pending registration is created"
+                  - id: 2
+                    key: "notify_admin_new_registration"
+                    value: "true"
+                    category: "notifications"
+                    description: "Send notification to admin when a new user registration is approved"
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to retrieve settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/settings/{setting_id}:
+    put:
+      tags:
+        - Settings
+      summary: Update a system setting by ID
+      description: Update the value of a system setting using its ID (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setting_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the setting to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  type: string
+                  description: The new value for the setting (can be "true"/"false" for booleans)
+              example:
+                value: "false"
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  setting:
+                    $ref: '#/components/schemas/Setting'
+        '400':
+          description: Value is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to update setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/settings/key/{key}:
+    put:
+      tags:
+        - Settings
+      summary: Update a system setting by key
+      description: Update the value of a system setting using its key name (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The key name of the setting to update (e.g., "notify_admin_pending_registration")
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  type: string
+                  description: The new value for the setting (can be "true"/"false" for booleans)
+              example:
+                value: "true"
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  setting:
+                    $ref: '#/components/schemas/Setting'
+        '400':
+          description: Value is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to update setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

@@ -65,18 +65,47 @@ def get_settings():
 @jwt_required()
 def get_admin_settings():
     """
-    Get all system settings (admin only)
-
-    Response:
-    {
-        "notifications": [
-            {
-                "key": "string",
-                "value": "string",
-                "description": "string"
-            }
-        ]
-    }
+    Get all system settings grouped by category
+    ---
+    tags:
+      - Settings
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: System settings grouped by category
+        schema:
+          type: object
+          properties:
+            notifications:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  description:
+                    type: string
+            email:
+              type: array
+              items:
+                type: object
+            security:
+              type: array
+              items:
+                type: object
+            general:
+              type: array
+              items:
+                type: object
+      403:
+        description: Admin access required
+      500:
+        description: Failed to retrieve settings
     """
     try:
         # Check if user is admin
@@ -114,12 +143,56 @@ def get_admin_settings():
 @jwt_required()
 def update_admin_setting(setting_id):
     """
-    Update a system setting (admin only)
-
-    Request body:
-    {
-        "value": "string"
-    }
+    Update a system setting by ID (admin only)
+    ---
+    tags:
+      - Settings
+    security:
+      - Bearer: []
+    parameters:
+      - name: setting_id
+        in: path
+        type: integer
+        required: true
+        description: The ID of the setting to update
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - value
+          properties:
+            value:
+              type: string
+              description: The new value for the setting (can be "true"/"false" for booleans)
+    responses:
+      200:
+        description: Setting updated successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            setting:
+              type: object
+              properties:
+                id:
+                  type: integer
+                key:
+                  type: string
+                value:
+                  type: string
+                description:
+                  type: string
+      400:
+        description: Value is required
+      403:
+        description: Admin access required
+      404:
+        description: Setting not found
+      500:
+        description: Failed to update setting
     """
     try:
         # Check if user is admin
@@ -162,12 +235,56 @@ def update_admin_setting(setting_id):
 @jwt_required()
 def update_admin_setting_by_key(key):
     """
-    Update a system setting by key (admin only)
-
-    Request body:
-    {
-        "value": "string" or boolean
-    }
+    Update a system setting by key name (admin only)
+    ---
+    tags:
+      - Settings
+    security:
+      - Bearer: []
+    parameters:
+      - name: key
+        in: path
+        type: string
+        required: true
+        description: The key name of the setting to update (e.g., "notify_admin_pending_registration")
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - value
+          properties:
+            value:
+              type: string
+              description: The new value for the setting (can be "true"/"false" for booleans)
+    responses:
+      200:
+        description: Setting updated successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            setting:
+              type: object
+              properties:
+                id:
+                  type: integer
+                key:
+                  type: string
+                value:
+                  type: string
+                description:
+                  type: string
+      400:
+        description: Value is required
+      403:
+        description: Admin access required
+      404:
+        description: Setting not found
+      500:
+        description: Failed to update setting
     """
     try:
         # Check if user is admin

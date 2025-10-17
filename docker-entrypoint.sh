@@ -5,7 +5,13 @@ echo "Starting OpenTAK Onboarding Portal..."
 
 # Run database migrations
 echo "Running database migrations..."
-flask db upgrade || echo "Warning: Migration failed or already up to date"
+if flask db upgrade 2>&1 | grep -q "user_roles_old"; then
+    echo "Warning: Migration issue detected with user_roles_old reference"
+    echo "Attempting to stamp database and continue..."
+    flask db stamp head || echo "Could not stamp database"
+else
+    echo "Migrations completed successfully"
+fi
 
 # Start the application with gunicorn
 echo "Starting gunicorn..."

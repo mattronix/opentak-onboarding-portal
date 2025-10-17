@@ -108,9 +108,8 @@ def create_app():
     @app.route('/<path:path>')
     def serve_spa(path):
         """Serve the React SPA for all non-API routes"""
-        # Skip API routes and static files
-        if path.startswith('api/') or path.startswith('static/'):
-            return None  # Let Flask handle it normally
+        # Note: API routes (/api/*) are handled by blueprints registered above
+        # This catch-all only handles frontend routes
 
         # Determine static folder path
         # In Docker: /app/frontend/dist
