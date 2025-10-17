@@ -46,7 +46,7 @@ function PendingRegistrationsList() {
   };
 
   const handleResendEmail = async (id, email) => {
-    if (!window.confirm(`Resend verification email to ${email}?`)) {
+    if (!window.confirm(`Resend verification email to ${email}?\n\nThis will extend the expiry date by 24 hours.`)) {
       return;
     }
 
@@ -56,6 +56,7 @@ function PendingRegistrationsList() {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert(response.data.message);
+      fetchPendingRegistrations(); // Refresh to show updated expiry
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to resend email');
     }
@@ -163,15 +164,13 @@ function PendingRegistrationsList() {
                     </span>
                   </td>
                   <td className="actions">
-                    {!pending.is_expired && (
-                      <button
-                        onClick={() => handleResendEmail(pending.id, pending.email)}
-                        className="btn-small btn-info"
-                        title="Resend verification email"
-                      >
-                        Resend Email
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleResendEmail(pending.id, pending.email)}
+                      className="btn-small btn-info"
+                      title="Resend verification email and extend expiry by 24 hours"
+                    >
+                      {pending.is_expired ? 'Restart Registration' : 'Resend Email'}
+                    </button>
                     <button
                       onClick={() => handleDelete(pending.id, pending.username)}
                       className="btn-small btn-danger"
