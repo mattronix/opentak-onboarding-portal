@@ -805,3 +805,91 @@ class OneTimeTokenModel(db.Model):
             print(f"Error cleaning up tokens: {e}")
             return 0
 
+
+class SystemSettingsModel(db.Model):
+    """
+    Model for system-wide settings
+    """
+    __tablename__ = "system_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(unique=True, nullable=False)
+    value: Mapped[str] = mapped_column(nullable=False)
+    category: Mapped[str] = mapped_column(nullable=False)  # e.g., 'notifications', 'email', 'security'
+    description: Mapped[str] = mapped_column(nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), nullable=False)
+    updated_at: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), onupdate=db.func.current_timestamp(), nullable=False)
+
+    @staticmethod
+    def get_setting(key, default=None):
+        """Get a setting value by key"""
+        setting = SystemSettingsModel.query.filter_by(key=key).first()
+        if setting:
+            # Parse boolean values
+            if setting.value.lower() in ['true', 'false']:
+                return setting.value.lower() == 'true'
+            return setting.value
+        return default
+
+    @staticmethod
+    def set_setting(key, value, category='general', description=None):
+        """Set or update a setting"""
+        try:
+            setting = SystemSettingsModel.query.filter_by(key=key).first()
+
+            # Convert boolean to string
+            if isinstance(value, bool):
+                value = str(value).lower()
+
+            if setting:
+                setting.value = value
+                setting.updated_at = datetime.datetime.now()
+            else:
+                setting = SystemSettingsModel(
+                    key=key,
+                    value=value,
+                    category=category,
+                    description=description
+                )
+                db.session.add(setting)
+
+            db.session.commit()
+            return setting
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error setting value: {e}")
+            return None
+
+    @staticmethod
+    def get_category_settings(category):
+        """Get all settings for a category"""
+        return SystemSettingsModel.query.filter_by(category=category).all()
+
+    @staticmethod
+    def initialize_defaults():
+        """Initialize default settings"""
+        defaults = [
+            {
+                'key': 'notify_admin_pending_registration',
+                'value': 'true',
+                'category': 'notifications',
+                'description': 'Send notification to admin when a new pending registration is created'
+            },
+            {
+                'key': 'notify_admin_new_registration',
+                'value': 'true',
+                'category': 'notifications',
+                'description': 'Send notification to admin when a new user completes registration'
+            }
+        ]
+
+        for default in defaults:
+            existing = SystemSettingsModel.query.filter_by(key=default['key']).first()
+            if not existing:
+                SystemSettingsModel.set_setting(
+                    key=default['key'],
+                    value=default['value'],
+                    category=default['category'],
+                    description=default['description']
+                )
+

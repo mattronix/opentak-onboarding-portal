@@ -3,8 +3,11 @@ Settings API endpoint
 Returns application configuration settings for the frontend
 """
 
-from flask import jsonify, current_app
+from flask import jsonify, current_app, request
+from flask_jwt_extended import jwt_required, get_jwt
 from app.api_v1 import api_v1
+from app.models import SystemSettingsModel
+from app import db
 
 
 @api_v1.route('/settings', methods=['GET'])
@@ -56,3 +59,148 @@ def get_settings():
     }
 
     return jsonify(settings), 200
+
+
+@api_v1.route('/admin/settings', methods=['GET'])
+@jwt_required()
+def get_admin_settings():
+    """
+    Get all system settings (admin only)
+
+    Response:
+    {
+        "notifications": [
+            {
+                "key": "string",
+                "value": "string",
+                "description": "string"
+            }
+        ]
+    }
+    """
+    try:
+        # Check if user is admin
+        claims = get_jwt()
+        if 'administrator' not in claims.get('roles', []) and 'admin' not in claims.get('roles', []):
+            return jsonify({'error': 'Admin access required'}), 403
+
+        # Initialize defaults if needed
+        SystemSettingsModel.initialize_defaults()
+
+        # Get settings by category
+        settings_by_category = {}
+        categories = ['notifications', 'email', 'security', 'general']
+
+        for category in categories:
+            settings = SystemSettingsModel.get_category_settings(category)
+            settings_by_category[category] = [
+                {
+                    'id': s.id,
+                    'key': s.key,
+                    'value': s.value,
+                    'description': s.description
+                }
+                for s in settings
+            ]
+
+        return jsonify(settings_by_category), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting admin settings: {str(e)}")
+        return jsonify({'error': 'Failed to retrieve settings'}), 500
+
+
+@api_v1.route('/admin/settings/<int:setting_id>', methods=['PUT'])
+@jwt_required()
+def update_admin_setting(setting_id):
+    """
+    Update a system setting (admin only)
+
+    Request body:
+    {
+        "value": "string"
+    }
+    """
+    try:
+        # Check if user is admin
+        claims = get_jwt()
+        if 'administrator' not in claims.get('roles', []) and 'admin' not in claims.get('roles', []):
+            return jsonify({'error': 'Admin access required'}), 403
+
+        data = request.get_json()
+        if not data or 'value' not in data:
+            return jsonify({'error': 'Value is required'}), 400
+
+        # Get the setting
+        setting = SystemSettingsModel.query.get(setting_id)
+        if not setting:
+            return jsonify({'error': 'Setting not found'}), 404
+
+        # Update the setting
+        setting.value = str(data['value']).lower() if isinstance(data['value'], bool) else data['value']
+        db.session.commit()
+
+        current_app.logger.info(f"Setting '{setting.key}' updated to '{setting.value}'")
+
+        return jsonify({
+            'message': 'Setting updated successfully',
+            'setting': {
+                'id': setting.id,
+                'key': setting.key,
+                'value': setting.value,
+                'description': setting.description
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating setting: {str(e)}")
+        return jsonify({'error': 'Failed to update setting'}), 500
+
+
+@api_v1.route('/admin/settings/key/<key>', methods=['PUT'])
+@jwt_required()
+def update_admin_setting_by_key(key):
+    """
+    Update a system setting by key (admin only)
+
+    Request body:
+    {
+        "value": "string" or boolean
+    }
+    """
+    try:
+        # Check if user is admin
+        claims = get_jwt()
+        if 'administrator' not in claims.get('roles', []) and 'admin' not in claims.get('roles', []):
+            return jsonify({'error': 'Admin access required'}), 403
+
+        data = request.get_json()
+        if not data or 'value' not in data:
+            return jsonify({'error': 'Value is required'}), 400
+
+        # Get the setting
+        setting = SystemSettingsModel.query.filter_by(key=key).first()
+        if not setting:
+            return jsonify({'error': 'Setting not found'}), 404
+
+        # Update the setting
+        setting.value = str(data['value']).lower() if isinstance(data['value'], bool) else data['value']
+        db.session.commit()
+
+        current_app.logger.info(f"Setting '{setting.key}' updated to '{setting.value}'")
+
+        return jsonify({
+            'message': 'Setting updated successfully',
+            'setting': {
+                'id': setting.id,
+                'key': setting.key,
+                'value': setting.value,
+                'description': setting.description
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating setting: {str(e)}")
+        return jsonify({'error': 'Failed to update setting'}), 500
