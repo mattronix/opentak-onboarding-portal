@@ -85,7 +85,6 @@ function MeshtasticList() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>URL</th>
                 <th>Description</th>
                 <th>Actions</th>
               </tr>
@@ -94,7 +93,6 @@ function MeshtasticList() {
               {configs.map(config => (
                 <tr key={config.id}>
                   <td><strong>{config.name}</strong></td>
-                  <td><a href={config.url} target="_blank" rel="noopener noreferrer">{config.url}</a></td>
                   <td>{config.description || '-'}</td>
                   <td>
                     <div className="table-actions">

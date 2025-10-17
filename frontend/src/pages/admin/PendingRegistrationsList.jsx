@@ -7,12 +7,28 @@ function PendingRegistrationsList() {
   const [pendingRegistrations, setPendingRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [selectedPending, setSelectedPending] = useState(null);
+  const [onboardingCodes, setOnboardingCodes] = useState([]);
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    callsign: '',
+    onboarding_code_id: ''
+  });
+  const [formError, setFormError] = useState('');
+  const [formLoading, setFormLoading] = useState(false);
   const navigate = useNavigate();
 
   const API_URL = window.location.origin;
 
   useEffect(() => {
     fetchPendingRegistrations();
+    fetchOnboardingCodes();
   }, []);
 
   const fetchPendingRegistrations = async () => {
@@ -26,6 +42,28 @@ function PendingRegistrationsList() {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch pending registrations');
       setLoading(false);
+    }
+  };
+
+  const fetchOnboardingCodes = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get(`${API_URL}/api/v1/onboarding-codes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Onboarding codes response:', response.data);
+      // API returns 'codes' not 'onboarding_codes'
+      const codes = response.data.codes || response.data.onboarding_codes || [];
+      console.log('Fetched onboarding codes:', codes);
+      setOnboardingCodes(codes);
+
+      // Set default onboarding code when opening create modal
+      if (codes.length > 0 && !formData.onboarding_code_id) {
+        setFormData(prev => ({ ...prev, onboarding_code_id: codes[0].id }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch onboarding codes:', err);
+      setError('Failed to load onboarding codes. Please refresh the page.');
     }
   };
 
@@ -101,6 +139,92 @@ function PendingRegistrationsList() {
     return `${hours}h ${minutes}m`;
   };
 
+  const openCreateModal = () => {
+    setModalMode('create');
+    console.log('Opening create modal, available codes:', onboardingCodes);
+    const defaultCodeId = onboardingCodes.length > 0 ? onboardingCodes[0].id : '';
+    console.log('Setting default onboarding code ID:', defaultCodeId);
+    setFormData({
+      username: '',
+      password: '',
+      email: '',
+      firstName: '',
+      lastName: '',
+      callsign: '',
+      onboarding_code_id: defaultCodeId
+    });
+    setFormError('');
+    setShowModal(true);
+  };
+
+  const openEditModal = (pending) => {
+    setModalMode('edit');
+    setSelectedPending(pending);
+    setFormData({
+      username: pending.username,
+      password: '',
+      email: pending.email,
+      firstName: pending.firstName,
+      lastName: pending.lastName,
+      callsign: pending.callsign,
+      onboarding_code_id: pending.onboarding_code_id
+    });
+    setFormError('');
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedPending(null);
+    setFormError('');
+  };
+
+  const handleFormChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    setFormLoading(true);
+
+    try {
+      const token = localStorage.getItem('access_token');
+
+      if (modalMode === 'create') {
+        await axios.post(`${API_URL}/api/v1/pending-registrations`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert('Pending registration created and verification email sent!');
+      } else {
+        // For edit, only send fields that are filled
+        const updateData = {};
+        if (formData.username) updateData.username = formData.username;
+        if (formData.password) updateData.password = formData.password;
+        if (formData.email) updateData.email = formData.email;
+        if (formData.firstName) updateData.firstName = formData.firstName;
+        if (formData.lastName) updateData.lastName = formData.lastName;
+        if (formData.callsign) updateData.callsign = formData.callsign;
+        if (formData.onboarding_code_id) updateData.onboarding_code_id = formData.onboarding_code_id;
+
+        await axios.put(`${API_URL}/api/v1/pending-registrations/${selectedPending.id}`, updateData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert('Pending registration updated and verification email sent!');
+      }
+
+      closeModal();
+      fetchPendingRegistrations();
+    } catch (err) {
+      setFormError(err.response?.data?.error || 'Failed to save pending registration');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading pending registrations...</div>;
   }
@@ -110,6 +234,9 @@ function PendingRegistrationsList() {
       <div className="pending-registrations-header">
         <h1>Pending Registrations</h1>
         <div className="header-actions">
+          <button onClick={openCreateModal} className="btn-primary">
+            Create New
+          </button>
           <button onClick={handleCleanupExpired} className="btn-warning">
             Clean Up Expired
           </button>
@@ -165,11 +292,18 @@ function PendingRegistrationsList() {
                   </td>
                   <td className="actions">
                     <button
+                      onClick={() => openEditModal(pending)}
+                      className="btn-small btn-secondary"
+                      title="Edit pending registration"
+                    >
+                      Edit
+                    </button>
+                    <button
                       onClick={() => handleResendEmail(pending.id, pending.email)}
                       className="btn-small btn-info"
                       title="Resend verification email and extend expiry by 24 hours"
                     >
-                      {pending.is_expired ? 'Restart Registration' : 'Resend Email'}
+                      {pending.is_expired ? 'Restart' : 'Resend'}
                     </button>
                     <button
                       onClick={() => handleDelete(pending.id, pending.username)}
@@ -193,6 +327,152 @@ function PendingRegistrationsList() {
           Active: <strong>{pendingRegistrations.filter(p => !p.is_expired).length}</strong>
         </p>
       </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{modalMode === 'create' ? 'Create Pending Registration' : 'Edit Pending Registration'}</h2>
+              <button className="close-btn" onClick={closeModal}>&times;</button>
+            </div>
+
+            <form onSubmit={handleFormSubmit} className="modal-form">
+              {formError && <div className="error-message">{formError}</div>}
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="username">Username *</label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleFormChange}
+                    required={modalMode === 'create'}
+                    placeholder="Enter username"
+                    pattern="[a-zA-Z0-9]+"
+                    title="Only letters and numbers allowed"
+                  />
+                  <small>Only letters and numbers (will be converted to lowercase)</small>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="email">Email *</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleFormChange}
+                    required={modalMode === 'create'}
+                    placeholder="user@example.com"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="firstName">First Name *</label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleFormChange}
+                    required={modalMode === 'create'}
+                    placeholder="First name"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="lastName">Last Name *</label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleFormChange}
+                    required={modalMode === 'create'}
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="callsign">Callsign *</label>
+                  <input
+                    type="text"
+                    id="callsign"
+                    name="callsign"
+                    value={formData.callsign}
+                    onChange={handleFormChange}
+                    required={modalMode === 'create'}
+                    placeholder="Callsign"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="password">Password *</label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleFormChange}
+                    required={modalMode === 'create'}
+                    placeholder={modalMode === 'edit' ? 'Leave blank to keep current' : 'Enter password'}
+                  />
+                  {modalMode === 'edit' && <small>Leave blank to keep current password</small>}
+                </div>
+              </div>
+
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="onboarding_code_id">Onboarding Code *</label>
+                <select
+                  id="onboarding_code_id"
+                  name="onboarding_code_id"
+                  value={formData.onboarding_code_id}
+                  onChange={handleFormChange}
+                  required={modalMode === 'create'}
+                  style={{
+                    backgroundColor: 'white',
+                    color: '#333',
+                    appearance: 'auto'
+                  }}
+                >
+                  <option value="">-- Select an onboarding code --</option>
+                  {onboardingCodes.map((code) => (
+                    <option key={code.id} value={code.id}>
+                      {code.name} ({code.onboardingCode})
+                    </option>
+                  ))}
+                </select>
+                {onboardingCodes.length === 0 && (
+                  <small style={{ color: '#dc3545', fontWeight: '500', display: 'block', marginTop: '0.5rem' }}>
+                    ⚠️ No onboarding codes found. Please create an onboarding code first in the Onboarding Codes section.
+                  </small>
+                )}
+                {onboardingCodes.length > 0 && (
+                  <small style={{ color: '#28a745' }}>
+                    ✓ {onboardingCodes.length} onboarding code{onboardingCodes.length !== 1 ? 's' : ''} available
+                  </small>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" onClick={closeModal} className="btn-secondary" disabled={formLoading}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" disabled={formLoading}>
+                  {formLoading ? 'Saving...' : (modalMode === 'create' ? 'Create & Send Email' : 'Update & Send Email')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

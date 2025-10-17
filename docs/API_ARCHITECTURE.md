@@ -9,11 +9,11 @@ This application now uses a pure API + React SPA architecture with legacy server
 **Base URL:** `/api/v1/`
 
 Used by the React frontend for all user and admin operations:
-- `/api/v1/auth/*` - Authentication (login, register, verify email, password reset)
+- `/api/v1/auth/*` - Authentication (login, register, verify email, change password)
 - `/api/v1/users/*` - User management
 - `/api/v1/roles/*` - Role management
 - `/api/v1/onboarding-codes/*` - Onboarding code management
-- `/api/v1/pending-registrations/*` - Email verification management
+- `/api/v1/pending-registrations/*` - Pending registration management (create, edit, resend verification)
 - `/api/v1/tak-profiles/*` - TAK profile management
 - `/api/v1/meshtastic/*` - Meshtastic configuration management
 - `/api/v1/radios/*` - Radio device management
@@ -130,6 +130,176 @@ User Login → API v1 /auth/login → JWT token → Stored in localStorage
 Device Script → API /radio → X-API-KEY header → Validates against settings.API_KEY
 → Creates/updates device records
 ```
+
+## API Endpoint Details
+
+### Pending Registrations API (`/api/v1/pending-registrations/`)
+
+Admin-only endpoints for managing user registrations awaiting email verification.
+
+#### `GET /api/v1/pending-registrations`
+List all pending registrations.
+
+**Response:**
+```json
+{
+  "pending_registrations": [{
+    "id": 1,
+    "username": "testuser",
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "callsign": "ALPHA1",
+    "onboarding_code_id": 5,
+    "onboarding_code": { "id": 5, "name": "VRU", "code": "ABC123" },
+    "created_at": "2025-10-17T10:00:00",
+    "expires_at": "2025-10-18T10:00:00",
+    "is_expired": false
+  }]
+}
+```
+
+#### `POST /api/v1/pending-registrations`
+Create a new pending registration manually (sends verification email).
+
+**Request Body:**
+```json
+{
+  "username": "testuser",
+  "password": "securepass123",
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "callsign": "ALPHA1",
+  "onboarding_code_id": 5
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "message": "Pending registration created successfully",
+  "id": 1,
+  "username": "testuser",
+  "email": "user@example.com",
+  "expires_at": "2025-10-18T10:00:00"
+}
+```
+
+**Features:**
+- Username automatically converted to lowercase
+- Username validation: only letters and numbers (no spaces, underscores, periods)
+- Generates verification token (24-hour expiry)
+- Sends verification email automatically
+
+#### `PUT /api/v1/pending-registrations/<id>`
+Update a pending registration (sends new verification email, extends expiry by 24 hours).
+
+**Request Body:** (all fields optional)
+```json
+{
+  "username": "newusername",
+  "email": "newemail@example.com",
+  "password": "newpassword",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "callsign": "BRAVO2",
+  "onboarding_code_id": 6
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Pending registration updated and verification email sent",
+  "id": 1,
+  "username": "newusername",
+  "email": "newemail@example.com",
+  "expires_at": "2025-10-18T10:00:00"
+}
+```
+
+**Features:**
+- Generates new verification token
+- Extends expiry by 24 hours
+- Sends updated verification email
+- Password optional (leave blank to keep current)
+
+#### `POST /api/v1/pending-registrations/<id>/resend`
+Resend verification email and extend expiry by 24 hours (works for expired registrations too).
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Verification email resent to user@example.com"
+}
+```
+
+**Features:**
+- Generates new verification token
+- Extends expiry by 24 hours from now
+- Works even if registration is expired
+- Perfect for "restart registration" functionality
+
+#### `DELETE /api/v1/pending-registrations/<id>`
+Delete a pending registration.
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Pending registration for testuser deleted successfully"
+}
+```
+
+#### `POST /api/v1/pending-registrations/cleanup-expired`
+Delete all expired pending registrations.
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Cleaned up 5 expired pending registrations"
+}
+```
+
+### Authentication API Updates (`/api/v1/auth/`)
+
+#### `POST /api/v1/auth/change-password` (Updated)
+Change password for authenticated user (no current password required).
+
+**Request Body:**
+```json
+{
+  "newPassword": "newsecurepass123"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Changes:**
+- No longer requires current password
+- User just needs to be authenticated (logged in)
+- Uses admin OTS credentials to reset password directly
+
+### Username Validation Rules
+
+All username-related endpoints now enforce strict validation:
+- **Only letters and numbers** (a-z, 0-9)
+- **No spaces, underscores, periods, or hyphens**
+- **3-32 characters**
+- **Automatically converted to lowercase**
+
+### Role Mapping for OTS
+
+When creating users in OTS, roles are mapped:
+- Roles named `'administrator'` or `'admin'` → `'administrator'` in OTS
+- All other roles → `'user'` in OTS
+
+This ensures compatibility with OTS's two-role system while maintaining flexible role management in the portal database.
 
 ## Documentation
 - API v1 Swagger docs: http://localhost:5000/api/docs
