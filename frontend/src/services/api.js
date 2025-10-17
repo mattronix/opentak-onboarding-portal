@@ -1,9 +1,24 @@
 import axios from 'axios';
 
 // API base URL - configurable via environment variable
-// Default to same origin (current hostname) for production, or localhost:5000 for local dev
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+// In production builds, always use same origin unless explicitly overridden
+// In development mode (vite dev server), use localhost:5000 unless overridden
+const getApiBaseUrl = () => {
+  // If explicitly set via env var, use it
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+
+  // In development mode (vite dev server on port 5173), default to localhost:5000
+  if (import.meta.env.DEV && window.location.port === '5173') {
+    return 'http://localhost:5000';
+  }
+
+  // For production builds or any other case, use same origin (API served from same host)
+  return window.location.origin;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Create axios instance with default config
 const api = axios.create({

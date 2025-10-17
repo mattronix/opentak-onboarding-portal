@@ -1,6 +1,8 @@
 .python-version
 *.pyc
 .env
+frontend/.env
+frontend/.env.local
 instance/
 .DS_Store
 datapackages/*
