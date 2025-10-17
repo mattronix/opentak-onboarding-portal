@@ -262,6 +262,16 @@ def register():
         if not data.get(field):
             return jsonify({'error': f'{field} is required'}), 400
 
+    # Validate username format (only letters, numbers, underscores, periods, and hyphens)
+    import re
+    username_pattern = r'^[a-zA-Z0-9._-]+$'
+    if not re.match(username_pattern, data['username']):
+        return jsonify({'error': 'Username can only contain letters, numbers, underscores, periods, and hyphens'}), 400
+
+    # Validate username length
+    if len(data['username']) < 3 or len(data['username']) > 32:
+        return jsonify({'error': 'Username must be between 3 and 32 characters'}), 400
+
     # Validate email format (basic check)
     if '@' not in data['email'] or '.' not in data['email']:
         return jsonify({'error': 'Invalid email format'}), 400
@@ -435,11 +445,22 @@ def verify_email():
             ots_roles = [role.name for role in onboarding_code.roles]
 
         # Create user in OTS with username, password, and roles
-        ots_response = ots.create_user(
-            username=pending.username,
-            password=pending.password,
-            roles=ots_roles
-        )
+        try:
+            ots_response = ots.create_user(
+                username=pending.username,
+                password=pending.password,
+                roles=ots_roles
+            )
+        except Exception as e:
+            # Check if it's a username validation error
+            error_msg = str(e)
+            if 'can contain only' in error_msg.lower() or 'username' in error_msg.lower():
+                PendingRegistrationModel.delete_by_id(pending.id)
+                return jsonify({
+                    'error': 'Username contains invalid characters. Username can only contain letters, numbers, underscores, periods, and hyphens. Please register again with a valid username.'
+                }), 400
+            # Re-raise other errors
+            raise
 
         # Create user in local database
         expiry_date = onboarding_code.userExpiryDate if onboarding_code.userExpiryDate else None

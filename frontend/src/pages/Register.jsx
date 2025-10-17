@@ -56,6 +56,19 @@ function Register() {
     e.preventDefault();
     setError('');
 
+    // Validate username format
+    const usernamePattern = /^[a-zA-Z0-9._-]+$/;
+    if (!usernamePattern.test(formData.username)) {
+      setError('Username can only contain letters, numbers, underscores, periods, and hyphens');
+      return;
+    }
+
+    // Validate username length
+    if (formData.username.length < 3 || formData.username.length > 32) {
+      setError('Username must be between 3 and 32 characters');
+      return;
+    }
+
     if (formData.password !== formData.passwordConfirm) {
       setError('Passwords do not match');
       return;
@@ -120,7 +133,14 @@ function Register() {
               onChange={handleChange}
               required
               placeholder="Choose a username"
+              pattern="[a-zA-Z0-9._-]+"
+              title="Username can only contain letters, numbers, underscores, periods, and hyphens"
+              minLength="3"
+              maxLength="32"
             />
+            <small style={{ color: '#666', fontSize: '0.85em' }}>
+              Only letters, numbers, underscores, periods, and hyphens (3-32 characters)
+            </small>
           </div>
 
           <div className="form-row">
