@@ -442,10 +442,21 @@ def verify_email():
         # Create user in OTS
         ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
 
-        # Prepare roles from onboarding code
+        # Prepare roles from onboarding code - OTS only supports 'user' and 'administrator'
         ots_roles = ['user']  # Default role
         if onboarding_code.roles:
-            ots_roles = [role.name for role in onboarding_code.roles]
+            # Filter roles to only include those that exist in OTS
+            allowed_ots_roles = ['user', 'administrator']
+            role_names = [role.name.lower() for role in onboarding_code.roles]
+
+            # Check if any role maps to administrator
+            if any(r in ['administrator', 'admin'] for r in role_names):
+                ots_roles = ['administrator']
+            else:
+                # Default to user for any other role
+                ots_roles = ['user']
+
+            current_app.logger.info(f"Mapped onboarding code roles {[r.name for r in onboarding_code.roles]} to OTS roles {ots_roles}")
 
         # Create user in OTS with username, password, and roles
         try:
