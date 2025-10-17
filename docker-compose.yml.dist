@@ -1,8 +1,8 @@
 services:
     web:
         restart: always
-        image: git.mattronix.nl/a-stsc/opentak-onboarding-portal:latest
-        # Uncomment below to build locally instead of using registry
+        image: ${DOCKER_USERNAME:-mattronix}/opentak-portal:latest
+        # Uncomment below to build locally instead of using Docker Hub
         # build:
         #     context: .
         #     dockerfile: Dockerfile
