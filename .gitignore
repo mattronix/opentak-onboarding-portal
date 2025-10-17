@@ -14,3 +14,10 @@ docker-compose.yml
 # Version files (auto-generated)
 app/version.py
 frontend/public/version.json
+
+# Testing and coverage
+htmlcov/
+.coverage
+.pytest_cache/
+*.cover
+.hypothesis/

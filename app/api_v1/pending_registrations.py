@@ -170,14 +170,16 @@ def resend_verification_email(pending_id):
         if pending.expires_at < datetime.now():
             return jsonify({'error': 'Verification link has expired. User must register again.'}), 400
 
-        # Get frontend URL - auto-detect from request if not configured
-        frontend_url = current_app.config.get('FRONTEND_URL')
-        if not frontend_url or frontend_url == 'http://localhost:5173':
-            # Auto-detect: use same host as API request
-            if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
-                frontend_url = 'http://localhost:5173'
-            else:
+        # Get frontend URL from config
+        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
+
+        # Auto-detect production URL if FRONTEND_URL is not set or is a localhost value
+        if frontend_url.startswith('http://localhost') or frontend_url.startswith('http://127.0.0.1'):
+            # Only use localhost if the request is actually from localhost
+            if not (request.host.startswith('localhost') or request.host.startswith('127.0.0.1')):
+                # For production, use the same host as the API
                 frontend_url = f"{request.scheme}://{request.host}"
+
         verification_link = f"{frontend_url}/verify-email?token={pending.verification_token}"
 
         welcome_message = f"""Hello {pending.firstName} {pending.lastName},

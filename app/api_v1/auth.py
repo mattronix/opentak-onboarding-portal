@@ -323,13 +323,13 @@ def register():
 
         # Send verification email to user
         try:
-            # Get frontend URL from config or use default frontend port
-            frontend_url = current_app.config.get('FRONTEND_URL')
-            if not frontend_url or frontend_url == 'http://localhost:5173':
-                # Default to frontend on port 5173 for local development
-                if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
-                    frontend_url = 'http://localhost:5173'
-                else:
+            # Get frontend URL from config
+            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
+
+            # Auto-detect production URL if FRONTEND_URL is not set or is a localhost value
+            if frontend_url.startswith('http://localhost') or frontend_url.startswith('http://127.0.0.1'):
+                # Only use localhost if the request is actually from localhost
+                if not (request.host.startswith('localhost') or request.host.startswith('127.0.0.1')):
                     # For production, use the same host as the API
                     frontend_url = f"{request.scheme}://{request.host}"
 
@@ -489,12 +489,14 @@ def verify_email():
 
         # Send welcome email to new user
         try:
-            frontend_url = current_app.config.get('FRONTEND_URL')
-            if not frontend_url or frontend_url == 'http://localhost:5173':
-                # Auto-detect: use same host as API request
-                if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
-                    frontend_url = 'http://localhost:5173'
-                else:
+            # Get frontend URL from config
+            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
+
+            # Auto-detect production URL if FRONTEND_URL is not set or is a localhost value
+            if frontend_url.startswith('http://localhost') or frontend_url.startswith('http://127.0.0.1'):
+                # Only use localhost if the request is actually from localhost
+                if not (request.host.startswith('localhost') or request.host.startswith('127.0.0.1')):
+                    # For production, use the same host as the API
                     frontend_url = f"{request.scheme}://{request.host}"
 
             welcome_message = f"""Welcome to OpenTAK, {user.firstName}!
@@ -611,11 +613,15 @@ def forgot_password():
 
         # Send email
         try:
-            # Get frontend URL from config, or derive from request
-            frontend_url = current_app.config.get('FRONTEND_URL')
-            if not frontend_url or frontend_url == 'http://localhost:5173':
-                # Derive from request URL (scheme + host)
-                frontend_url = f"{request.scheme}://{request.host}"
+            # Get frontend URL from config
+            frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5000')
+
+            # Auto-detect production URL if FRONTEND_URL is not set or is a localhost value
+            if frontend_url.startswith('http://localhost') or frontend_url.startswith('http://127.0.0.1'):
+                # Only use localhost if the request is actually from localhost
+                if not (request.host.startswith('localhost') or request.host.startswith('127.0.0.1')):
+                    # For production, use the same host as the API
+                    frontend_url = f"{request.scheme}://{request.host}"
 
             reset_link = f"{frontend_url}/reset-password?token={token_value}"
             message = f"Hello {user.username},\n\nYou have requested to reset your password. Please click the link below to reset your password:\n\n{reset_link}\n\nThis link will expire in 15 minutes and can only be used once.\n\nIf you did not request this, please ignore this email."
