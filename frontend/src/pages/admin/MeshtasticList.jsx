@@ -76,6 +76,7 @@ function MeshtasticList() {
       <div className="admin-header">
         <h1>Meshtastic Configs</h1>
         <button className="btn btn-primary" onClick={() => {resetForm(); setShowModal(true);}}>+ Add Config</button>
+        {/* Force rebuild - v2 */}
       </div>
       <div className="admin-table-container">
         {configs.length === 0 ? (
