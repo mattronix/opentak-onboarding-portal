@@ -4,6 +4,9 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+            args:
+                GIT_COMMIT: ${GIT_COMMIT:-dev}
+                GIT_DATE: ${GIT_DATE:-unknown}
         ports:
             - "5000:5000"
         env_file:

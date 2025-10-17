@@ -26,14 +26,36 @@ This project is an Opensource ATAK Portal that works with OpenTak Server to prov
 
 
 # Setup
-git clone
-copy env.dist to .env and replace with real info. 
-```
-cp env.dist .env
-cp docker-compose.yml.dist docker-compose.yml
-# If you want to expose a tak update server via OTS and this container runs on the same host as OTS uncomment the volume line in docker-compose.yml 
-docker compose build
+
+## Initial Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd opentak-onboarding-portal
+   ```
+
+2. Copy configuration templates:
+   ```bash
+   cp .env.example .env
+   cp docker-compose.yml.dist docker-compose.yml
+   ```
+
+3. Edit `.env` and replace with your actual configuration
+
+## Docker Compose Setup
+
+If you want to expose a TAK update server via OTS and this container runs on the same host as OTS, uncomment the volume line in docker-compose.yml.
+
+Build and start the containers:
+```bash
+# Build with version info
+./docker-build.sh
+
+# Start containers
 docker compose up -d
+
+# Run database migrations
 docker compose exec web flask db upgrade
 ```
 

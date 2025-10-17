@@ -9,6 +9,7 @@ When you make changes to the frontend or backend, you need to rebuild the Docker
 - SSH access to production server
 - Git repository up to date on production server
 - Docker and docker-compose installed on production server
+- `docker-compose.yml` file on production server (copy from `docker-compose.yml.dist` if needed)
 
 ## Deployment Steps
 
@@ -46,6 +47,15 @@ git pull origin main
 ```
 
 This will pull all the latest code including the updated frontend.
+
+**First time setup or after docker-compose.yml.dist updates:**
+```bash
+# Check if your docker-compose.yml has the latest structure
+diff docker-compose.yml docker-compose.yml.dist
+
+# If different, update your docker-compose.yml
+cp docker-compose.yml.dist docker-compose.yml
+```
 
 ### 5. Rebuild Docker Container
 
@@ -190,6 +200,22 @@ docker compose exec web cat .env | head -10
 ```
 
 ## Troubleshooting
+
+### Docker Compose Version Warning
+
+**Symptom:** Warning message: `the attribute 'version' is obsolete`
+
+**Cause:** Old docker-compose.yml format with `version:` attribute at the top.
+
+**Solution:**
+```bash
+# Update to latest docker-compose.yml template
+cp docker-compose.yml.dist docker-compose.yml
+
+# The file should start directly with "services:" not "version: '3'"
+```
+
+This is just a warning and doesn't affect functionality.
 
 ### Frontend/Backend Not Updating
 
