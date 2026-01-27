@@ -293,6 +293,19 @@ export const settingsAPI = {
 
     updateByKey: (key, value) =>
       api.put(`/admin/settings/key/${key}`, { value }),
+
+    // Logo management
+    getLogo: () =>
+      api.get('/admin/logo'),
+
+    uploadLogo: (file) => {
+      const formData = new FormData();
+      formData.append('logo', file);
+      return api.post('/admin/logo', formData);
+    },
+
+    deleteLogo: () =>
+      api.delete('/admin/logo'),
   },
 };
 

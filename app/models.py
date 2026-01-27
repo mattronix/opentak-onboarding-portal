@@ -1081,6 +1081,25 @@ class SystemSettingsModel(db.Model):
                 'value': 'true',
                 'category': 'general',
                 'description': 'Enable forgot password functionality'
+            },
+            # Branding settings
+            {
+                'key': 'custom_logo_enabled',
+                'value': 'false',
+                'category': 'branding',
+                'description': 'Enable custom logo display'
+            },
+            {
+                'key': 'custom_logo_path',
+                'value': '',
+                'category': 'branding',
+                'description': 'Path to uploaded custom logo file'
+            },
+            {
+                'key': 'logo_display_mode',
+                'value': 'logo_and_text',
+                'category': 'branding',
+                'description': 'How to display logo and brand name (logo_only, text_only, logo_and_text)'
             }
         ]
 

@@ -24,6 +24,13 @@ function Layout() {
   });
 
   const brandName = settings?.brand_name || 'OpenTAK Portal';
+  const logoEnabled = settings?.custom_logo_enabled === true || settings?.custom_logo_enabled === 'true';
+  const logoPath = logoEnabled && settings?.custom_logo_path
+    ? settings.custom_logo_path
+    : settings?.default_logo_path;
+  const displayMode = settings?.logo_display_mode || 'logo_and_text';
+  const showLogo = logoPath && (displayMode === 'logo_only' || displayMode === 'logo_and_text');
+  const showText = displayMode === 'text_only' || displayMode === 'logo_and_text';
 
   useEffect(() => {
     // Fetch version info
@@ -71,7 +78,12 @@ function Layout() {
     <div className="layout">
       <nav className="navbar">
         <div className="navbar-brand">
-          <Link to="/dashboard">{brandName}</Link>
+          <Link to="/dashboard">
+            {showLogo && (
+              <img src={logoPath} alt={brandName} className="navbar-logo" />
+            )}
+            {showText && <span className="navbar-brand-text">{brandName}</span>}
+          </Link>
         </div>
 
         <button

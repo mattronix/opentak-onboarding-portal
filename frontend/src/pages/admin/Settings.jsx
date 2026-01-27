@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { settingsAPI } from '../../services/api';
 import './Admin.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 // Component for numeric settings (number input with save button)
 function NumericSettingItem({ setting, onSave, saving, formatSettingName }) {
@@ -143,8 +145,121 @@ function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, sav
   );
 }
 
+// Component for logo upload
+function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChange, saving }) {
+  const [preview, setPreview] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (file) => {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please use PNG, JPG, or GIF.');
+      return;
+    }
+
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File too large. Maximum size is 2MB.');
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target.result);
+    reader.readAsDataURL(file);
+
+    // Upload
+    onUpload(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    handleFileSelect(file);
+  };
+
+  const currentLogo = logoSettings?.custom_logo_enabled && logoSettings?.custom_logo_path
+    ? `${API_BASE_URL}${logoSettings.custom_logo_path}`
+    : logoSettings?.default_logo_path
+      ? `${API_BASE_URL}${logoSettings.default_logo_path}`
+      : null;
+
+  return (
+    <div className="setting-item setting-item-logo">
+      <div className="setting-header">
+        <div className="setting-info">
+          <h4>Portal Logo</h4>
+          <p className="setting-description">Upload a custom logo for the portal. Supports PNG, JPG, GIF (max 2MB)</p>
+        </div>
+      </div>
+
+      <div className="logo-upload-section">
+        {/* Current Logo Preview */}
+        {(preview || currentLogo) && (
+          <div className="logo-preview-container">
+            <img
+              src={preview || currentLogo}
+              alt="Current logo"
+              className="logo-preview"
+            />
+          </div>
+        )}
+
+        {/* Upload Zone */}
+        <div
+          className={`logo-dropzone ${dragOver ? 'drag-over' : ''}`}
+          onDrop={handleDrop}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".png,.jpg,.jpeg,.gif"
+            onChange={(e) => handleFileSelect(e.target.files[0])}
+            style={{ display: 'none' }}
+          />
+          <p>Drop image here or click to upload</p>
+        </div>
+
+        {/* Display Mode */}
+        <div className="logo-display-mode">
+          <label>Display Mode:</label>
+          <select
+            value={logoSettings?.logo_display_mode || 'logo_and_text'}
+            onChange={(e) => onDisplayModeChange(e.target.value)}
+            disabled={saving}
+          >
+            <option value="logo_only">Logo Only</option>
+            <option value="text_only">Text Only</option>
+            <option value="logo_and_text">Logo and Text</option>
+          </select>
+        </div>
+
+        {/* Actions */}
+        {logoSettings?.custom_logo_enabled && (
+          <button
+            className="btn-cancel-setting"
+            onClick={onDelete}
+            disabled={saving}
+          >
+            Reset to Default
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Settings() {
   const [settings, setSettings] = useState({});
+  const [logoSettings, setLogoSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -155,6 +270,7 @@ function Settings() {
 
   useEffect(() => {
     fetchSettings();
+    fetchLogoSettings();
   }, []);
 
   const fetchSettings = async () => {
@@ -168,6 +284,63 @@ function Settings() {
       setError(err.response?.data?.error || 'Failed to load settings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLogoSettings = async () => {
+    try {
+      const response = await settingsAPI.admin.getLogo();
+      setLogoSettings(response.data);
+    } catch (err) {
+      console.error('Error fetching logo settings:', err);
+    }
+  };
+
+  const handleLogoUpload = async (file) => {
+    try {
+      setSaving(true);
+      setError('');
+      await settingsAPI.admin.uploadLogo(file);
+      setSuccess('Logo uploaded successfully');
+      fetchLogoSettings();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      setError(err.response?.data?.error || 'Failed to upload logo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    try {
+      setSaving(true);
+      setError('');
+      await settingsAPI.admin.deleteLogo();
+      setSuccess('Logo reset to default');
+      fetchLogoSettings();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error deleting logo:', err);
+      setError(err.response?.data?.error || 'Failed to reset logo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDisplayModeChange = async (mode) => {
+    try {
+      setSaving(true);
+      setError('');
+      await settingsAPI.admin.updateByKey('logo_display_mode', mode);
+      setSuccess('Display mode updated');
+      fetchLogoSettings();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error updating display mode:', err);
+      setError(err.response?.data?.error || 'Failed to update display mode');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -288,7 +461,9 @@ function Settings() {
 
   // Get regular (non-paired) settings from a category
   const getRegularSettings = (categorySettings, processedKeys) => {
-    return categorySettings?.filter(s => !processedKeys.has(s.key)) || [];
+    // Settings managed by dedicated components (not shown as toggles)
+    const managedSettings = ['custom_logo_path', 'logo_display_mode'];
+    return categorySettings?.filter(s => !processedKeys.has(s.key) && !managedSettings.includes(s.key)) || [];
   };
 
   const renderCategorySettings = (categorySettings) => {
@@ -391,6 +566,21 @@ function Settings() {
             </div>
           </div>
         )}
+
+        {/* Branding Section */}
+        <div className="settings-section">
+          <h2>Branding</h2>
+          <div className="settings-list">
+            <LogoUploadSetting
+              logoSettings={logoSettings}
+              onUpload={handleLogoUpload}
+              onDelete={handleLogoDelete}
+              onDisplayModeChange={handleDisplayModeChange}
+              saving={saving}
+            />
+            {settings.branding && renderCategorySettings(settings.branding)}
+          </div>
+        </div>
 
         {/* General Section */}
         {settings.general && settings.general.length > 0 && (

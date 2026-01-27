@@ -20,7 +20,7 @@ function Approvals() {
   const approveMutation = useMutation({
     mutationFn: (id) => approvalsAPI.approve(id),
     onSuccess: (response) => {
-      queryClient.invalidateQueries(['myApprovals']);
+      queryClient.invalidateQueries({ queryKey: ['myApprovals'] });
       showSuccess(response.data.message);
     },
     onError: (err) => {
@@ -34,7 +34,7 @@ function Approvals() {
   const rejectMutation = useMutation({
     mutationFn: (id) => approvalsAPI.reject(id),
     onSuccess: (response) => {
-      queryClient.invalidateQueries(['myApprovals']);
+      queryClient.invalidateQueries({ queryKey: ['myApprovals'] });
       showSuccess(response.data.message);
     },
     onError: (err) => {

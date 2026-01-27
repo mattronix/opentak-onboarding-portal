@@ -24,10 +24,24 @@
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .navbar-brand a:hover {
   text-decoration: none;
+}
+
+.navbar-logo {
+  height: 40px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+}
+
+.navbar-brand-text {
+  color: white;
 }
 
 /* Hamburger menu button */
@@ -229,6 +243,10 @@
 
   .navbar-brand a {
     font-size: 1.2rem;
+  }
+
+  .navbar-logo {
+    height: 32px;
   }
 
   .navbar-menu {

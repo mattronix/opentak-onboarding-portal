@@ -74,6 +74,11 @@ def get_settings():
         'meshtastic_installer_qr_android_url': get_str_setting('meshtastic_installer_qr_android_url', 'https://play.google.com/store/apps/details?id=com.geeksville.mesh'),
         'meshtastic_installer_qr_iphone_enabled': get_bool_setting('meshtastic_installer_qr_iphone_enabled', True),
         'meshtastic_installer_qr_iphone_url': get_str_setting('meshtastic_installer_qr_iphone_url', 'https://apps.apple.com/app/meshtastic/id1586432531'),
+        # Logo settings
+        'custom_logo_enabled': get_bool_setting('custom_logo_enabled', False),
+        'custom_logo_path': get_str_setting('custom_logo_path', ''),
+        'logo_display_mode': get_str_setting('logo_display_mode', 'logo_and_text'),
+        'default_logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png'),
     }
 
     return jsonify(settings), 200
@@ -136,7 +141,7 @@ def get_admin_settings():
 
         # Get settings by category
         settings_by_category = {}
-        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'general']
+        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'general']
 
         for category in categories:
             settings = SystemSettingsModel.get_category_settings(category)

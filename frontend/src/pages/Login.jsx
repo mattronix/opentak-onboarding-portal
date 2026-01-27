@@ -22,6 +22,10 @@ function Login() {
   });
 
   const brandName = settings?.brand_name || 'OpenTAK Onboarding Portal';
+  const logoEnabled = settings?.custom_logo_enabled === true || settings?.custom_logo_enabled === 'true';
+  const logoPath = logoEnabled && settings?.custom_logo_path
+    ? settings.custom_logo_path
+    : settings?.default_logo_path;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,6 +46,11 @@ function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {logoPath && (
+          <div className="auth-logo">
+            <img src={logoPath} alt={brandName} />
+          </div>
+        )}
         <h2>{brandName}</h2>
         <h3>Login</h3>
 

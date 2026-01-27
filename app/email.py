@@ -2,7 +2,7 @@ from app.extensions import mail
 from flask_mail import Message
 from flask import render_template
 
-from app.settings import MAIL_DEFAULT_SENDER, BRAND_NAME as DEFAULT_BRAND_NAME
+from app.settings import MAIL_DEFAULT_SENDER, BRAND_NAME as DEFAULT_BRAND_NAME, FRONTEND_URL
 from app.models import SystemSettingsModel
 import logging
 
@@ -20,15 +20,29 @@ def get_brand_name():
     return DEFAULT_BRAND_NAME
 
 
+def get_logo_url():
+    """Get logo URL for emails"""
+    try:
+        enabled = SystemSettingsModel.get_setting('custom_logo_enabled')
+        if enabled and str(enabled).lower() == 'true':
+            path = SystemSettingsModel.get_setting('custom_logo_path')
+            if path:
+                return f"{FRONTEND_URL}{path}"
+    except Exception:
+        pass
+    return None
+
+
 def send_html_email(subject, recipients, message, title=None, template="email_default_template.html", sender=MAIL_DEFAULT_SENDER, link_url="https://portal.example.nl", link_title="LOGIN to TAK Portal"):
     if not title:
         title = subject
 
     # Get settings from database
     brand_name = get_brand_name()
+    logo_url = get_logo_url()
 
     msg = Message(subject, sender=sender, recipients=recipients)
-    msg.html = render_template(template, title=title, message=message, link_title=link_title, link_url=link_url, brand_name=brand_name)
+    msg.html = render_template(template, title=title, message=message, link_title=link_title, link_url=link_url, brand_name=brand_name, logo_url=logo_url)
 
     try:
         mail.send(msg)

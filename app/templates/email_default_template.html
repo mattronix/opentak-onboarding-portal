@@ -5,6 +5,11 @@
     <td>&nbsp;</td>
     <td class="container">
       <div class="content">
+        {% if logo_url %}
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="{{ logo_url }}" alt="{{ brand_name }}" style="max-width: 200px; max-height: 80px;" />
+        </div>
+        {% endif %}
         <h1>{{brand_name}}</h1>
         <!-- START CENTERED WHITE CONTAINER -->
         <table role="presentation" class="main">

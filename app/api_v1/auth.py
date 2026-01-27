@@ -532,10 +532,24 @@ The OpenTAK Team"""
                         approver_emails.add(user.email)
                         current_app.logger.info(f"Adding approver from role '{onboarding_code.approverRole.name}': {user.username} ({user.email})")
 
+            # If no approver role set or no emails in that role, fall back to administrators
             if not approver_emails:
-                current_app.logger.error("No approvers configured for onboarding code with requireApproval enabled")
+                current_app.logger.info("No approvers with email found, falling back to administrators")
+                from app.models import UserRoleModel
+                # Case-insensitive search for administrator role
+                admin_role = UserRoleModel.query.filter(
+                    db.func.lower(UserRoleModel.name) == 'administrator'
+                ).first()
+                if admin_role:
+                    for user in admin_role.users:
+                        if user.email:
+                            approver_emails.add(user.email)
+                            current_app.logger.info(f"Adding admin as approver: {user.username} ({user.email})")
+
+            if not approver_emails:
+                current_app.logger.error("No approvers with email addresses found for onboarding code with requireApproval enabled")
                 PendingRegistrationModel.delete_by_id(pending.id)
-                return jsonify({'error': 'No approvers configured. Please contact administrator.'}), 500
+                return jsonify({'error': 'No approvers with email addresses configured. Approvers must have an email address set.'}), 500
 
             # Send approval emails to all approvers
             approval_message = f"""A new user registration requires your approval:
