@@ -86,7 +86,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
   font-family: inherit;
@@ -98,7 +98,19 @@ select {
   color: #333;
 }
 
-input:focus,
+input[type="checkbox"],
+input[type="radio"] {
+  -webkit-appearance: checkbox;
+  -moz-appearance: checkbox;
+  appearance: checkbox;
+  accent-color: #333;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
 select:focus {
   outline: 2px solid #007bff;

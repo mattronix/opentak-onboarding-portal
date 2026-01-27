@@ -54,7 +54,7 @@
   font-size: 0.9rem;
 }
 
-.form-group input,
+.form-group input:not([type="checkbox"]):not([type="radio"]),
 .form-group select,
 .form-group textarea {
   padding: 0.875rem;

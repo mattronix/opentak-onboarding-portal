@@ -329,9 +329,13 @@
 
 .form-group input[type="checkbox"] {
   width: auto;
+  height: auto;
+  padding: 0;
   cursor: pointer;
   margin: 0;
   flex-shrink: 0;
+  min-width: 18px;
+  min-height: 18px;
 }
 
 .form-group label.checkbox-label {
@@ -342,6 +346,8 @@
   cursor: pointer;
   margin-bottom: 0;
   padding: 0.5rem 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .form-group label.checkbox-label input[type="checkbox"] {
