@@ -1,0 +1,895 @@
+.dashboard {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 120px); /* Subtract navbar and footer height */
+  box-sizing: border-box;
+}
+
+/* Only constrain width on very large screens */
+@media (min-width: 1600px) {
+  .dashboard {
+    max-width: 1400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard {
+    padding: 0.75rem;
+  }
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 300;
+  margin: 0;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 1.8rem;
+  }
+}
+
+.portal-name {
+  color: #ff9800;
+  font-size: 1.2rem;
+  margin: 0.5rem 0 0 0;
+}
+
+@media (max-width: 768px) {
+  .portal-name {
+    font-size: 1rem;
+  }
+}
+
+.welcome-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  margin-top: 0.25rem;
+}
+
+.profile-info {
+  flex: 1;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profile-info h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.profile-detail {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: baseline;
+  line-height: 1.5;
+}
+
+.profile-detail strong {
+  color: #333;
+  min-width: 90px;
+  font-weight: 600;
+}
+
+.welcome-text {
+  margin-top: 1rem;
+}
+
+.welcome-text p {
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .profile-info h2 {
+    font-size: 1.2rem;
+  }
+}
+
+.get-started-section {
+  margin-bottom: 2rem;
+}
+
+.get-started-section > h1 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .get-started-section > h1 {
+    font-size: 1.5rem;
+  }
+}
+
+.steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .steps-container {
+    gap: 1rem;
+  }
+}
+
+.step-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.step-card.full-width {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .step-card {
+    padding: 1.5rem;
+  }
+}
+
+.step-card h2 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .step-card h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Install Options */
+.install-options {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .install-options {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+}
+
+.install-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  min-width: 150px;
+}
+
+@media (max-width: 768px) {
+  .install-item {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+.icon {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 1rem;
+  display: block;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.install-item p {
+  margin: 0.5rem 0;
+  font-weight: 500;
+  color: #333;
+}
+
+.links a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
+
+/* QR Code Sections */
+.qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-code {
+  width: 150px;
+  height: 150px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  background: white;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+@media (max-width: 480px) {
+  .qr-code {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+.qr-login-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+}
+
+.qr-code-container {
+  position: relative;
+  display: inline-block;
+}
+
+.qr-code-large {
+  display: block;
+  border: 3px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background: white;
+  width: 100%;
+  max-width: 330px;
+}
+
+.qr-code-large svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .qr-code-large {
+    max-width: 280px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .qr-code-large {
+    max-width: 230px;
+    padding: 10px;
+  }
+}
+
+.tak-logo-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+  .tak-logo-overlay {
+    width: 60px;
+    height: 60px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tak-logo-overlay {
+    width: 50px;
+    height: 50px;
+    padding: 6px;
+  }
+}
+
+.tak-logo-overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cant-scan {
+  text-align: center;
+  margin-top: 1rem;
+  padding: 0 1rem;
+}
+
+.cant-scan p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #666;
+  word-wrap: break-word;
+}
+
+.cant-scan a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cant-scan a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .cant-scan p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Packages Table */
+.packages-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  display: table;
+}
+
+@media (max-width: 768px) {
+  .packages-table {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    display: table;
+  }
+}
+
+.packages-table th,
+.packages-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.packages-table th:first-child,
+.packages-table td:first-child {
+  width: 30%;
+}
+
+.packages-table th:nth-child(2),
+.packages-table td:nth-child(2) {
+  width: 50%;
+}
+
+.packages-table th:last-child,
+.packages-table td:last-child {
+  text-align: right;
+  width: 20%;
+}
+
+@media (max-width: 768px) {
+  .packages-table th,
+  .packages-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .packages-table th,
+  .packages-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.85rem;
+  }
+}
+
+.packages-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.download-btn {
+  background: #ff9800;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .download-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .download-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+}
+
+.download-btn:hover {
+  background: #f57c00;
+}
+
+.help-section {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.help-btn {
+  background: #ffc107;
+  color: #333;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+}
+
+.help-btn:hover {
+  background: #ffb300;
+}
+
+/* User Info Section */
+.user-info-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .user-info-section {
+    padding: 1.5rem;
+  }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.info-card {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .info-card {
+    margin-bottom: 1rem;
+  }
+}
+
+.info-card h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .info-card h3 {
+    font-size: 1rem;
+  }
+}
+
+.roles-list,
+.radios-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.role-badge {
+  background: #333;
+  color: white !important;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none !important;
+}
+
+.radio-badge {
+  background: #f0f0f0;
+  color: #333;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #ddd;
+}
+
+.no-items {
+  color: #999;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+.action-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .action-btn {
+    width: 100%;
+    padding: 0.875rem 1rem;
+  }
+}
+
+.edit-profile {
+  background: #ff9800;
+  color: white;
+}
+
+.edit-profile:hover {
+  background: #f57c00;
+}
+
+.change-password {
+  background: #ff9800;
+  color: white;
+}
+
+.change-password:hover {
+  background: #f57c00;
+}
+
+/* Meshtastic Section */
+.meshtastic-section {
+  margin-top: 3rem;
+}
+
+@media (max-width: 768px) {
+  .meshtastic-section {
+    margin-top: 2rem;
+  }
+}
+
+.meshtastic-section > h1 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .meshtastic-section > h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.meshtastic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .meshtastic-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .meshtastic-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.config-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+  .config-card {
+    padding: 1.5rem;
+  }
+}
+
+.config-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .config-card h3 {
+    font-size: 1.1rem;
+  }
+}
+
+.config-card p {
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .config-card p {
+    font-size: 0.9rem;
+  }
+}
+
+.config-link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.config-link:hover {
+  text-decoration: underline;
+}
+
+/* QR Codes Grid - dual ATAK/iTAK layout */
+.qr-codes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .qr-codes-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+}
+
+.qr-code-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 280px;
+}
+
+@media (max-width: 480px) {
+  .qr-code-section {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+.qr-label {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .qr-label {
+    font-size: 1.1rem;
+  }
+}
+
+.qr-info {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qr-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.refresh-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.copy-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  background: white;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover {
+  background: #f5f5f5;
+}
+
+.expiry-info {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.expiry-info strong {
+  color: #333;
+}
+
+/* QR Code loading and error states */
+.qr-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.qr-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 1.5rem;
+  background: #fff3f3;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.qr-error p {
+  margin: 0 0 0.5rem 0;
+  color: #c62828;
+  font-weight: 500;
+}
+
+.qr-error small {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Additional responsive utilities */
+@media (max-width: 480px) {
+  .welcome-section {
+    padding: 1rem;
+  }
+
+  .welcome-section h2 {
+    font-size: 1.2rem;
+  }
+
+  .welcome-section p {
+    font-size: 0.9rem;
+  }
+}

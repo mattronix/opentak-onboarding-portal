@@ -1,0 +1,49 @@
+name: Build and Deploy OpenTAK Portal
+run-name: ${{ gitea.actor }} is building and deploying OpenTAK Portal
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat >>~/.ssh/config <<END
+          Host production
+            HostName tak.kggdutchies.nl
+            User root
+            StrictHostKeyChecking no
+          END
+
+      - name: Deploy to production
+        run: |
+          ssh production << 'EOF'
+            cd /root/services/opentak-onboarding-portal
+
+            # Pull latest code
+            git pull origin main
+
+            # Pull new image from Docker Hub
+            docker compose pull
+
+            # Restart with new image
+            docker compose down
+            docker compose up -d
+
+            # Show status
+            echo "=== Deployment Complete ==="
+            docker compose ps
+
+            # Verify the build
+            echo "=== Verifying frontend bundle ==="
+            docker compose exec -T web grep -o "Description" /app/frontend/dist/assets/*.js | wc -l
+
+            echo "=== Recent logs ==="
+            docker compose logs --tail=20 web
+          EOF

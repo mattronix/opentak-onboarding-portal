@@ -1,0 +1,27 @@
+services:
+    web:
+        restart: always
+        image: mattronix/atak-onboarding-portal
+        # Uncomment below to build locally instead of using Docker Hub
+        # build:
+        #     context: .
+        #     dockerfile: Dockerfile
+        #     args:
+        #         GIT_COMMIT: ${GIT_COMMIT:-dev}
+        #         GIT_DATE: ${GIT_DATE:-unknown}
+        ports:
+            - "5000:5000"
+        env_file:
+            - .env
+        volumes:
+            # Mount database for persistence
+            - ./instance:/app/instance
+            # Mount data packages
+            - ./datapackages:/app/datapackages
+        environment:
+            # FRONTEND_URL is now auto-detected from request host
+            # Uncomment and set if you need to override (e.g., behind a reverse proxy)
+            # - FRONTEND_URL=https://your-domain.com
+            - CORS_ORIGINS=*
+        extra_hosts:
+            - "host.docker.internal:host-gateway"

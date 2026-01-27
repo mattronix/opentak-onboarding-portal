@@ -1,0 +1,277 @@
+/* API Documentation Page Styles */
+.api-docs-page {
+  max-width: 1000px;
+}
+
+.api-docs-intro {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.api-docs-intro h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.api-docs-intro h3 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 1.5rem 0 0.75rem 0;
+  color: #333;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.api-docs-intro h3:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.api-docs-intro p {
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+}
+
+.base-url {
+  display: block;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 1rem;
+  color: #333;
+  border-left: 4px solid #333;
+}
+
+.auth-methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.auth-method {
+  background: #f8f9fa;
+  padding: 1.25rem;
+  border-radius: 6px;
+}
+
+.auth-method h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.auth-method p {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.auth-method pre,
+.api-docs-intro > pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* API Sections */
+.api-docs-sections {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.api-docs-sections > h2 {
+  padding: 1.5rem 2rem;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #333;
+  border-bottom: 1px solid #eee;
+}
+
+.api-section {
+  border-bottom: 1px solid #eee;
+}
+
+.api-section:last-child {
+  border-bottom: none;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.section-header:hover {
+  background: #f8f9fa;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.toggle-icon {
+  font-size: 1.5rem;
+  color: #666;
+  font-weight: 300;
+}
+
+.section-content {
+  padding: 0 2rem 2rem;
+}
+
+.section-description {
+  color: #666;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.endpoints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.endpoint {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 1.25rem;
+  border: 1px solid #e8e8e8;
+}
+
+.endpoint-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.method {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.method-get {
+  background: #d4edda;
+  color: #155724;
+}
+
+.method-post {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.method-put {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.method-delete {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.path {
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: #333;
+  background: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.endpoint-description {
+  color: #555;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.endpoint-auth {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.endpoint-auth strong {
+  color: #333;
+}
+
+.endpoint-params,
+.endpoint-body,
+.endpoint-response {
+  margin-top: 0.75rem;
+}
+
+.endpoint-params strong,
+.endpoint-body strong,
+.endpoint-response strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.endpoint-params pre,
+.endpoint-body pre,
+.endpoint-response pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .api-docs-intro,
+  .section-content {
+    padding: 1.5rem;
+  }
+
+  .section-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .api-docs-sections > h2 {
+    padding: 1rem 1.5rem;
+  }
+
+  .auth-methods {
+    grid-template-columns: 1fr;
+  }
+
+  .endpoint-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

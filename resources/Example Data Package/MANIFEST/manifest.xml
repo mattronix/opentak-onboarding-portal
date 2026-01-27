@@ -1,0 +1,12 @@
+<MissionPackageManifest version="2">
+                   <Configuration>
+                      <Parameter name="uid" value="0f0a13f4-7010-47ee-95d7-04b52e764978"/>
+                      <Parameter name="name" value="Example Connection Data Package"/>
+                      <Parameter name="onReceiveDelete" value="true"/>
+                   </Configuration>
+                   <Contents>
+                      <Content ignore="false" zipEntry="5c2bfcae3d98c9f4d262172df99ebac5/preference.pref"/>
+                      <Content ignore="false" zipEntry="5c2bfcae3d98c9f4d262172df99ebac5/truststore-root.p12"/>
+                   </Contents>
+                </MissionPackageManifest>
+                

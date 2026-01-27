@@ -1,0 +1,259 @@
+.registration-success-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.registration-success-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 3rem;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.success-animation {
+  margin-bottom: 1.5rem;
+}
+
+.checkmark-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #28a745;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: scaleIn 0.4s ease-out;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.checkmark {
+  width: 50px;
+  height: 50px;
+  border: 5px solid white;
+  border-top: none;
+  border-right: none;
+  transform: rotate(-45deg);
+  margin-top: -8px;
+  animation: drawCheck 0.4s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+@keyframes drawCheck {
+  to {
+    opacity: 1;
+  }
+}
+
+.registration-success-card h1 {
+  font-size: 2rem;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+  font-weight: 300;
+}
+
+.success-message {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.user-info-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: left;
+  border-left: 4px solid #28a745;
+}
+
+.user-info-card h2 {
+  font-size: 1.1rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+  font-weight: 500;
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.info-label {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.info-value {
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.welcome-section {
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.welcome-section h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.next-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.step {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.step:hover {
+  background: #f0f0f0;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: #333;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  margin: 0 0 0.25rem 0;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.step-content p {
+  margin: 0;
+  color: #666;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.redirect-info {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.redirect-info p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.redirect-info strong {
+  color: #333;
+  font-size: 1rem;
+}
+
+.btn-login {
+  background-color: #333;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-login:hover {
+  background-color: #555;
+}
+
+.btn-login:active {
+  background-color: #222;
+}
+
+@media (max-width: 480px) {
+  .registration-success-container {
+    padding: 1rem;
+  }
+
+  .registration-success-card {
+    padding: 1.5rem;
+  }
+
+  .registration-success-card h1 {
+    font-size: 1.5rem;
+  }
+
+  .checkmark-circle {
+    width: 80px;
+    height: 80px;
+  }
+
+  .checkmark {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+
+  .info-item {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+
+  .step {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+}

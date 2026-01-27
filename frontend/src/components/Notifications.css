@@ -1,0 +1,265 @@
+/* Toast Notifications Container */
+.notifications-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+/* Individual Notification */
+.notification {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+  pointer-events: auto;
+  min-width: 280px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.notification-icon {
+  font-size: 1.1rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.notification-message {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.5rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  line-height: 1;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+/* Notification Types */
+.notification-success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.notification-success .notification-icon {
+  background-color: #28a745;
+  color: white;
+}
+
+.notification-success .notification-close {
+  color: #155724;
+}
+
+.notification-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.notification-error .notification-icon {
+  background-color: #dc3545;
+  color: white;
+}
+
+.notification-error .notification-close {
+  color: #721c24;
+}
+
+.notification-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+}
+
+.notification-warning .notification-icon {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.notification-warning .notification-close {
+  color: #856404;
+}
+
+.notification-info {
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+.notification-info .notification-icon {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.notification-info .notification-close {
+  color: #0c5460;
+}
+
+/* Confirm Dialog Overlay */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+  padding: 1rem;
+}
+
+/* Confirm Dialog */
+.confirm-dialog {
+  background: white;
+  border-radius: 8px;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirm-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.confirm-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.confirm-body {
+  padding: 1.5rem;
+}
+
+.confirm-body p {
+  margin: 0;
+  color: #555;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f9f9f9;
+  border-radius: 0 0 8px 8px;
+}
+
+.btn-confirm-cancel {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-confirm-cancel:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+.btn-confirm-ok {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  background-color: #333;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-confirm-ok:hover {
+  background-color: #555;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .notifications-container {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+
+  .notification {
+    min-width: auto;
+  }
+
+  .confirm-dialog {
+    margin: 0 1rem;
+  }
+
+  .confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirm-actions button {
+    width: 100%;
+  }
+}

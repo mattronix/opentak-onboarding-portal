@@ -1,0 +1,26 @@
+.python-version
+*.pyc
+.env
+frontend/.env
+frontend/.env.local
+frontend/dist/
+instance/
+.DS_Store
+datapackages/*
+updates/*
+app/static/img/custom/*.png
+app/static/img/custom/*.jpeg
+app/static/img/custom/*.jpeg
+app/static/img/custom/*.webp
+docker-compose.yml
+
+# Version files (auto-generated)
+app/version.py
+frontend/public/version.json
+
+# Testing and coverage
+htmlcov/
+.coverage
+.pytest_cache/
+*.cover
+.hypothesis/

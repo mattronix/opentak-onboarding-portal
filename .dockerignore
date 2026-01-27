@@ -1,0 +1,59 @@
+# Git files
+.git
+.gitignore
+.gitea
+
+# Environment files
+.env
+.env.*
+frontend/.env
+frontend/.env.*
+!.env.example
+!.env.example.frontend
+!frontend/.env.example
+
+# Python cache
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Node modules (will be installed in Docker)
+frontend/node_modules
+frontend/dist
+
+# Documentation
+docs/
+screenshots/
+README.MD
+*.md
+!DOCKER.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other
+data_packages/
+datapackages/
+scripts/
+resources/
+tests/

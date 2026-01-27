@@ -1,0 +1,1072 @@
+openapi: 3.0.3
+info:
+  title: OpenTAK Onboarding Portal API
+  description: |
+    RESTful API for the OpenTAK Onboarding Portal.
+
+    ## Authentication
+    Most endpoints require JWT authentication. Use the `/auth/login` endpoint to obtain access and refresh tokens.
+
+    Include the access token in the Authorization header:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+    ## Admin Endpoints
+    Endpoints marked with 🔒 require the 'administrator' role.
+  version: 1.0.0
+  contact:
+    name: OpenTAK Onboarding Portal
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Development server
+  - url: /api/v1
+    description: Production server (relative)
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User management (admin only)
+  - name: Roles
+    description: Role management
+  - name: Onboarding Codes
+    description: Onboarding code management
+  - name: TAK Profiles
+    description: TAK profile management and downloads
+  - name: Meshtastic
+    description: Meshtastic radio configuration management
+  - name: Radios
+    description: Radio device inventory management
+  - name: Packages
+    description: ATAK package management
+  - name: Settings
+    description: System settings management (admin only)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from /auth/login
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        callsign:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        onboardedBy:
+          type: string
+          nullable: true
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+
+    OnboardingCode:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        onboardingCode:
+          type: string
+        uses:
+          type: integer
+        maxUses:
+          type: integer
+          nullable: true
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        userExpiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+
+    TakProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        isPublic:
+          type: boolean
+
+    Meshtastic:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        isPublic:
+          type: boolean
+        defaultRadioConfig:
+          type: boolean
+        showOnHomepage:
+          type: boolean
+
+    Radio:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        platform:
+          type: string
+        radioType:
+          type: string
+          enum: [meshtastic, other]
+        description:
+          type: string
+        mac:
+          type: string
+
+    Package:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        platform:
+          type: string
+        typePackage:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+
+    Setting:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+          description: Unique identifier for the setting
+        value:
+          type: string
+          description: The value of the setting (string representation)
+        category:
+          type: string
+          description: Category grouping (e.g., "notifications", "email", "security")
+        description:
+          type: string
+          description: Human-readable description of what this setting does
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate with username and password to receive JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: password
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT access token (12 hour expiry)
+                  refresh_token:
+                    type: string
+                    description: JWT refresh token (30 day expiry)
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using a refresh token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: New access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get the authenticated user's profile information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new user account with an onboarding code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - email
+                - firstName
+                - lastName
+                - callsign
+                - onboardingCode
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                email:
+                  type: string
+                  format: email
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                callsign:
+                  type: string
+                onboardingCode:
+                  type: string
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Invalid input or onboarding code
+
+  /auth/change-password:
+    post:
+      tags:
+        - Authentication
+      summary: Change password
+      description: Change password for authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Password changed successfully
+        '401':
+          description: Current password is incorrect
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List all users (admin) 🔒
+      description: Get paginated list of all users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          description: Search username, email, or callsign
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+        '403':
+          description: Administrator role required
+
+    post:
+      tags:
+        - Users
+      summary: Create user (admin) 🔒
+      description: Create a new user account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - email
+                - firstName
+                - lastName
+                - callsign
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                callsign:
+                  type: string
+                roleIds:
+                  type: array
+                  items:
+                    type: integer
+                expiryDate:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: User created successfully
+        '403':
+          description: Administrator role required
+        '409':
+          description: Username already exists
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Get detailed user information (own profile or admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          description: Permission denied
+        '404':
+          description: User not found
+
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Update user information (own profile or admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                callsign:
+                  type: string
+                roleIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: Admin only
+                expiryDate:
+                  type: string
+                  format: date-time
+                  description: Admin only
+      responses:
+        '200':
+          description: User updated successfully
+        '403':
+          description: Permission denied
+        '404':
+          description: User not found
+
+    delete:
+      tags:
+        - Users
+      summary: Delete user (admin) 🔒
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User deleted successfully
+        '403':
+          description: Administrator role required
+        '404':
+          description: User not found
+
+  /roles:
+    get:
+      tags:
+        - Roles
+      summary: List all roles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+
+    post:
+      tags:
+        - Roles
+      summary: Create role (admin) 🔒
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Role created successfully
+        '403':
+          description: Administrator role required
+        '409':
+          description: Role already exists
+
+  /onboarding-codes:
+    get:
+      tags:
+        - Onboarding Codes
+      summary: List onboarding codes (admin) 🔒
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of onboarding codes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OnboardingCode'
+
+  /onboarding-codes/validate/{code}:
+    get:
+      tags:
+        - Onboarding Codes
+      summary: Validate onboarding code
+      description: Public endpoint to validate an onboarding code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Code is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  name:
+                    type: string
+                  description:
+                    type: string
+        '400':
+          description: Code expired or at max uses
+        '404':
+          description: Invalid code
+
+  /tak-profiles:
+    get:
+      tags:
+        - TAK Profiles
+      summary: List TAK profiles
+      description: Get list of accessible TAK profiles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of TAK profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TakProfile'
+
+  /tak-profiles/{id}/download:
+    get:
+      tags:
+        - TAK Profiles
+      summary: Download TAK profile
+      description: Download TAK profile as ZIP with callsign injection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ZIP file download
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Access denied
+        '404':
+          description: Profile not found
+
+  /meshtastic:
+    get:
+      tags:
+        - Meshtastic
+      summary: List Meshtastic configurations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of Meshtastic configs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Meshtastic'
+
+  /radios:
+    get:
+      tags:
+        - Radios
+      summary: List radios
+      description: Get list of accessible radios
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of radios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  radios:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Radio'
+
+  /radios/{id}/assign:
+    put:
+      tags:
+        - Radios
+      summary: Assign radio to user (admin) 🔒
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: integer
+                  nullable: true
+      responses:
+        '200':
+          description: Radio assigned successfully
+        '403':
+          description: Administrator role required
+        '404':
+          description: Radio not found
+
+  /radios/{id}/claim:
+    post:
+      tags:
+        - Radios
+      summary: Claim radio ownership
+      description: Claim ownership of an unowned radio
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Radio claimed successfully
+        '404':
+          description: Radio not found
+        '409':
+          description: Radio already has an owner
+
+  /packages:
+    get:
+      tags:
+        - Packages
+      summary: List packages
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of packages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  packages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Package'
+
+  /packages/{id}/download:
+    get:
+      tags:
+        - Packages
+      summary: Download package
+      description: Download package APK file
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: APK file download
+          content:
+            application/vnd.android.package-archive:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Package not found
+
+  /settings:
+    get:
+      tags:
+        - Settings
+      summary: Get public application settings
+      description: |
+        Returns configuration that the frontend needs to know about,
+        such as feature flags, branding, and display settings.
+        This endpoint does not require authentication.
+      responses:
+        '200':
+          description: Application settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  brand_name:
+                    type: string
+                    example: My OTS Portal
+                  primary_color:
+                    type: string
+                    example: '#000000'
+                  secondary_color:
+                    type: string
+                    example: orange
+                  accent_color:
+                    type: string
+                    example: orange
+                  logo_path:
+                    type: string
+                    example: /static/img/logo.png
+                  help_link:
+                    type: string
+                    example: https://www.google.com
+                  help_email:
+                    type: string
+                    example: help@example.nl
+                  generate_atak_qr_code:
+                    type: boolean
+                  itak_hostname:
+                    type: string
+                  ots_hostname:
+                    type: string
+                  ots_url:
+                    type: string
+                  itak_homepage_icon_enabled:
+                    type: boolean
+                  truststore_homepage_icon_enabled:
+                    type: boolean
+                  zerotier_icon:
+                    type: boolean
+                  enable_repo:
+                    type: boolean
+                  enable_claim_radio:
+                    type: boolean
+                  forgot_password_enabled:
+                    type: boolean
+
+  /admin/settings:
+    get:
+      tags:
+        - Settings
+      summary: Get all system settings
+      description: Retrieve all system settings grouped by category (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System settings grouped by category
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Setting'
+              example:
+                notifications:
+                  - id: 1
+                    key: "notify_admin_pending_registration"
+                    value: "true"
+                    category: "notifications"
+                    description: "Send notification to admin when a new pending registration is created"
+                  - id: 2
+                    key: "notify_admin_new_registration"
+                    value: "true"
+                    category: "notifications"
+                    description: "Send notification to admin when a new user registration is approved"
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to retrieve settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/settings/{setting_id}:
+    put:
+      tags:
+        - Settings
+      summary: Update a system setting by ID
+      description: Update the value of a system setting using its ID (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setting_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the setting to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  type: string
+                  description: The new value for the setting (can be "true"/"false" for booleans)
+              example:
+                value: "false"
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  setting:
+                    $ref: '#/components/schemas/Setting'
+        '400':
+          description: Value is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to update setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/settings/key/{key}:
+    put:
+      tags:
+        - Settings
+      summary: Update a system setting by key
+      description: Update the value of a system setting using its key name (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The key name of the setting to update (e.g., "notify_admin_pending_registration")
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  type: string
+                  description: The new value for the setting (can be "true"/"false" for booleans)
+              example:
+                value: "true"
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  setting:
+                    $ref: '#/components/schemas/Setting'
+        '400':
+          description: Value is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to update setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

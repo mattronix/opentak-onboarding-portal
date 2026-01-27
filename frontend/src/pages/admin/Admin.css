@@ -1,0 +1,330 @@
+/* General Admin Page Styles */
+.admin-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  color: #333;
+  margin: 0;
+  line-height: 1;
+}
+
+/* Settings Page Styles */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.settings-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.setting-item:hover {
+  background: #f9f9f9;
+  border-color: #ddd;
+}
+
+.setting-info {
+  flex: 1;
+  margin-right: 2rem;
+}
+
+.setting-info h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+}
+
+.setting-description {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 28px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #4CAF50;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Paired Setting (toggle + text input) */
+.setting-item-paired {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.setting-item-paired .setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.setting-item-paired .setting-info {
+  margin-right: 2rem;
+}
+
+.setting-value-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.setting-value-description {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Text Setting Input */
+.setting-item-text {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.setting-text-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.setting-text-input input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.setting-text-input input[type="text"]:focus {
+  outline: none;
+  border-color: #333;
+}
+
+.setting-text-input input[type="text"]:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.setting-text-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-save-setting,
+.btn-cancel-setting {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-save-setting {
+  background-color: #333;
+  color: white;
+}
+
+.btn-save-setting:hover {
+  background-color: #555;
+}
+
+.btn-save-setting:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+}
+
+.btn-cancel-setting {
+  background-color: #e8e8e8;
+  color: #333;
+}
+
+.btn-cancel-setting:hover {
+  background-color: #ddd;
+}
+
+.btn-cancel-setting:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Numeric setting input */
+.setting-item-numeric {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.setting-numeric-input {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.setting-numeric-input input[type="number"] {
+  width: 100px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.setting-numeric-input input[type="number"]:focus {
+  outline: none;
+  border-color: #333;
+}
+
+.setting-numeric-input input[type="number"]:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.setting-numeric-input .setting-text-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Alerts */
+.alert {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 1rem;
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .setting-info {
+    margin-right: 0;
+  }
+
+  .toggle-switch {
+    align-self: flex-start;
+  }
+}

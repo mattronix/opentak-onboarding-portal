@@ -1,0 +1,190 @@
+/* File Browser Styles */
+.file-browser {
+  margin-top: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.file-browser-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.file-browser-breadcrumb {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.file-browser-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.file-browser-close:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+/* Search input */
+.file-browser-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.file-browser-search svg {
+  flex-shrink: 0;
+}
+
+.file-browser-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  background: transparent;
+}
+
+.file-browser-search input::placeholder {
+  color: #999;
+}
+
+.search-clear {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-clear:hover {
+  color: #666;
+}
+
+.file-browser-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Table styles */
+.file-browser-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.file-browser-table thead th {
+  text-align: left;
+  padding: 0.625rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.file-browser-table tbody .file-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.file-browser-table tbody .file-row:hover {
+  background: #f5f5f5;
+}
+
+.file-browser-table tbody .file-row.selectable:hover {
+  background: #e3f2fd;
+}
+
+.file-browser-table tbody .file-row.selected {
+  background: #bbdefb;
+}
+
+.file-browser-table tbody td {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.file-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-cell svg {
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-size: 0.9rem;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-row.selectable .file-name {
+  color: #1976d2;
+}
+
+.file-path {
+  font-size: 0.8rem;
+  color: #888;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 2rem !important;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Scrollbar styling */
+.file-browser-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-browser-content::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.file-browser-content::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.file-browser-content::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}

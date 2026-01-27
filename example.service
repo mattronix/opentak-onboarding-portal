@@ -1,0 +1,19 @@
+[Unit]
+Description=TAK Portal daemon
+After=network.target
+
+[Service]
+User=takportal
+Group=takportal
+Environment="VIRTUAL_ENV=/opt/takportal/venv"
+Environment="PATH=/opt/takportal/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/takportal/venv/bin/gunicorn app:app \
+		      -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
+                      --name takportal --workers 1 \
+                      --max-requests 400  --max-requests-jitter 50 \
+                      --log-level=info --bind=0.0.0.0:5000
+WorkingDirectory=/opt/takportal/takportal
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

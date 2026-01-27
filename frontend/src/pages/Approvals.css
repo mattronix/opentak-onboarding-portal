@@ -1,0 +1,265 @@
+.approvals-container {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.approvals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.approvals-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.approver-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.approver-badge {
+  background-color: #e7f3ff;
+  color: #0066cc;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 4px;
+  border-left: 4px solid #c33;
+}
+
+.not-approver-message {
+  text-align: center;
+  padding: 3rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.not-approver-message h2 {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.not-approver-message p {
+  color: #888;
+  margin: 0.5rem 0;
+}
+
+.no-approvals {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: #f8fff8;
+  border-radius: 8px;
+  border: 2px dashed #28a745;
+}
+
+.no-approvals-icon {
+  margin-bottom: 1rem;
+}
+
+.no-approvals h2 {
+  color: #28a745;
+  margin-bottom: 0.5rem;
+}
+
+.no-approvals p {
+  color: #666;
+  margin: 0;
+}
+
+.approvals-count {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.count-badge {
+  display: inline-block;
+  background-color: #ffc107;
+  color: #000;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.approvals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.approval-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.approval-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.approval-card.expired {
+  opacity: 0.7;
+  background-color: #fff8f8;
+}
+
+.approval-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.user-info h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.user-info .username {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.expiry-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.expiry-badge.expired {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.approval-card-body {
+  padding: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 0.75rem;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-row .label {
+  flex: 0 0 140px;
+  color: #666;
+  font-weight: 500;
+}
+
+.detail-row .value {
+  color: #333;
+}
+
+.role-badge {
+  background-color: #e7f3ff;
+  color: #0066cc;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.approval-card-actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.approval-card-actions .btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.approval-card-actions .btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.approval-card-actions .btn-success:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.approval-card-actions .btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.approval-card-actions .btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.approval-card-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .approvals-container {
+    padding: 1rem;
+  }
+
+  .approvals-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .approval-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .detail-row .label {
+    flex: none;
+  }
+
+  .approval-card-actions {
+    flex-direction: column;
+  }
+}
