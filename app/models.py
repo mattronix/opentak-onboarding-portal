@@ -1078,7 +1078,7 @@ class SystemSettingsModel(db.Model):
             },
             {
                 'key': 'callsign_qr_code_enabled',
-                'value': 'false',
+                'value': 'true',
                 'category': 'qr_enrollment',
                 'description': 'Show QR code to set callsign in ATAK app'
             },

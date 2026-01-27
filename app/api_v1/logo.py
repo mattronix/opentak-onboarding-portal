@@ -3,7 +3,7 @@ Logo API endpoints
 Upload and manage custom logo for the portal
 """
 
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, send_from_directory
 from flask_jwt_extended import jwt_required
 from app.api_v1 import api_v1
 from app.models import SystemSettingsModel
@@ -23,8 +23,11 @@ def allowed_file(filename):
 
 
 def get_logo_upload_folder():
-    """Get the path to the logo upload folder"""
-    return os.path.join(current_app.root_path, 'static', 'img', 'custom')
+    """Get the path to the logo upload folder (in instance folder for persistence)"""
+    instance_path = current_app.instance_path
+    upload_folder = os.path.join(instance_path, 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+    return upload_folder
 
 
 @api_v1.route('/admin/logo', methods=['POST'])
@@ -88,16 +91,24 @@ def upload_logo():
         # Delete old custom logo if exists
         old_logo_path = SystemSettingsModel.get_setting('custom_logo_path')
         if old_logo_path:
-            old_file = os.path.join(upload_folder, os.path.basename(old_logo_path))
+            # Handle both old path format (/static/img/custom/) and new format (/api/v1/uploads/)
+            old_filename = os.path.basename(old_logo_path)
+            # Try new location first (instance/uploads)
+            old_file = os.path.join(upload_folder, old_filename)
             if os.path.exists(old_file):
                 os.remove(old_file)
+            else:
+                # Try old location (static/img/custom)
+                old_static_path = os.path.join(current_app.root_path, 'static', 'img', 'custom', old_filename)
+                if os.path.exists(old_static_path):
+                    os.remove(old_static_path)
 
         # Save new file
         filepath = os.path.join(upload_folder, filename)
         file.save(filepath)
 
-        # Update settings
-        logo_url = f'/static/img/custom/{filename}'
+        # Update settings - use API route to serve from instance folder
+        logo_url = f'/api/v1/uploads/{filename}'
 
         # Update or create settings
         logo_enabled_setting = SystemSettingsModel.query.filter_by(key='custom_logo_enabled').first()
@@ -165,9 +176,16 @@ def delete_logo():
         logo_path = SystemSettingsModel.get_setting('custom_logo_path')
         if logo_path:
             upload_folder = get_logo_upload_folder()
-            old_file = os.path.join(upload_folder, os.path.basename(logo_path))
+            old_filename = os.path.basename(logo_path)
+            # Try new location first (instance/uploads)
+            old_file = os.path.join(upload_folder, old_filename)
             if os.path.exists(old_file):
                 os.remove(old_file)
+            else:
+                # Try old location (static/img/custom)
+                old_static_path = os.path.join(current_app.root_path, 'static', 'img', 'custom', old_filename)
+                if os.path.exists(old_static_path):
+                    os.remove(old_static_path)
 
         # Update settings
         logo_enabled_setting = SystemSettingsModel.query.filter_by(key='custom_logo_enabled').first()
@@ -230,3 +248,19 @@ def get_logo_settings():
         'logo_display_mode': SystemSettingsModel.get_setting('logo_display_mode') or 'logo_and_text',
         'default_logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png')
     }), 200
+
+
+@api_v1.route('/uploads/<filename>', methods=['GET'])
+def serve_upload(filename):
+    """
+    Serve uploaded files (logos, etc.) from the instance folder
+    This ensures files persist across container restarts
+    """
+    # Sanitize filename to prevent directory traversal
+    filename = secure_filename(filename)
+    upload_folder = get_logo_upload_folder()
+
+    if not os.path.exists(os.path.join(upload_folder, filename)):
+        return jsonify({'error': 'File not found'}), 404
+
+    return send_from_directory(upload_folder, filename)
