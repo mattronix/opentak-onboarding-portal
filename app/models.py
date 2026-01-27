@@ -1077,6 +1077,12 @@ class SystemSettingsModel(db.Model):
                 'description': 'Maximum number of uses per QR code token'
             },
             {
+                'key': 'callsign_qr_code_enabled',
+                'value': 'false',
+                'category': 'qr_enrollment',
+                'description': 'Show QR code to set callsign in ATAK app'
+            },
+            {
                 'key': 'forgot_password_enabled',
                 'value': 'true',
                 'category': 'general',

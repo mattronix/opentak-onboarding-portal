@@ -149,6 +149,16 @@ function Dashboard() {
   // Check if any QR code is enabled
   const hasAnyQRCode = settings?.generate_atak_qr_code || settings?.generate_itak_qr_code;
 
+  // Generate callsign QR URL
+  const getCallsignQRUrl = () => {
+    const callsign = user?.callsign || user?.username || '';
+    return `tak://com.atakmap.app/preference?key1=locationCallsign&type1=string&value1=${encodeURIComponent(callsign)}`;
+  };
+
+  const handleOpenCallsignLink = () => {
+    window.location.href = getCallsignQRUrl();
+  };
+
   return (
     <div className="dashboard" style={{ '--accent-color': accentColor }}>
       <div className="dashboard-header">
@@ -485,9 +495,51 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Step 3: Download Data Packages */}
+          {/* Step: Set Callsign in ATAK */}
+          {settings?.callsign_qr_code_enabled && user?.callsign && (
+            <div className="step-card">
+              <h2>{hasAnyQRCode ? '3' : '2'}. Set Your Callsign</h2>
+              <p className="step-description">Scan this QR code with ATAK to automatically set your callsign to <strong>{user.callsign}</strong></p>
+              <div className="qr-codes-grid">
+                <div className="qr-code-section">
+                  <h3 className="qr-label">ATAK Callsign</h3>
+                  <div className="qr-code-container">
+                    <QRCodeSVG
+                      value={getCallsignQRUrl()}
+                      size={250}
+                      level="H"
+                      includeMargin={true}
+                      className="qr-code-large"
+                    />
+                    <div className="tak-logo-overlay">
+                      <img
+                        src={getTAKIconURL()}
+                        alt="ATAK"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="qr-info">
+                    <div className="qr-actions">
+                      <button
+                        onClick={handleOpenCallsignLink}
+                        className="open-btn"
+                        style={{ background: accentColor }}
+                      >
+                        Open in ATAK
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step: Download Data Packages */}
           <div className="step-card">
-            <h2>{hasAnyQRCode ? '3' : '2'}. Download Data Packages</h2>
+            <h2>{(hasAnyQRCode ? 3 : 2) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0)}. Download Data Packages</h2>
             {loadingProfiles ? (
               <p>Loading...</p>
             ) : takProfiles && takProfiles.length > 0 ? (
@@ -529,7 +581,7 @@ function Dashboard() {
       {/* Meshtastic Configs Section */}
       {meshtasticConfigs && meshtasticConfigs.length > 0 && (
         <div className="meshtastic-section">
-          <h1>{hasAnyQRCode ? '4' : '3'}. Meshtastic Configs</h1>
+          <h1>{(hasAnyQRCode ? 4 : 3) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0)}. Meshtastic Configs</h1>
           <div className="meshtastic-grid">
             {meshtasticConfigs.map((config) => (
               <div key={config.id} className="config-card">

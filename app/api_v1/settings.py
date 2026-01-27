@@ -74,6 +74,8 @@ def get_settings():
         'meshtastic_installer_qr_android_url': get_str_setting('meshtastic_installer_qr_android_url', 'https://play.google.com/store/apps/details?id=com.geeksville.mesh'),
         'meshtastic_installer_qr_iphone_enabled': get_bool_setting('meshtastic_installer_qr_iphone_enabled', True),
         'meshtastic_installer_qr_iphone_url': get_str_setting('meshtastic_installer_qr_iphone_url', 'https://apps.apple.com/app/meshtastic/id1586432531'),
+        # Callsign QR code
+        'callsign_qr_code_enabled': get_bool_setting('callsign_qr_code_enabled', False),
         # Logo settings
         'custom_logo_enabled': get_bool_setting('custom_logo_enabled', False),
         'custom_logo_path': get_str_setting('custom_logo_path', ''),

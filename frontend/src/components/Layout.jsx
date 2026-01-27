@@ -98,7 +98,7 @@ function Layout() {
 
         <div className={`navbar-menu ${mobileMenuOpen ? 'open' : ''}`}>
           <Link to="/dashboard" className="nav-link">
-            Dashboard
+            Homepage
           </Link>
 
           {approverStatus?.isApprover && (
