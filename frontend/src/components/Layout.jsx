@@ -149,7 +149,7 @@ function Layout() {
       <footer className="footer">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span style={{ fontSize: '0.85rem', color: '#999' }}>
-            {version && `v${version.commit}`}
+            {version && `v${version.version || version.commit}`}
           </span>
           <p style={{ margin: 0 }}>&copy; 2024 {brandName}. All rights reserved.</p>
           <span style={{ fontSize: '0.85rem', color: 'transparent' }}>spacer</span>

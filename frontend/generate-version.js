@@ -19,10 +19,32 @@ const __dirname = path.dirname(__filename);
 
 let version;
 
+// Read VERSION file (check both Docker location and local dev location)
+let appVersion = 'dev';
+try {
+  // Docker build: VERSION is copied to same directory
+  let versionFile = path.join(__dirname, 'VERSION');
+  if (!fs.existsSync(versionFile)) {
+    // Local dev: VERSION is in parent (root) directory
+    versionFile = path.join(__dirname, '..', 'VERSION');
+  }
+  if (fs.existsSync(versionFile)) {
+    appVersion = fs.readFileSync(versionFile, 'utf8').trim();
+  }
+} catch (error) {
+  console.warn('⚠ Could not read VERSION file:', error.message);
+}
+
+// Check for APP_VERSION env var (Docker build)
+if (process.env.APP_VERSION) {
+  appVersion = process.env.APP_VERSION;
+}
+
 // Check if running in Docker with build args
 if (process.env.GIT_COMMIT && process.env.GIT_DATE) {
   console.log('Using git info from environment variables (Docker build)');
   version = {
+    version: appVersion,
     commit: process.env.GIT_COMMIT,
     date: process.env.GIT_DATE,
     buildTime: new Date().toISOString()
@@ -41,6 +63,7 @@ if (process.env.GIT_COMMIT && process.env.GIT_DATE) {
       .trim();
 
     version = {
+      version: appVersion,
       commit: gitHash,
       date: gitDate,
       buildTime: new Date().toISOString()
@@ -51,6 +74,7 @@ if (process.env.GIT_COMMIT && process.env.GIT_DATE) {
     console.warn('⚠ Could not get git info:', error.message);
     // Create fallback version
     version = {
+      version: appVersion,
       commit: 'dev',
       date: new Date().toISOString().split('T')[0],
       buildTime: new Date().toISOString()

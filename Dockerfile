@@ -4,6 +4,7 @@ FROM node:20-alpine AS frontend-builder
 # Accept build arguments for version
 ARG GIT_COMMIT=dev
 ARG GIT_DATE=unknown
+ARG APP_VERSION=dev
 
 WORKDIR /frontend
 
@@ -16,9 +17,13 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
+# Copy VERSION file for generate-version.js
+COPY VERSION ./VERSION
+
 # Set git info as environment variables for generate-version.js
 ENV GIT_COMMIT=${GIT_COMMIT}
 ENV GIT_DATE=${GIT_DATE}
+ENV APP_VERSION=${APP_VERSION}
 
 # Build frontend (generate-version.js will use env vars)
 RUN npm run build

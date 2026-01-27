@@ -46,6 +46,7 @@ if ! docker buildx version &> /dev/null; then
     docker build \
         --build-arg GIT_COMMIT="${GIT_COMMIT}" \
         --build-arg GIT_DATE="${GIT_DATE}" \
+        --build-arg APP_VERSION="${VERSION}" \
         -t "${IMAGE_NAME}:${TAG}" \
         -t "${IMAGE_NAME}:latest" \
         .
@@ -70,6 +71,7 @@ else
         --platform "${PLATFORMS}" \
         --build-arg GIT_COMMIT="${GIT_COMMIT}" \
         --build-arg GIT_DATE="${GIT_DATE}" \
+        --build-arg APP_VERSION="${VERSION}" \
         -t "${IMAGE_NAME}:${TAG}" \
         -t "${IMAGE_NAME}:latest" \
         --push \
