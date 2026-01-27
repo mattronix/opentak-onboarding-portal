@@ -118,6 +118,9 @@ export const authAPI = {
 
   getPermissions: () =>
     api.get('/auth/permissions'),
+
+  completeProfile: (data) =>
+    api.post('/auth/complete-profile', data),
 };
 
 // Users API

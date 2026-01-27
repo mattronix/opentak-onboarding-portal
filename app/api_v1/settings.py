@@ -22,7 +22,6 @@ def get_settings():
     {
         "brand_name": "string",
         "primary_color": "string",
-        "secondary_color": "string",
         "accent_color": "string",
         "logo_path": "string",
         "generate_atak_qr_code": boolean,
@@ -53,10 +52,10 @@ def get_settings():
     settings = {
         # Brand name - only show if enabled
         'brand_name': brand_name_value if brand_name_enabled else 'My OTS Portal',
-        'primary_color': current_app.config.get('PRIMARY_COLOR', '#000000'),
-        'secondary_color': current_app.config.get('SECONDARY_COLOR', 'orange'),
-        'accent_color': current_app.config.get('ACCENT_COLOR', 'orange'),
-        'logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png'),
+        # Theme colors from database
+        'primary_color': get_str_setting('primary_color', '#000000'),
+        'accent_color': get_str_setting('accent_color', '#ff9800'),
+        'logo_path': '/static/img/logo.png',  # Default logo path
         'generate_atak_qr_code': get_bool_setting('generate_atak_qr_code', True),
         'generate_itak_qr_code': get_bool_setting('generate_itak_qr_code', True),
         'ots_hostname': current_app.config.get('OTS_HOSTNAME', ''),
@@ -80,7 +79,7 @@ def get_settings():
         'custom_logo_enabled': get_bool_setting('custom_logo_enabled', False),
         'custom_logo_path': get_str_setting('custom_logo_path', ''),
         'logo_display_mode': get_str_setting('logo_display_mode', 'logo_and_text'),
-        'default_logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png'),
+        'default_logo_path': '/static/img/logo.png',
     }
 
     return jsonify(settings), 200

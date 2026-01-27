@@ -2,7 +2,9 @@ from app.extensions import mail
 from flask_mail import Message
 from flask import render_template
 
-from app.settings import MAIL_DEFAULT_SENDER, BRAND_NAME as DEFAULT_BRAND_NAME, FRONTEND_URL, MAIL_ENABLED
+from app.settings import MAIL_DEFAULT_SENDER, FRONTEND_URL, MAIL_ENABLED
+
+DEFAULT_BRAND_NAME = 'My OTS Portal'
 from app.models import SystemSettingsModel
 import logging
 

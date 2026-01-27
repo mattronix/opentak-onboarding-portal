@@ -246,7 +246,7 @@ def get_logo_settings():
         'custom_logo_enabled': custom_logo_enabled,
         'custom_logo_path': SystemSettingsModel.get_setting('custom_logo_path') or '',
         'logo_display_mode': SystemSettingsModel.get_setting('logo_display_mode') or 'logo_and_text',
-        'default_logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png')
+        'default_logo_path': '/static/img/logo.png'
     }), 200
 
 

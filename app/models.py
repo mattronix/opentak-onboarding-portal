@@ -1106,11 +1106,23 @@ class SystemSettingsModel(db.Model):
                 'value': 'logo_and_text',
                 'category': 'branding',
                 'description': 'How to display logo and brand name (logo_only, text_only, logo_and_text)'
+            },
+            {
+                'key': 'primary_color',
+                'value': '#000000',
+                'category': 'branding',
+                'description': 'Primary color for the portal theme'
+            },
+            {
+                'key': 'accent_color',
+                'value': '#ff9800',
+                'category': 'branding',
+                'description': 'Accent color for buttons and highlights'
             }
         ]
 
         # Remove old/deprecated settings
-        deprecated_keys = ['brand_name', 'help_link', 'help_email', 'auto_approve_registration']
+        deprecated_keys = ['brand_name', 'help_link', 'help_email', 'auto_approve_registration', 'secondary_color']
         for key in deprecated_keys:
             old_setting = SystemSettingsModel.query.filter_by(key=key).first()
             if old_setting:

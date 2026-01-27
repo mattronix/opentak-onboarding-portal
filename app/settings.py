@@ -25,14 +25,6 @@ MAIL_ENABLED=strtobool(environ.get('MAIL_ENABLED', 'False'))
 DATAPACKAGE_UPLOAD_FOLDER = (environ.get('DATAPACKAGE_UPLOAD_FOLDER','datapackages'))
 UPDATES_UPLOAD_FOLDER = str(environ.get('UPDATES_UPLOAD_FOLDER', 'updates'))
 
-PRIMARY_COLOR = str(environ.get('PRIMARY_COLOR', '#000000'))
-SECONDARY_COLOR = str(environ.get('SECONDARY_COLOR', 'orange'))
-
-ACCENT_COLOR = str(environ.get('ACCENT_COLOR', 'orange'))
-
-LOGO_PATH = str(environ.get('LOGO_PATH', '/static/img/logo.png'))
-BRAND_NAME = str(environ.get('BRAND_NAME', 'My OTS Portal'))
-
 JWT_SECRET_KEY = str(environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
 # Allow JWT identity to be any JSON-serializable type (not just string)
 JWT_IDENTITY_CLAIM = 'sub'

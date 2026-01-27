@@ -145,6 +145,116 @@ function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, sav
   );
 }
 
+// Color name to hex mapping
+const colorNameToHex = {
+  black: '#000000',
+  white: '#ffffff',
+  red: '#ff0000',
+  green: '#008000',
+  blue: '#0000ff',
+  yellow: '#ffff00',
+  orange: '#ff9800',
+  purple: '#800080',
+  pink: '#ffc0cb',
+  gray: '#808080',
+  grey: '#808080',
+  brown: '#a52a2a',
+  cyan: '#00ffff',
+  magenta: '#ff00ff',
+  lime: '#00ff00',
+  navy: '#000080',
+  teal: '#008080',
+  maroon: '#800000',
+  olive: '#808000',
+  silver: '#c0c0c0',
+};
+
+// Convert color value to hex for the color picker
+const toHexColor = (value) => {
+  if (!value) return '#000000';
+  // Already a hex value
+  if (value.startsWith('#')) return value;
+  // Check color name mapping
+  const hex = colorNameToHex[value.toLowerCase()];
+  if (hex) return hex;
+  // Default fallback
+  return '#000000';
+};
+
+// Component for color settings
+function ColorSettingItem({ setting, onSave, saving, formatSettingName }) {
+  const [localValue, setLocalValue] = useState(setting?.value || '#000000');
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    setLocalValue(setting?.value || '#000000');
+    setIsEditing(false);
+  }, [setting?.value]);
+
+  const handleSave = () => {
+    onSave(setting.id, localValue);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setLocalValue(setting?.value || '#000000');
+    setIsEditing(false);
+  };
+
+  // When color picker changes, update text to hex value
+  const handleColorPickerChange = (e) => {
+    setLocalValue(e.target.value);
+    setIsEditing(true);
+  };
+
+  return (
+    <div className="setting-item setting-item-color">
+      <div className="setting-info">
+        <h4>{formatSettingName(setting.key)}</h4>
+        <p className="setting-description">{setting.description}</p>
+      </div>
+      <div className="setting-color-input">
+        <input
+          type="color"
+          value={toHexColor(localValue)}
+          onChange={handleColorPickerChange}
+          disabled={saving}
+          className="color-picker"
+        />
+        <input
+          type="text"
+          value={localValue}
+          onChange={(e) => {
+            setLocalValue(e.target.value);
+            setIsEditing(true);
+          }}
+          placeholder="#ff9800"
+          disabled={saving}
+          className="color-text"
+        />
+        {isEditing && (
+          <div className="setting-text-actions">
+            <button
+              className="btn-save-setting"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              Save
+            </button>
+            <button
+              className="btn-cancel-setting"
+              onClick={handleCancel}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Component for logo upload
 function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChange, saving }) {
   const [preview, setPreview] = useState(null);
@@ -459,11 +569,19 @@ function Settings() {
     return { pairs, processed };
   };
 
+  // Color setting keys
+  const colorSettingKeys = ['primary_color', 'accent_color'];
+
   // Get regular (non-paired) settings from a category
   const getRegularSettings = (categorySettings, processedKeys) => {
     // Settings managed by dedicated components (not shown as toggles)
-    const managedSettings = ['custom_logo_path', 'logo_display_mode'];
+    const managedSettings = ['custom_logo_path', 'logo_display_mode', ...colorSettingKeys];
     return categorySettings?.filter(s => !processedKeys.has(s.key) && !managedSettings.includes(s.key)) || [];
+  };
+
+  // Get color settings from a category
+  const getColorSettings = (categorySettings) => {
+    return categorySettings?.filter(s => colorSettingKeys.includes(s.key)) || [];
   };
 
   const renderCategorySettings = (categorySettings) => {
@@ -578,6 +696,16 @@ function Settings() {
               onDisplayModeChange={handleDisplayModeChange}
               saving={saving}
             />
+            {/* Color Settings */}
+            {settings.branding && getColorSettings(settings.branding).map(setting => (
+              <ColorSettingItem
+                key={setting.id}
+                setting={setting}
+                onSave={handleTextChange}
+                saving={saving}
+                formatSettingName={formatSettingName}
+              />
+            ))}
             {settings.branding && renderCategorySettings(settings.branding)}
           </div>
         </div>

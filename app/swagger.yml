@@ -859,9 +859,6 @@ paths:
                   primary_color:
                     type: string
                     example: '#000000'
-                  secondary_color:
-                    type: string
-                    example: orange
                   accent_color:
                     type: string
                     example: orange

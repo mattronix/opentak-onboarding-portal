@@ -15,6 +15,7 @@ import RegistrationPending from './pages/RegistrationPending';
 import RegistrationSuccess from './pages/RegistrationSuccess';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import CompleteProfile from './pages/CompleteProfile';
 import Dashboard from './pages/Dashboard';
 import EditProfile from './pages/EditProfile';
 import ChangePassword from './pages/ChangePassword';
@@ -98,8 +99,8 @@ const LoadingScreen = () => (
 );
 
 // Protected Route component
-const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user, loading, isAdmin } = useAuth();
+const ProtectedRoute = ({ children, adminOnly = false, allowIncomplete = false }) => {
+  const { user, loading, isAdmin, needsProfileCompletion } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
@@ -107,6 +108,11 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to complete profile if needed (unless on the complete-profile page itself)
+  if (needsProfileCompletion && !allowIncomplete) {
+    return <Navigate to="/complete-profile" replace />;
   }
 
   if (adminOnly && !isAdmin()) {
@@ -170,6 +176,16 @@ function App() {
               }
             />
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Complete profile route - accessible only when logged in but profile incomplete */}
+            <Route
+              path="/complete-profile"
+              element={
+                <ProtectedRoute allowIncomplete>
+                  <CompleteProfile />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected routes */}
             <Route

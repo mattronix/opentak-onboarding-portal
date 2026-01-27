@@ -173,9 +173,13 @@ def login():
             expires_delta=timedelta(days=30)
         )
 
+        # Check if user needs to complete their profile (missing email or callsign)
+        needs_profile_completion = not user.email or not user.callsign
+
         return jsonify({
             'access_token': access_token,
             'refresh_token': refresh_token,
+            'needs_profile_completion': needs_profile_completion,
             'user': {
                 'id': user.id,
                 'username': user.username,
@@ -222,6 +226,78 @@ def refresh():
     )
 
     return jsonify({'access_token': access_token}), 200
+
+
+@api_v1.route('/auth/complete-profile', methods=['POST'])
+@jwt_required()
+def complete_profile():
+    """
+    Complete user profile with missing email and/or callsign.
+    Used for users created via OTS who don't have these fields set.
+
+    Request body:
+    {
+        "email": "string" (optional if already set),
+        "callsign": "string" (optional if already set)
+    }
+
+    Response:
+    {
+        "message": "Profile updated successfully",
+        "user": { ... }
+    }
+    """
+    from app.models import db
+
+    current_user_id = get_jwt_identity()
+    user = UserModel.get_user_by_id(int(current_user_id))
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    email = data.get('email', '').strip()
+    callsign = data.get('callsign', '').strip()
+
+    # Validate email if provided and user doesn't already have one
+    if email and not user.email:
+        # Check for duplicate email
+        existing_user = UserModel.query.filter(
+            UserModel.email == email,
+            UserModel.id != user.id
+        ).first()
+        if existing_user:
+            return jsonify({'error': 'Email address is already in use'}), 400
+        user.email = email
+
+    # Validate callsign if provided and user doesn't already have one
+    if callsign and not user.callsign:
+        user.callsign = callsign
+
+    # Check if profile is still incomplete
+    if not user.email:
+        return jsonify({'error': 'Email is required'}), 400
+    if not user.callsign:
+        return jsonify({'error': 'Callsign is required'}), 400
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Profile updated successfully',
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'firstName': user.firstName,
+            'lastName': user.lastName,
+            'callsign': user.callsign,
+            'roles': [{'name': role.name, 'displayName': role.display_name} for role in user.roles],
+            'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None
+        }
+    }), 200
 
 
 @api_v1.route('/auth/me', methods=['GET'])

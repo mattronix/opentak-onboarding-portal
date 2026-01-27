@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { settingsAPI } from '../services/api';
 import './Auth.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
@@ -14,6 +16,20 @@ function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await settingsAPI.get();
+      return response.data;
+    },
+  });
+
+  const brandName = settings?.brand_name || 'OpenTAK Portal';
+  const logoEnabled = settings?.custom_logo_enabled === true || settings?.custom_logo_enabled === 'true';
+  const logoPath = logoEnabled && settings?.custom_logo_path
+    ? settings.custom_logo_path
+    : settings?.default_logo_path;
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -67,6 +83,11 @@ function ResetPassword() {
     return (
       <div className="auth-container">
         <div className="auth-card">
+          {logoPath && (
+            <div className="auth-logo">
+              <img src={logoPath} alt={brandName} />
+            </div>
+          )}
           <h2>Password Reset Successful</h2>
           <div className="alert alert-success">
             <p>Your password has been reset successfully. Redirecting to login...</p>
@@ -79,6 +100,11 @@ function ResetPassword() {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {logoPath && (
+          <div className="auth-logo">
+            <img src={logoPath} alt={brandName} />
+          </div>
+        )}
         <h2>Reset Password</h2>
         <p>Enter your new password below.</p>
 

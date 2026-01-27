@@ -281,6 +281,65 @@
   gap: 0.5rem;
 }
 
+/* Color Setting Styles */
+.setting-item-color {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.setting-color-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.setting-color-input .color-picker {
+  width: 50px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+}
+
+.setting-color-input .color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.setting-color-input .color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+.setting-color-input .color-text {
+  width: 120px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.setting-color-input .color-text:focus {
+  outline: none;
+  border-color: #333;
+}
+
+.setting-color-input .color-text:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.setting-color-input .setting-text-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* Alerts */
 .alert {
   padding: 1rem;

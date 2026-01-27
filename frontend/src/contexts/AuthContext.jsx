@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [permissions, setPermissions] = useState({ roles: [], modules: [], isAdmin: false });
   const [approverStatus, setApproverStatus] = useState({ isApprover: false, pendingCount: 0 });
+  const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -71,13 +72,14 @@ export const AuthProvider = ({ children }) => {
     try {
       // Convert username to lowercase for consistency
       const response = await authAPI.login(username.toLowerCase().trim(), password);
-      const { access_token, refresh_token, user: userData } = response.data;
+      const { access_token, refresh_token, user: userData, needs_profile_completion } = response.data;
 
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('user', JSON.stringify(userData));
 
       setUser(userData);
+      setNeedsProfileCompletion(needs_profile_completion || false);
 
       // Fetch permissions and approver status from database after login
       try {
@@ -94,7 +96,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to fetch permissions:', e);
       }
 
-      return { success: true };
+      return { success: true, needsProfileCompletion: needs_profile_completion || false };
     } catch (error) {
       return {
         success: false,
@@ -128,6 +130,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setPermissions({ roles: [], modules: [], isAdmin: false });
     setApproverStatus({ isApprover: false, pendingCount: 0 });
+    setNeedsProfileCompletion(false);
   };
 
   const updateUser = async () => {
@@ -137,13 +140,18 @@ export const AuthProvider = ({ children }) => {
         authAPI.getPermissions(),
         approvalsAPI.checkApproverStatus().catch(() => ({ data: { is_approver: false, pending_count: 0 } }))
       ]);
-      setUser(userResponse.data);
-      localStorage.setItem('user', JSON.stringify(userResponse.data));
+      const userData = userResponse.data;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       setPermissions(permResponse.data);
       setApproverStatus({
         isApprover: approverResponse.data.is_approver,
         pendingCount: approverResponse.data.pending_count
       });
+      // Check if profile is now complete
+      if (userData.email && userData.callsign) {
+        setNeedsProfileCompletion(false);
+      }
     } catch (error) {
       console.error('Failed to update user:', error);
     }
@@ -206,6 +214,7 @@ export const AuthProvider = ({ children }) => {
     permissions,
     approverStatus,
     refreshApproverStatus,
+    needsProfileCompletion,
   };
 
   return (

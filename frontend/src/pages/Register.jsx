@@ -35,6 +35,10 @@ function Register() {
   });
 
   const brandName = settings?.brand_name || 'OpenTAK Onboarding Portal';
+  const logoEnabled = settings?.custom_logo_enabled === true || settings?.custom_logo_enabled === 'true';
+  const logoPath = logoEnabled && settings?.custom_logo_path
+    ? settings.custom_logo_path
+    : settings?.default_logo_path;
 
   useEffect(() => {
     if (code) {
@@ -143,6 +147,11 @@ function Register() {
     return (
       <div className="auth-container">
         <div className="auth-card">
+          {logoPath && (
+            <div className="auth-logo">
+              <img src={logoPath} alt={brandName} />
+            </div>
+          )}
           <h2>Validating onboarding code...</h2>
         </div>
       </div>
@@ -153,6 +162,11 @@ function Register() {
     return (
       <div className="auth-container">
         <div className="auth-card">
+          {logoPath && (
+            <div className="auth-logo">
+              <img src={logoPath} alt={brandName} />
+            </div>
+          )}
           <h2>Invalid Onboarding Code</h2>
           <div className="alert alert-error">{error}</div>
         </div>
@@ -163,6 +177,11 @@ function Register() {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {logoPath && (
+          <div className="auth-logo">
+            <img src={logoPath} alt={brandName} />
+          </div>
+        )}
         <h2>{brandName}</h2>
         <h3>Register</h3>
 

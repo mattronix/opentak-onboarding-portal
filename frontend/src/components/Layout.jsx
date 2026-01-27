@@ -163,7 +163,7 @@ function Layout() {
           <span style={{ fontSize: '0.85rem', color: '#999' }}>
             {version && `v${version.version || version.commit}`}
           </span>
-          <p style={{ margin: 0 }}>&copy; 2024 {brandName}. All rights reserved.</p>
+          <p style={{ margin: 0 }}>&copy; {new Date().getFullYear()} {brandName}. All rights reserved.</p>
           <span style={{ fontSize: '0.85rem', color: 'transparent' }}>spacer</span>
         </div>
       </footer>
