@@ -537,101 +537,103 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Step: Download Data Packages */}
-          <div className="step-card">
-            <h2>{(hasAnyQRCode ? 3 : 2) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0)}. Download Data Packages</h2>
-            {loadingProfiles ? (
-              <p>Loading...</p>
-            ) : takProfiles && takProfiles.length > 0 ? (
-              <>
-                <table className="packages-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Description</th>
-                      <th>Download</th>
+          {/* Step: Download Data Packages - only show if profiles exist */}
+          {takProfiles && takProfiles.length > 0 && (
+            <div className="step-card">
+              <h2>{(hasAnyQRCode ? 3 : 2) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0)}. Download Data Packages</h2>
+              <table className="packages-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {takProfiles.map((profile) => (
+                    <tr key={profile.id}>
+                      <td>{profile.name}</td>
+                      <td>{profile.description || 'TAK Profile'}</td>
+                      <td>
+                        <button
+                          className="download-btn"
+                          onClick={() => handleDownloadProfile(profile.id)}
+                          style={{ background: accentColor }}
+                        >
+                          DOWNLOAD
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {takProfiles.map((profile) => (
-                      <tr key={profile.id}>
-                        <td>{profile.name}</td>
-                        <td>{profile.description || 'TAK Profile'}</td>
-                        <td>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Step: Meshtastic Configs - only show if configs exist */}
+          {meshtasticConfigs && meshtasticConfigs.length > 0 && (
+            <div className="step-card">
+              <h2>{2 + (hasAnyQRCode ? 1 : 0) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0) + (takProfiles && takProfiles.length > 0 ? 1 : 0)}. Meshtastic Configs</h2>
+              <div className="meshtastic-grid">
+                {meshtasticConfigs.map((config) => (
+                  <div key={config.id} className="meshtastic-config-item">
+                    <h3>{config.name}</h3>
+                    {config.url && (
+                      <div className="qr-section" style={{ marginBottom: '1rem' }}>
+                        <QRCodeSVG
+                          value={config.url}
+                          size={200}
+                          level="H"
+                          includeMargin={true}
+                          className="qr-code"
+                          imageSettings={{
+                            src: `${API_BASE_URL}/static/img/meshtastic.png`,
+                            height: 40,
+                            width: 40,
+                            excavate: true,
+                          }}
+                        />
+                      </div>
+                    )}
+                    <p>{config.description}</p>
+                    {config.url && (
+                      <>
+                        <div className="qr-actions" style={{ marginTop: '1rem' }}>
                           <button
-                            className="download-btn"
-                            onClick={() => handleDownloadProfile(profile.id)}
+                            onClick={() => window.location.href = config.url}
+                            className="open-btn"
                             style={{ background: accentColor }}
                           >
-                            DOWNLOAD
+                            Open in Meshtastic
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </>
-            ) : (
-              <p>No TAK profiles available.</p>
-            )}
-          </div>
+                        </div>
+                        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.75rem' }}>
+                          Can't Scan?{' '}
+                          <button
+                            onClick={() => handleCopyMeshtasticLink(config.url, config.id)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: copiedMeshtastic === config.id ? '#28a745' : '#007bff',
+                              textDecoration: 'underline',
+                              cursor: 'pointer',
+                              padding: 0,
+                              font: 'inherit',
+                              fontWeight: 500
+                            }}
+                          >
+                            {copiedMeshtastic === config.id ? 'Copied!' : 'Copy Link'}
+                          </button>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Meshtastic Configs Section */}
-      {meshtasticConfigs && meshtasticConfigs.length > 0 && (
-        <div className="meshtastic-section">
-          <h1>{(hasAnyQRCode ? 4 : 3) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0)}. Meshtastic Configs</h1>
-          <div className="meshtastic-grid">
-            {meshtasticConfigs.map((config) => (
-              <div key={config.id} className="config-card">
-                <h3>{config.name}</h3>
-                {config.url && (
-                  <div className="qr-section" style={{ marginBottom: '1rem' }}>
-                    <QRCodeSVG
-                      value={config.url}
-                      size={200}
-                      level="H"
-                      includeMargin={true}
-                      className="qr-code"
-                      imageSettings={{
-                        src: `${API_BASE_URL}/static/img/meshtastic.png`,
-                        height: 40,
-                        width: 40,
-                        excavate: true,
-                      }}
-                    />
-                  </div>
-                )}
-                <p>{config.description}</p>
-                {config.url && (
-                  <>
-                    <hr style={{ margin: '1rem 0', border: 'none', borderTop: '1px solid #ddd' }} />
-                    <p style={{ fontSize: '0.9rem', color: '#666' }}>
-                      Can't Scan?{' '}
-                      <button
-                        onClick={() => handleCopyMeshtasticLink(config.url, config.id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: copiedMeshtastic === config.id ? '#28a745' : '#007bff',
-                          textDecoration: 'underline',
-                          cursor: 'pointer',
-                          padding: 0,
-                          font: 'inherit',
-                          fontWeight: 500
-                        }}
-                      >
-                        {copiedMeshtastic === config.id ? 'Copied!' : 'Copy Link'}
-                      </button>
-                    </p>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
