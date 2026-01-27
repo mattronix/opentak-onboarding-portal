@@ -2,7 +2,7 @@ from app.extensions import mail
 from flask_mail import Message
 from flask import render_template
 
-from app.settings import MAIL_DEFAULT_SENDER, BRAND_NAME as DEFAULT_BRAND_NAME, FRONTEND_URL
+from app.settings import MAIL_DEFAULT_SENDER, BRAND_NAME as DEFAULT_BRAND_NAME, FRONTEND_URL, MAIL_ENABLED
 from app.models import SystemSettingsModel
 import logging
 
@@ -34,6 +34,11 @@ def get_logo_url():
 
 
 def send_html_email(subject, recipients, message, title=None, template="email_default_template.html", sender=MAIL_DEFAULT_SENDER, link_url="https://portal.example.nl", link_title="LOGIN to TAK Portal"):
+    # Skip if email is disabled
+    if not MAIL_ENABLED:
+        logging.info(f"Email disabled - skipping email to {recipients} with subject '{subject}'")
+        return
+
     if not title:
         title = subject
 

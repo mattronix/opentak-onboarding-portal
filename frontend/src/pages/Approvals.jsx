@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { approvalsAPI } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
 import './Approvals.css';
 
 function Approvals() {
   const queryClient = useQueryClient();
   const { showSuccess, showError, confirm } = useNotification();
+  const { refreshApproverStatus } = useAuth();
   const [actionLoading, setActionLoading] = useState(null);
 
   const { data, isLoading, error } = useQuery({
@@ -21,6 +23,7 @@ function Approvals() {
     mutationFn: (id) => approvalsAPI.approve(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['myApprovals'] });
+      refreshApproverStatus(); // Update navbar badge
       showSuccess(response.data.message);
     },
     onError: (err) => {
@@ -35,6 +38,7 @@ function Approvals() {
     mutationFn: (id) => approvalsAPI.reject(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['myApprovals'] });
+      refreshApproverStatus(); // Update navbar badge
       showSuccess(response.data.message);
     },
     onError: (err) => {
@@ -47,7 +51,7 @@ function Approvals() {
 
   const handleApprove = async (pending) => {
     const confirmed = await confirm(
-      `Approve registration for ${pending.username}?\n\nThey will receive an email to verify their email address.`,
+      `Approve registration for ${pending.username}?\n\nTheir account will be created immediately and they can log in right away.`,
       'Approve Registration'
     );
     if (!confirmed) return;

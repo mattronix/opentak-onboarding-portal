@@ -161,6 +161,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Poll approver status every 30 seconds when user is logged in
+  useEffect(() => {
+    if (!user) return;
+
+    const pollInterval = setInterval(() => {
+      refreshApproverStatus();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [user]);
+
   const isAdmin = () => {
     // Check from database permissions (RBAC)
     return permissions.isAdmin || permissions.roles.includes('administrator');

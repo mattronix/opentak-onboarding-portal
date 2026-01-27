@@ -96,16 +96,15 @@ def get_my_approvals():
 @api_v1.route('/approvals/<int:pending_id>/approve', methods=['POST'])
 @jwt_required()
 def approve_pending(pending_id):
-    """Approve a pending registration (must be in approver role)"""
+    """Approve a pending registration and create user directly (must be in approver role)"""
     try:
         from app.email import send_html_email
-        import secrets
-        from datetime import timedelta
+        from app.ots import OTSClient
 
         current_user_id = get_jwt_identity()
-        user = UserModel.get_user_by_id(int(current_user_id))
+        approver = UserModel.get_user_by_id(int(current_user_id))
 
-        if not user:
+        if not approver:
             return jsonify({'error': 'User not found'}), 404
 
         # Get the pending registration
@@ -124,9 +123,9 @@ def approve_pending(pending_id):
         if not onboarding_code.requireApproval or not onboarding_code.approverRole:
             return jsonify({'error': 'This registration does not require approval'}), 400
 
-        # Check if user has the approver role
-        user_role_ids = [role.id for role in user.roles]
-        if onboarding_code.approverRoleId not in user_role_ids:
+        # Check if approver has the approver role
+        approver_role_ids = [role.id for role in approver.roles]
+        if onboarding_code.approverRoleId not in approver_role_ids:
             return jsonify({'error': 'You do not have permission to approve this registration'}), 403
 
         # Check if expired
@@ -138,64 +137,130 @@ def approve_pending(pending_id):
             PendingRegistrationModel.delete_by_id(pending.id)
             return jsonify({'error': 'Username already exists'}), 409
 
-        # Update status to pending_verification and generate new verification token
-        pending.approval_status = 'pending_verification'
-        pending.approved_by = user.id
+        if UserModel.query.filter_by(email=pending.email).first():
+            PendingRegistrationModel.delete_by_id(pending.id)
+            return jsonify({'error': 'Email already registered'}), 409
+
+        # Create user in OTS
+        current_app.logger.info(f"Creating user {pending.username} in OTS (approved by {approver.username})")
+        ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
+
+        # Prepare roles from onboarding code - OTS only supports 'user' and 'administrator'
+        ots_roles = ['user']  # Default role
+        if onboarding_code.roles:
+            role_names = [role.name.lower() for role in onboarding_code.roles]
+            if any(r in ['administrator', 'admin'] for r in role_names):
+                ots_roles = ['administrator']
+
+        try:
+            ots_response = ots.create_user(
+                username=pending.username,
+                password=pending.password,
+                roles=ots_roles
+            )
+            current_app.logger.info(f"OTS user creation successful for {pending.username}")
+        except Exception as e:
+            error_msg = str(e)
+            current_app.logger.error(f"OTS user creation failed: {error_msg}")
+            if 'can contain only' in error_msg.lower() or 'username' in error_msg.lower():
+                return jsonify({'error': 'Username contains invalid characters'}), 400
+            return jsonify({'error': f'Failed to create user in TAK server: {error_msg}'}), 500
+
+        # Create user in local database
+        expiry_date = onboarding_code.userExpiryDate if onboarding_code.userExpiryDate else None
+
+        new_user = UserModel.create_user(
+            username=pending.username,
+            email=pending.email,
+            firstname=pending.firstName,
+            lastname=pending.lastName,
+            callsign=pending.callsign,
+            expirydate=expiry_date,
+            onboardedby=onboarding_code.onboardContact.username if onboarding_code.onboardContact else None
+        )
+
+        if isinstance(new_user, dict) and 'error' in new_user:
+            return jsonify({'error': 'Failed to create user in local database'}), 500
+
+        # Mark email as verified (admin approved)
+        new_user.emailVerified = True
+
+        # Add roles from onboarding code
+        for role in onboarding_code.roles:
+            new_user.roles.append(role)
+
+        # Add TAK profiles from onboarding code roles
+        for role in onboarding_code.roles:
+            for tak_profile in role.takprofiles:
+                if tak_profile not in new_user.takprofiles:
+                    new_user.takprofiles.append(tak_profile)
+
+        # Add Meshtastic configs from onboarding code roles
+        for role in onboarding_code.roles:
+            for meshtastic in role.meshtastic:
+                if meshtastic not in new_user.meshtastic:
+                    new_user.meshtastic.append(meshtastic)
+
+        # Increment onboarding code uses
+        onboarding_code.uses += 1
+
+        # Update pending registration status before deleting
+        pending.approval_status = 'approved'
+        pending.approved_by = approver.id
         pending.approved_at = datetime.now()
-        pending.verification_token = secrets.token_urlsafe(48)
-        pending.expires_at = datetime.now() + timedelta(hours=24)  # Reset expiry for verification
 
         db.session.commit()
 
-        # Get frontend URL
+        # Delete pending registration
+        PendingRegistrationModel.delete_by_id(pending.id)
+
+        # Get frontend URL for welcome email
         frontend_url = get_frontend_url()
 
-        verification_link = f"{frontend_url}/verify-email?token={pending.verification_token}"
-
-        # Send verification email to user
+        # Send welcome email to new user
         try:
-            verification_message = f"""Hello {pending.firstName},
+            welcome_message = f"""Hello {new_user.firstName},
 
-Great news! Your registration request for OpenTAK Portal has been approved by {user.firstName or user.username}!
+Great news! Your registration request for OpenTAK Portal has been approved by {approver.firstName or approver.username}!
 
-To complete your registration, please verify your email address by clicking the link below:
+Your account is now active and you can log in immediately.
 
-{verification_link}
+Your Account Details:
+- Username: {new_user.username}
+- Email: {new_user.email}
+- Callsign: {new_user.callsign}
 
-This link will expire in 24 hours.
-
-Your registration details:
-- Username: {pending.username}
-- Callsign: {pending.callsign}
-- Email: {pending.email}
-
-Once you verify your email, your account will be created and you can log in.
+Getting Started:
+1. Login to the portal at {frontend_url}/login
+2. Download your TAK certificates from your dashboard
+3. Configure your TAK devices with your certificates
+4. Join the network and start collaborating!
 
 Welcome to the team!
 The OpenTAK Team"""
 
             send_html_email(
-                subject='Registration Approved - Verify Your Email',
-                recipients=[pending.email],
-                message=verification_message,
-                title='Registration Approved!',
-                link_url=verification_link,
-                link_title='Verify Email Address'
+                subject='Welcome to OpenTAK Portal - Registration Approved!',
+                recipients=[new_user.email],
+                message=welcome_message,
+                title='Welcome to OpenTAK!',
+                link_url=f"{frontend_url}/login",
+                link_title='Login to Portal'
             )
         except Exception as e:
-            current_app.logger.error(f"Failed to send verification email: {str(e)}")
-            return jsonify({'error': f'Approved but failed to send verification email: {str(e)}'}), 500
+            current_app.logger.error(f"Failed to send welcome email: {str(e)}")
+            # Don't fail the approval if email fails
 
-        current_app.logger.info(f"Registration approved by {user.username} for {pending.username} - verification email sent")
+        current_app.logger.info(f"Registration approved and user created by {approver.username} for {pending.username}")
 
         return jsonify({
-            'message': f'Registration approved for {pending.username}. Verification email sent.',
-            'pending': {
-                'id': pending.id,
-                'username': pending.username,
-                'email': pending.email,
-                'approval_status': pending.approval_status,
-                'approved_by': user.username
+            'message': f'Registration approved! User {new_user.username} has been created and can now log in.',
+            'user': {
+                'id': new_user.id,
+                'username': new_user.username,
+                'email': new_user.email,
+                'callsign': new_user.callsign,
+                'approved_by': approver.username
             }
         }), 200
 
