@@ -262,6 +262,19 @@
   text-decoration: underline;
 }
 
+/* Installer QR Codes (under app icons) */
+.installer-qr {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.installer-qr svg {
+  display: block;
+}
+
 /* QR Code Sections */
 .qr-section {
   display: flex;

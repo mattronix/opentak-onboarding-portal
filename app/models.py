@@ -974,6 +974,12 @@ class SystemSettingsModel(db.Model):
             },
             # General - Feature Toggles
             {
+                'key': 'atak_homepage_icon_enabled',
+                'value': 'true',
+                'category': 'general',
+                'description': 'Show ATAK download icon on the dashboard'
+            },
+            {
                 'key': 'itak_homepage_icon_enabled',
                 'value': 'true',
                 'category': 'general',
@@ -981,7 +987,7 @@ class SystemSettingsModel(db.Model):
             },
             {
                 'key': 'truststore_homepage_icon_enabled',
-                'value': 'true',
+                'value': 'false',
                 'category': 'general',
                 'description': 'Show TrustStore download icon on the dashboard'
             },
@@ -996,6 +1002,31 @@ class SystemSettingsModel(db.Model):
                 'value': 'true',
                 'category': 'general',
                 'description': 'Show Meshtastic download icon on the dashboard'
+            },
+            # Installer QR Codes
+            {
+                'key': 'atak_installer_qr_enabled',
+                'value': 'true',
+                'category': 'general',
+                'description': 'Show QR code for ATAK app download'
+            },
+            {
+                'key': 'atak_installer_qr_url',
+                'value': 'https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en',
+                'category': 'general',
+                'description': 'URL for ATAK installer QR code'
+            },
+            {
+                'key': 'itak_installer_qr_enabled',
+                'value': 'true',
+                'category': 'general',
+                'description': 'Show QR code for iTAK app download'
+            },
+            {
+                'key': 'itak_installer_qr_url',
+                'value': 'https://apps.apple.com/app/itak/id1561656396',
+                'category': 'general',
+                'description': 'URL for iTAK installer QR code'
             },
             {
                 'key': 'generate_atak_qr_code',

@@ -68,7 +68,7 @@ function Dashboard() {
       const response = await qrAPI.getItakQRString();
       return response.data;
     },
-    enabled: !!settings?.generate_itak_qr_code && !!user,
+    enabled: !!user,
     staleTime: Infinity, // iTAK connection strings don't change
     retry: false,
   });
@@ -147,7 +147,7 @@ function Dashboard() {
   const accentColor = settings?.accent_color || '#ff9800';
 
   // Check if any QR code is enabled
-  const hasAnyQRCode = settings?.generate_atak_qr_code || settings?.generate_itak_qr_code;
+  const hasAnyQRCode = settings?.generate_atak_qr_code;
 
   return (
     <div className="dashboard" style={{ '--accent-color': accentColor }}>
@@ -199,25 +199,13 @@ function Dashboard() {
           >
             EDIT PROFILE
           </button>
-          {settings?.forgot_password_enabled && (
-            <button
-              className="action-btn change-password"
-              style={{ background: accentColor }}
-              onClick={() => navigate('/change-password')}
-            >
-              CHANGE PASSWORD
-            </button>
-          )}
-          {settings?.help_link && (
-            <a href={settings.help_link} target="_blank" rel="noopener noreferrer">
-              <button
-                className="action-btn help-btn"
-                style={{ background: accentColor }}
-              >
-                HELP
-              </button>
-            </a>
-          )}
+          <button
+            className="action-btn change-password"
+            style={{ background: accentColor }}
+            onClick={() => navigate('/change-password')}
+          >
+            CHANGE PASSWORD
+          </button>
         </div>
       </div>
 
@@ -260,25 +248,37 @@ function Dashboard() {
                 </div>
               )}
 
-              {/* ATAK */}
-              <div className="install-item">
-                <img
-                  src={`${API_BASE_URL}/static/img/atak.png`}
-                  alt="ATAK"
-                  className="icon"
-                  style={{ width: '100px', height: '100px' }}
-                  onError={(e) => {
-                    e.target.parentElement.remove();
-                  }}
-                />
-                <p>Get ATAK</p>
-                <div className="links">
-                  <a href="https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en" target="_blank" rel="noopener noreferrer">Android</a>
+              {/* ATAK - only show if enabled */}
+              {settings?.atak_homepage_icon_enabled && (
+                <div className="install-item">
+                  <img
+                    src={`${API_BASE_URL}/static/img/atak.png`}
+                    alt="ATAK"
+                    className="icon"
+                    style={{ width: '100px', height: '100px' }}
+                    onError={(e) => {
+                      e.target.parentElement.remove();
+                    }}
+                  />
+                  <p>Get ATAK</p>
+                  <div className="links">
+                    <a href={settings?.atak_installer_qr_url || "https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en"} target="_blank" rel="noopener noreferrer">Android</a>
+                  </div>
+                  {settings?.atak_installer_qr_enabled && settings?.atak_installer_qr_url && (
+                    <div className="installer-qr">
+                      <QRCodeSVG
+                        value={settings.atak_installer_qr_url}
+                        size={80}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               {/* iTAK - only show if enabled */}
-              {settings && settings.itak_homepage_icon_enabled === true && (
+              {settings?.itak_homepage_icon_enabled && (
                 <div className="install-item">
                   <img
                     src={`${API_BASE_URL}/static/img/itak.jpg`}
@@ -291,13 +291,23 @@ function Dashboard() {
                   />
                   <p>Get iTAK</p>
                   <div className="links">
-                    <a href="https://apps.apple.com/app/itak/id1561656396" target="_blank" rel="noopener noreferrer">iPhone</a>
+                    <a href={settings?.itak_installer_qr_url || "https://apps.apple.com/app/itak/id1561656396"} target="_blank" rel="noopener noreferrer">iPhone</a>
                   </div>
+                  {settings?.itak_installer_qr_enabled && settings?.itak_installer_qr_url && (
+                    <div className="installer-qr">
+                      <QRCodeSVG
+                        value={settings.itak_installer_qr_url}
+                        size={80}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* TrustStore - only show if enabled */}
-              {settings && settings.truststore_homepage_icon_enabled === true && (
+              {settings?.truststore_homepage_icon_enabled && (
                 <div className="install-item">
                   <img
                     src={`${API_BASE_URL}/static/img/certificate.png`}
@@ -311,27 +321,6 @@ function Dashboard() {
                   <p>TrustStore</p>
                   <div className="links">
                     <a href={`${settings?.ots_url || API_BASE_URL.replace(':5000', ':8080')}/api/truststore`} target="_blank" rel="noopener noreferrer">Download</a>
-                  </div>
-                </div>
-              )}
-
-              {/* ZeroTier - only show if enabled */}
-              {settings && settings.zerotier_icon === true && (
-                <div className="install-item">
-                  <img
-                    src={`${API_BASE_URL}/static/img/zerotier.png`}
-                    alt="ZeroTier"
-                    className="icon"
-                    style={{ width: '100px', height: '100px' }}
-                    onError={(e) => {
-                      e.target.parentElement.remove();
-                    }}
-                  />
-                  <p>Get Zerotier</p>
-                  <div className="links">
-                    <a href="https://apps.apple.com/us/app/zerotier-one/id1084101492" target="_blank" rel="noopener noreferrer">iPhone</a>
-                    {' / '}
-                    <a href="https://play.google.com/store/apps/details?id=com.zerotier.one&hl=en" target="_blank" rel="noopener noreferrer">Android</a>
                   </div>
                 </div>
               )}
@@ -426,44 +415,42 @@ function Dashboard() {
                 )}
 
                 {/* iTAK QR Code - no expiry/usage tracking, no refresh needed */}
-                {settings?.generate_itak_qr_code && (
-                  <div className="qr-code-section">
-                    <h3 className="qr-label">iTAK (iOS)</h3>
-                    {loadingItakQR ? (
-                      <div className="qr-loading">Loading QR code...</div>
-                    ) : itakError ? (
-                      <div className="qr-error">
-                        <p>Failed to load iTAK QR code</p>
-                        <small>Your OTS server may not support iTAK enrollment</small>
-                      </div>
-                    ) : itakQrData?.qr_string ? (
-                      <>
-                        <div className="qr-code-container">
-                          <QRCodeSVG
-                            value={itakQrData.qr_string}
-                            size={250}
-                            level="H"
-                            includeMargin={true}
-                            className="qr-code-large"
+                <div className="qr-code-section">
+                  <h3 className="qr-label">iTAK (iOS)</h3>
+                  {loadingItakQR ? (
+                    <div className="qr-loading">Loading QR code...</div>
+                  ) : itakError ? (
+                    <div className="qr-error">
+                      <p>Failed to load iTAK QR code</p>
+                      <small>Your OTS server may not support iTAK enrollment</small>
+                    </div>
+                  ) : itakQrData?.qr_string ? (
+                    <>
+                      <div className="qr-code-container">
+                        <QRCodeSVG
+                          value={itakQrData.qr_string}
+                          size={250}
+                          level="H"
+                          includeMargin={true}
+                          className="qr-code-large"
+                        />
+                        <div className="tak-logo-overlay">
+                          <img
+                            src={getItakIconURL()}
+                            alt="iTAK"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
-                          <div className="tak-logo-overlay">
-                            <img
-                              src={getItakIconURL()}
-                              alt="iTAK"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="qr-error">
-                        <p>QR code not available</p>
                       </div>
-                    )}
-                  </div>
-                )}
+                    </>
+                  ) : (
+                    <div className="qr-error">
+                      <p>QR code not available</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

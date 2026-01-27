@@ -150,8 +150,8 @@ function Settings() {
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Paired settings - these have both _enabled and _value variants
-  const pairedSettingKeys = ['brand_name', 'help_link', 'help_email'];
+  // Paired settings - these have both _enabled and _value (or _url) variants
+  const pairedSettingKeys = ['brand_name', 'atak_installer_qr', 'itak_installer_qr'];
 
   useEffect(() => {
     fetchSettings();
@@ -272,12 +272,14 @@ function Settings() {
 
     for (const baseKey of pairedSettingKeys) {
       const enabledSetting = categorySettings?.find(s => s.key === `${baseKey}_enabled`);
-      const valueSetting = categorySettings?.find(s => s.key === `${baseKey}_value`);
+      // Look for both _value and _url suffixes
+      const valueSetting = categorySettings?.find(s => s.key === `${baseKey}_value`) ||
+                          categorySettings?.find(s => s.key === `${baseKey}_url`);
 
       if (enabledSetting) {
         pairs.push({ enabledSetting, valueSetting });
         processed.add(`${baseKey}_enabled`);
-        if (valueSetting) processed.add(`${baseKey}_value`);
+        if (valueSetting) processed.add(valueSetting.key);
       }
     }
 

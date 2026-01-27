@@ -239,10 +239,10 @@ def get_or_create_itak_token(username, force_refresh=False):
     Returns:
         dict: {qr_string, expires_at: None, max_uses: None, total_uses: None}
     """
-    from app.settings import ITAK_HOSTNAME, ITAK_PORT, OTS_HOSTNAME
+    from app.settings import OTS_HOSTNAME
 
-    host = ITAK_HOSTNAME or OTS_HOSTNAME or 'localhost'
-    port = ITAK_PORT or '8089'
+    host = OTS_HOSTNAME or 'localhost'
+    port = '8089'
 
     itak_qr_string = f"OpenTAKServer_{host},{host},{port},SSL"
 

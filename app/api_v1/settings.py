@@ -25,17 +25,9 @@ def get_settings():
         "secondary_color": "string",
         "accent_color": "string",
         "logo_path": "string",
-        "help_link": "string",
-        "help_email": "string",
         "generate_atak_qr_code": boolean,
-        "itak_hostname": "string",
         "ots_hostname": "string",
-        "itak_homepage_icon_enabled": boolean,
-        "truststore_homepage_icon_enabled": boolean,
-        "zerotier_icon": boolean,
-        "enable_repo": boolean,
-        "enable_claim_radio": boolean,
-        "forgot_password_enabled": boolean
+        "meshtastic_homepage_icon_enabled": boolean
     }
     """
     # Helper function to get boolean setting from DB
@@ -58,12 +50,6 @@ def get_settings():
     brand_name_enabled = get_bool_setting('brand_name_enabled', True)
     brand_name_value = get_str_setting('brand_name_value', 'My OTS Portal')
 
-    help_link_enabled = get_bool_setting('help_link_enabled', False)
-    help_link_value = get_str_setting('help_link_value', '')
-
-    help_email_enabled = get_bool_setting('help_email_enabled', False)
-    help_email_value = get_str_setting('help_email_value', '')
-
     settings = {
         # Brand name - only show if enabled
         'brand_name': brand_name_value if brand_name_enabled else 'My OTS Portal',
@@ -71,22 +57,18 @@ def get_settings():
         'secondary_color': current_app.config.get('SECONDARY_COLOR', 'orange'),
         'accent_color': current_app.config.get('ACCENT_COLOR', 'orange'),
         'logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png'),
-        # Help link - only return value if enabled
-        'help_link': help_link_value if help_link_enabled else '',
-        # Help email - only return value if enabled
-        'help_email': help_email_value if help_email_enabled else '',
         'generate_atak_qr_code': get_bool_setting('generate_atak_qr_code', True),
-        'generate_itak_qr_code': get_bool_setting('generate_itak_qr_code', True),
-        'itak_hostname': current_app.config.get('ITAK_HOSTNAME', ''),
         'ots_hostname': current_app.config.get('OTS_HOSTNAME', ''),
         'ots_url': current_app.config.get('OTS_URL', ''),
-        'itak_homepage_icon_enabled': get_bool_setting('itak_homepage_icon_enabled', True),
-        'truststore_homepage_icon_enabled': get_bool_setting('truststore_homepage_icon_enabled', True),
         'meshtastic_homepage_icon_enabled': get_bool_setting('meshtastic_homepage_icon_enabled', True),
-        'zerotier_icon': get_bool_setting('zerotier_icon', False),
-        'enable_repo': bool(current_app.config.get('ENABLE_REPO', False)),
-        'enable_claim_radio': bool(current_app.config.get('ENABLE_CLAIM_RADIO', False)),
-        'forgot_password_enabled': get_bool_setting('forgot_password_enabled', True),
+        'atak_homepage_icon_enabled': get_bool_setting('atak_homepage_icon_enabled', True),
+        'itak_homepage_icon_enabled': get_bool_setting('itak_homepage_icon_enabled', True),
+        'truststore_homepage_icon_enabled': get_bool_setting('truststore_homepage_icon_enabled', False),
+        # Installer QR codes
+        'atak_installer_qr_enabled': get_bool_setting('atak_installer_qr_enabled', True),
+        'atak_installer_qr_url': get_str_setting('atak_installer_qr_url', 'https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en'),
+        'itak_installer_qr_enabled': get_bool_setting('itak_installer_qr_enabled', True),
+        'itak_installer_qr_url': get_str_setting('itak_installer_qr_url', 'https://apps.apple.com/app/itak/id1561656396'),
     }
 
     return jsonify(settings), 200
