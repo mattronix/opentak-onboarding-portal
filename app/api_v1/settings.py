@@ -58,6 +58,7 @@ def get_settings():
         'accent_color': current_app.config.get('ACCENT_COLOR', 'orange'),
         'logo_path': current_app.config.get('LOGO_PATH', '/static/img/logo.png'),
         'generate_atak_qr_code': get_bool_setting('generate_atak_qr_code', True),
+        'generate_itak_qr_code': get_bool_setting('generate_itak_qr_code', True),
         'ots_hostname': current_app.config.get('OTS_HOSTNAME', ''),
         'ots_url': current_app.config.get('OTS_URL', ''),
         'meshtastic_homepage_icon_enabled': get_bool_setting('meshtastic_homepage_icon_enabled', True),
@@ -69,6 +70,10 @@ def get_settings():
         'atak_installer_qr_url': get_str_setting('atak_installer_qr_url', 'https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en'),
         'itak_installer_qr_enabled': get_bool_setting('itak_installer_qr_enabled', True),
         'itak_installer_qr_url': get_str_setting('itak_installer_qr_url', 'https://apps.apple.com/app/itak/id1561656396'),
+        'meshtastic_installer_qr_android_enabled': get_bool_setting('meshtastic_installer_qr_android_enabled', True),
+        'meshtastic_installer_qr_android_url': get_str_setting('meshtastic_installer_qr_android_url', 'https://play.google.com/store/apps/details?id=com.geeksville.mesh'),
+        'meshtastic_installer_qr_iphone_enabled': get_bool_setting('meshtastic_installer_qr_iphone_enabled', True),
+        'meshtastic_installer_qr_iphone_url': get_str_setting('meshtastic_installer_qr_iphone_url', 'https://apps.apple.com/app/meshtastic/id1586432531'),
     }
 
     return jsonify(settings), 200

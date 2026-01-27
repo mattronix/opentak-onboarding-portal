@@ -151,7 +151,7 @@ function Settings() {
   const [saving, setSaving] = useState(false);
 
   // Paired settings - these have both _enabled and _value (or _url) variants
-  const pairedSettingKeys = ['brand_name', 'atak_installer_qr', 'itak_installer_qr'];
+  const pairedSettingKeys = ['brand_name', 'atak_installer_qr', 'itak_installer_qr', 'meshtastic_installer_qr_android', 'meshtastic_installer_qr_iphone'];
 
   useEffect(() => {
     fetchSettings();

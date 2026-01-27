@@ -1029,6 +1029,30 @@ class SystemSettingsModel(db.Model):
                 'description': 'URL for iTAK installer QR code'
             },
             {
+                'key': 'meshtastic_installer_qr_android_enabled',
+                'value': 'true',
+                'category': 'general',
+                'description': 'Show QR code for Meshtastic Android app download'
+            },
+            {
+                'key': 'meshtastic_installer_qr_android_url',
+                'value': 'https://play.google.com/store/apps/details?id=com.geeksville.mesh',
+                'category': 'general',
+                'description': 'URL for Meshtastic Android installer QR code'
+            },
+            {
+                'key': 'meshtastic_installer_qr_iphone_enabled',
+                'value': 'true',
+                'category': 'general',
+                'description': 'Show QR code for Meshtastic iPhone app download'
+            },
+            {
+                'key': 'meshtastic_installer_qr_iphone_url',
+                'value': 'https://apps.apple.com/app/meshtastic/id1586432531',
+                'category': 'general',
+                'description': 'URL for Meshtastic iPhone installer QR code'
+            },
+            {
                 'key': 'generate_atak_qr_code',
                 'value': 'true',
                 'category': 'qr_enrollment',

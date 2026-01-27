@@ -147,7 +147,7 @@ function Dashboard() {
   const accentColor = settings?.accent_color || '#ff9800';
 
   // Check if any QR code is enabled
-  const hasAnyQRCode = settings?.generate_atak_qr_code;
+  const hasAnyQRCode = settings?.generate_atak_qr_code || settings?.generate_itak_qr_code;
 
   return (
     <div className="dashboard" style={{ '--accent-color': accentColor }}>
@@ -241,9 +241,37 @@ function Dashboard() {
                   />
                   <p>Get Meshtastic</p>
                   <div className="links">
-                    <a href="https://apps.apple.com/in/app/meshtastic/id1586432531" target="_blank" rel="noopener noreferrer">iPhone</a>
-                    {' / '}
-                    <a href="https://play.google.com/store/apps/details?id=com.geeksville.mesh&hl=en" target="_blank" rel="noopener noreferrer">Android</a>
+                    {settings?.meshtastic_installer_qr_android_enabled && (
+                      <a href={settings?.meshtastic_installer_qr_android_url || "https://play.google.com/store/apps/details?id=com.geeksville.mesh"} target="_blank" rel="noopener noreferrer">Android</a>
+                    )}
+                    {settings?.meshtastic_installer_qr_android_enabled && settings?.meshtastic_installer_qr_iphone_enabled && ' | '}
+                    {settings?.meshtastic_installer_qr_iphone_enabled && (
+                      <a href={settings?.meshtastic_installer_qr_iphone_url || "https://apps.apple.com/app/meshtastic/id1586432531"} target="_blank" rel="noopener noreferrer">iPhone</a>
+                    )}
+                  </div>
+                  <div className="installer-qr-group">
+                    {settings?.meshtastic_installer_qr_android_enabled && settings?.meshtastic_installer_qr_android_url && (
+                      <div className="installer-qr">
+                        <span className="qr-platform-label">Android</span>
+                        <QRCodeSVG
+                          value={settings.meshtastic_installer_qr_android_url}
+                          size={80}
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                    )}
+                    {settings?.meshtastic_installer_qr_iphone_enabled && settings?.meshtastic_installer_qr_iphone_url && (
+                      <div className="installer-qr">
+                        <span className="qr-platform-label">iPhone</span>
+                        <QRCodeSVG
+                          value={settings.meshtastic_installer_qr_iphone_url}
+                          size={80}
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -327,10 +355,10 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Step 2: Login to ATAK/iTAK */}
+          {/* Step 2: Login to ATAK */}
           {hasAnyQRCode && (
             <div className="step-card">
-              <h2>2. Login to ATAK/iTAK</h2>
+              <h2>2. Login to ATAK</h2>
               <div className="qr-codes-grid">
                 {/* ATAK QR Code */}
                 {settings?.generate_atak_qr_code && (
@@ -415,42 +443,44 @@ function Dashboard() {
                 )}
 
                 {/* iTAK QR Code - no expiry/usage tracking, no refresh needed */}
-                <div className="qr-code-section">
-                  <h3 className="qr-label">iTAK (iOS)</h3>
-                  {loadingItakQR ? (
-                    <div className="qr-loading">Loading QR code...</div>
-                  ) : itakError ? (
-                    <div className="qr-error">
-                      <p>Failed to load iTAK QR code</p>
-                      <small>Your OTS server may not support iTAK enrollment</small>
-                    </div>
-                  ) : itakQrData?.qr_string ? (
-                    <>
-                      <div className="qr-code-container">
-                        <QRCodeSVG
-                          value={itakQrData.qr_string}
-                          size={250}
-                          level="H"
-                          includeMargin={true}
-                          className="qr-code-large"
-                        />
-                        <div className="tak-logo-overlay">
-                          <img
-                            src={getItakIconURL()}
-                            alt="iTAK"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        </div>
+                {settings?.generate_itak_qr_code && (
+                  <div className="qr-code-section">
+                    <h3 className="qr-label">iTAK (iOS)</h3>
+                    {loadingItakQR ? (
+                      <div className="qr-loading">Loading QR code...</div>
+                    ) : itakError ? (
+                      <div className="qr-error">
+                        <p>Failed to load iTAK QR code</p>
+                        <small>Your OTS server may not support iTAK enrollment</small>
                       </div>
-                    </>
-                  ) : (
-                    <div className="qr-error">
-                      <p>QR code not available</p>
-                    </div>
-                  )}
-                </div>
+                    ) : itakQrData?.qr_string ? (
+                      <>
+                        <div className="qr-code-container">
+                          <QRCodeSVG
+                            value={itakQrData.qr_string}
+                            size={250}
+                            level="H"
+                            includeMargin={true}
+                            className="qr-code-large"
+                          />
+                          <div className="tak-logo-overlay">
+                            <img
+                              src={getItakIconURL()}
+                              alt="iTAK"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="qr-error">
+                        <p>QR code not available</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

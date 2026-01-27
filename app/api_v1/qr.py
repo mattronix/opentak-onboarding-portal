@@ -1,6 +1,6 @@
 """
 QR Code API endpoints
-Generates QR code connection strings for ATAK/iTAK
+Generates QR code connection strings for ATAK
 Mimics the OTS server /Marti/api/tls/config/qr endpoint
 """
 
@@ -258,7 +258,7 @@ def get_or_create_itak_token(username, force_refresh=False):
 @jwt_required(optional=True)
 def get_marti_qr():
     """
-    Get QR code image for ATAK/iTAK configuration
+    Get QR code image for ATAK configuration
 
     Mimics the OTS server endpoint: /Marti/api/tls/config/qr?clientUid=username
 

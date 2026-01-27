@@ -269,10 +269,27 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
 .installer-qr svg {
   display: block;
+  margin: 0 auto;
+}
+
+.installer-qr-group {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.qr-platform-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
 }
 
 /* QR Code Sections */
@@ -749,7 +766,7 @@
   text-decoration: underline;
 }
 
-/* QR Codes Grid - dual ATAK/iTAK layout */
+/* QR Codes Grid - dual ATAK layout */
 .qr-codes-grid {
   display: flex;
   flex-wrap: wrap;
