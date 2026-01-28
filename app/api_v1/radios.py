@@ -298,6 +298,74 @@ def claim_radio(radio_id):
         return jsonify({'error': f'Failed to claim radio: {str(e)}'}), 400
 
 
+@api_v1.route('/radios/<int:radio_id>/claim-token', methods=['GET'])
+@jwt_required()
+def get_claim_token(radio_id):
+    """
+    Get the claim token for a radio (admin only).
+    The token is base64(mac|name|createdAt) and can be used to generate a claim URL.
+    """
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'radio_admin']):
+        return jsonify({'error': 'Admin access required'}), 403
+
+    radio = RadioModel.get_by_id(radio_id)
+    if not radio:
+        return jsonify({'error': 'Radio not found'}), 404
+
+    token = radio.generate_claim_token()
+    return jsonify({'claim_token': token}), 200
+
+
+@api_v1.route('/radios/claim-by-token/<token>', methods=['GET'])
+@jwt_required()
+def get_radio_by_claim_token(token):
+    """
+    Get radio info by claim token (for claim page).
+    Returns basic radio info if token is valid.
+    """
+    radio = RadioModel.get_by_claim_token(token)
+    if not radio:
+        return jsonify({'error': 'Invalid or expired claim token'}), 404
+
+    return jsonify({
+        'id': radio.id,
+        'name': radio.name,
+        'platform': radio.platform,
+        'model': radio.model,
+        'shortName': radio.shortName,
+        'longName': radio.longName,
+        'assignedTo': radio.assignedTo
+    }), 200
+
+
+@api_v1.route('/radios/claim-by-token/<token>', methods=['POST'])
+@jwt_required()
+def claim_radio_by_token(token):
+    """
+    Claim a radio using a claim token (assigns it to the current user).
+    The token is base64(mac|name|createdAt).
+    """
+    current_user_id = int(get_jwt_identity())
+
+    radio = RadioModel.get_by_claim_token(token)
+    if not radio:
+        return jsonify({'error': 'Invalid or expired claim token'}), 404
+
+    if radio.assignedTo:
+        return jsonify({'error': 'Radio is already assigned to someone'}), 409
+
+    try:
+        radio.assignedTo = current_user_id
+        radio.updatedAt = datetime.utcnow()
+        RadioModel.update(radio)
+
+        return jsonify({'message': 'Radio claimed successfully'}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to claim radio: {str(e)}'}), 400
+
+
 @api_v1.route('/radios/enroll', methods=['POST'])
 @jwt_required()
 def enroll_radio():

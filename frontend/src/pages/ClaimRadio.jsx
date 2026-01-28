@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { radiosAPI, settingsAPI } from '../services/api';
 import './ClaimRadio.css';
 
 function ClaimRadio() {
-  const { radioId } = useParams();
+  const { token } = useParams();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -19,18 +19,18 @@ function ClaimRadio() {
     },
   });
 
-  // Fetch radio info
+  // Fetch radio info using claim token
   const { data: radioData, isLoading: loadingRadio, error: radioError } = useQuery({
-    queryKey: ['radio', radioId],
+    queryKey: ['radio-claim', token],
     queryFn: async () => {
-      const response = await radiosAPI.getById(radioId);
+      const response = await radiosAPI.getByClaimToken(token);
       return response.data;
     },
-    enabled: !!radioId,
+    enabled: !!token,
   });
 
   const claimMutation = useMutation({
-    mutationFn: () => radiosAPI.claim(radioId),
+    mutationFn: () => radiosAPI.claimByToken(token),
     onSuccess: () => {
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 3000);

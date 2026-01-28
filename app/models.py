@@ -831,6 +831,49 @@ class RadioModel(db.Model):
         else:
             return {"error": "object.not.found"}
 
+    def generate_claim_token(self):
+        """
+        Generate a base64 claim token from mac|name|createdAt.
+        This provides a non-guessable URL for claiming radios.
+        """
+        import base64
+        # Format: mac|name|createdAt_timestamp
+        created_ts = int(self.createdAt.timestamp()) if self.createdAt else 0
+        token_data = f"{self.mac or ''}|{self.name}|{created_ts}"
+        return base64.urlsafe_b64encode(token_data.encode()).decode()
+
+    @staticmethod
+    def get_by_claim_token(token):
+        """
+        Decode a claim token and find the matching radio.
+        Returns the radio if found and token is valid, None otherwise.
+        """
+        import base64
+        try:
+            token_data = base64.urlsafe_b64decode(token.encode()).decode()
+            parts = token_data.split('|')
+            if len(parts) != 3:
+                return None
+            mac, name, created_ts = parts
+
+            # Find radio by mac and name
+            radio = RadioModel.query.filter_by(mac=mac if mac else None, name=name).first()
+            if not radio:
+                # Try finding by name alone if mac is empty
+                if not mac:
+                    radio = RadioModel.query.filter_by(name=name).first()
+                if not radio:
+                    return None
+
+            # Verify createdAt timestamp matches
+            radio_ts = int(radio.createdAt.timestamp()) if radio.createdAt else 0
+            if str(radio_ts) != created_ts:
+                return None
+
+            return radio
+        except Exception:
+            return None
+
 
 class PendingRegistrationModel(db.Model):
     """

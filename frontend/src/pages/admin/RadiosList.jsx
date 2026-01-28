@@ -67,12 +67,15 @@ function RadiosList() {
   const claimRadioEnabled = settingsData?.claim_radio_enabled || false;
 
   const copyClaimUrl = async (radioId) => {
-    const claimUrl = `${FRONTEND_URL}/claim-radio/${radioId}`;
     try {
+      // Get the claim token from the API
+      const response = await radiosAPI.getClaimToken(radioId);
+      const token = response.data.claim_token;
+      const claimUrl = `${FRONTEND_URL}/claim-radio/${token}`;
       await navigator.clipboard.writeText(claimUrl);
       // Brief visual feedback could be added here
     } catch (err) {
-      showError('Failed to copy URL to clipboard');
+      showError(err.response?.data?.error || 'Failed to copy URL to clipboard');
     }
   };
 

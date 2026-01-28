@@ -87,6 +87,15 @@
   background-color: #c82333;
 }
 
+.btn-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-info:hover:not(:disabled) {
+  background-color: #138496;
+}
+
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
@@ -141,7 +150,14 @@
 
 .table-actions {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.table-actions .btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .pagination {

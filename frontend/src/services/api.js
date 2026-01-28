@@ -305,6 +305,18 @@ export const radiosAPI = {
   claim: (id) =>
     api.post(`/radios/${id}/claim`),
 
+  // Get claim token for a radio (admin only)
+  getClaimToken: (id) =>
+    api.get(`/radios/${id}/claim-token`),
+
+  // Get radio info by claim token
+  getByClaimToken: (token) =>
+    api.get(`/radios/claim-by-token/${encodeURIComponent(token)}`),
+
+  // Claim a radio by token
+  claimByToken: (token) =>
+    api.post(`/radios/claim-by-token/${encodeURIComponent(token)}`),
+
   enroll: (data) =>
     api.post('/radios/enroll', data),
 

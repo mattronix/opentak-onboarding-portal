@@ -205,7 +205,7 @@ function App() {
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="announcements" element={<AnnouncementHistory />} />
               <Route path="approvals" element={<Approvals />} />
-              <Route path="claim-radio/:radioId" element={<ClaimRadio />} />
+              <Route path="claim-radio/:token" element={<ClaimRadio />} />
 
               {/* Admin routes */}
               <Route

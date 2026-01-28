@@ -269,7 +269,7 @@ class MeshtasticSerialService {
               ...this.deviceInfo,
               shortName: user.shortName || this.deviceInfo?.shortName,
               longName: user.longName || this.deviceInfo?.longName,
-              macAddr: this._formatMacFromBytes(user.macaddr) || this._formatMacFromBytes(user.macAddr) || user.id || this.deviceInfo?.macAddr,
+              macAddr: this._formatMacFromBytes(user.macaddr) || this._formatMacFromBytes(user.macAddr) || this._formatMacFromBytes(user.id) || this.deviceInfo?.macAddr,
               hwModel: user.hwModel || this.deviceInfo?.hwModel,
             };
             this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}"`, 'success');
@@ -1428,9 +1428,15 @@ class MeshtasticSerialService {
 
     // Already formatted string
     if (typeof macaddr === 'string') {
+      // Already a proper MAC format like "E5:5D:13:9B:01:22"
+      if (/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test(macaddr.trim())) {
+        return macaddr.trim().toUpperCase();
+      }
       // Check if it looks like comma-separated numbers (raw bytes as string)
-      if (/^\d+,\d+,\d+,\d+,\d+,\d+$/.test(macaddr)) {
-        const parts = macaddr.split(',').map(n => parseInt(n, 10));
+      // Handle optional whitespace around commas
+      const cleaned = macaddr.replace(/\s+/g, '');
+      if (/^\d+,\d+,\d+,\d+,\d+,\d+/.test(cleaned)) {
+        const parts = cleaned.split(',').map(n => parseInt(n, 10));
         if (parts.length >= 6) {
           return parts.slice(0, 6).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
         }
@@ -1467,7 +1473,7 @@ class MeshtasticSerialService {
     }
 
     // Last resort: stringify and check for comma-separated numbers
-    const str = String(macaddr);
+    const str = String(macaddr).replace(/\s+/g, '');
     if (/^\d+,\d+,\d+,\d+,\d+,\d+/.test(str)) {
       const parts = str.split(',').map(n => parseInt(n, 10));
       if (parts.length >= 6) {
@@ -1475,6 +1481,8 @@ class MeshtasticSerialService {
       }
     }
 
+    // Debug: log what we couldn't parse
+    console.warn('[_formatMacFromBytes] Could not parse MAC:', macaddr, typeof macaddr);
     return null;
   }
 }
