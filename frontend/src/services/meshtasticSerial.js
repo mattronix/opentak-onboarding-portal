@@ -210,26 +210,21 @@ class MeshtasticSerialService {
 
         this._log(`User packet from node ${fromNode}: shortName="${data?.shortName}", longName="${data?.longName}"`, 'info');
 
-        // Accept the first user packet we receive (should be our device) OR
-        // if we have our nodeNum, only accept packets from our node
-        const isFirstPacket = !this.hasReceivedUserInfo;
+        // Only accept packets from our own node - never from other mesh nodes
         const isOurNode = this.deviceInfo?.nodeNum && fromNode === this.deviceInfo?.nodeNum;
 
-        if (data && (data.shortName || data.longName) && (isFirstPacket || isOurNode)) {
-          // Format MAC address from bytes object
-          let macAddr = this.deviceInfo?.macAddr;
-          if (data.macaddr) {
-            macAddr = this._formatMacFromBytes(data.macaddr);
-          }
+        if (data && (data.shortName || data.longName) && isOurNode) {
+          // Only use actual macaddr field from device - never fallback
+          const macFromDevice = data.macaddr ? this._formatMacFromBytes(data.macaddr) : null;
 
           this.deviceInfo = {
             ...this.deviceInfo,
             shortName: data.shortName || this.deviceInfo?.shortName,
             longName: data.longName || this.deviceInfo?.longName,
-            macAddr: macAddr,
+            macAddr: macFromDevice || this.deviceInfo?.macAddr,
             hwModel: data.hwModel || this.deviceInfo?.hwModel,
           };
-          this._log(`Updated deviceInfo: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}"`, 'success');
+          this._log(`Updated deviceInfo: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}", mac="${this.deviceInfo.macAddr}"`, 'success');
 
           // Mark that we've received user info (prevents other nodes overwriting)
           if (!this.hasReceivedUserInfo) {
@@ -239,8 +234,8 @@ class MeshtasticSerialService {
               this.onDeviceInfoReceived(this.deviceInfo);
             }
           }
-        } else if (!isFirstPacket && !isOurNode) {
-          this._log(`Ignoring user packet from other node ${fromNode}`, 'info');
+        } else if (!isOurNode) {
+          this._log(`Ignoring user packet from other node ${fromNode} (our node: ${this.deviceInfo?.nodeNum})`, 'info');
         }
       });
 
@@ -263,16 +258,21 @@ class MeshtasticSerialService {
             user = nodeInfoPacket.data.user;
           }
 
-          if (user && (user.shortName || user.longName) && (isFirstPacket || isOurNode)) {
-            this._log(`Node info for node ${nodeNum}: shortName="${user.shortName}", longName="${user.longName}"`, 'info');
+          // Only capture data from our own node - never accept from other mesh nodes
+          if (user && (user.shortName || user.longName) && isOurNode) {
+            this._log(`Node info for OUR node ${nodeNum}: shortName="${user.shortName}", longName="${user.longName}"`, 'info');
+
+            // Only use actual macaddr field - never fallback to user.id which may be something else
+            const macFromDevice = this._formatMacFromBytes(user.macaddr) || this._formatMacFromBytes(user.macAddr);
+
             this.deviceInfo = {
               ...this.deviceInfo,
               shortName: user.shortName || this.deviceInfo?.shortName,
               longName: user.longName || this.deviceInfo?.longName,
-              macAddr: this._formatMacFromBytes(user.macaddr) || this._formatMacFromBytes(user.macAddr) || this._formatMacFromBytes(user.id) || this.deviceInfo?.macAddr,
+              macAddr: macFromDevice || this.deviceInfo?.macAddr,
               hwModel: user.hwModel || this.deviceInfo?.hwModel,
             };
-            this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}"`, 'success');
+            this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}", mac="${this.deviceInfo.macAddr}"`, 'success');
 
             // Mark that we've received user info
             if (!this.hasReceivedUserInfo) {
@@ -282,8 +282,8 @@ class MeshtasticSerialService {
                 this.onDeviceInfoReceived(this.deviceInfo);
               }
             }
-          } else if (user && !isFirstPacket && !isOurNode) {
-            this._log(`Ignoring nodeInfoPacket from other node ${nodeNum}`, 'info');
+          } else if (user && !isOurNode) {
+            this._log(`Ignoring nodeInfoPacket from other node ${nodeNum} (our node: ${this.deviceInfo?.nodeNum})`, 'info');
           }
         });
       }
@@ -296,16 +296,19 @@ class MeshtasticSerialService {
             const nodeInfo = packet.payloadVariant?.value || packet.nodeInfo;
             const nodeNum = nodeInfo?.num;
 
-            // Only use info from our own node
-            const isOurNode = !this.deviceInfo?.nodeNum || nodeNum === this.deviceInfo?.nodeNum;
+            // Only use info from our own node - must know our nodeNum first
+            const isOurNode = this.deviceInfo?.nodeNum && nodeNum === this.deviceInfo?.nodeNum;
 
             if (nodeInfo?.user && isOurNode) {
+              // Only use actual macaddr field from device
+              const macFromDevice = this._formatMacFromBytes(nodeInfo.user.macaddr) || this._formatMacFromBytes(nodeInfo.user.macAddr);
+
               this._log(`FromRadio nodeInfo (our node ${nodeNum}): shortName="${nodeInfo.user.shortName}", longName="${nodeInfo.user.longName}"`, 'info');
               this.deviceInfo = {
                 ...this.deviceInfo,
                 shortName: nodeInfo.user.shortName || this.deviceInfo?.shortName,
                 longName: nodeInfo.user.longName || this.deviceInfo?.longName,
-                macAddr: this._formatMacFromBytes(nodeInfo.user.macaddr) || this._formatMacFromBytes(nodeInfo.user.macAddr) || this.deviceInfo?.macAddr,
+                macAddr: macFromDevice || this.deviceInfo?.macAddr,
                 hwModel: nodeInfo.user.hwModel || this.deviceInfo?.hwModel,
               };
             }
@@ -318,16 +321,19 @@ class MeshtasticSerialService {
         this.device.events.onConfigComplete.subscribe(() => {
           this._log('Config complete, checking final device state...', 'info');
           this.configComplete = true;
-          // Try to get info from device nodes if available
+          // Try to get info from device nodes if available (only our own node)
           if (this.device.nodes && this.deviceInfo?.nodeNum) {
             const myNode = this.device.nodes.get(this.deviceInfo.nodeNum);
             if (myNode?.user) {
-              this._log(`Config complete - our node: shortName="${myNode.user.shortName}", longName="${myNode.user.longName}"`, 'success');
+              // Only use actual macaddr field from device
+              const macFromDevice = this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr);
+
+              this._log(`Config complete - our node: shortName="${myNode.user.shortName}", longName="${myNode.user.longName}", mac="${macFromDevice}"`, 'success');
               this.deviceInfo = {
                 ...this.deviceInfo,
                 shortName: myNode.user.shortName || this.deviceInfo?.shortName,
                 longName: myNode.user.longName || this.deviceInfo?.longName,
-                macAddr: this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr) || this.deviceInfo?.macAddr,
+                macAddr: macFromDevice || this.deviceInfo?.macAddr,
                 hwModel: myNode.user.hwModel || this.deviceInfo?.hwModel,
               };
             }
