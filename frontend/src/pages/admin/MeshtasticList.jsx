@@ -13,7 +13,7 @@ function MeshtasticList() {
   const [error, setError] = useState('');
   const [syncing, setSyncing] = useState(false);
 
-  const { data: configsData, isLoading } = useQuery({
+  const { data: configsData, isLoading, error: configsError } = useQuery({
     queryKey: ['meshtasticAdmin'],
     queryFn: async () => {
       const response = await meshtasticAPI.getAllAdmin();
@@ -32,7 +32,7 @@ function MeshtasticList() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => meshtasticAPI.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['meshtastic']);
+      queryClient.invalidateQueries(['meshtasticAdmin']);
       setShowModal(false);
       resetForm();
     },
@@ -41,14 +41,14 @@ function MeshtasticList() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => meshtasticAPI.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['meshtastic']),
+    onSuccess: () => queryClient.invalidateQueries(['meshtasticAdmin']),
     onError: (err) => showError(err.response?.data?.error || 'Failed to delete config'),
   });
 
   const syncToOtsMutation = useMutation({
     mutationFn: (id) => meshtasticAPI.syncToOts(id),
     onSuccess: (response) => {
-      queryClient.invalidateQueries(['meshtastic']);
+      queryClient.invalidateQueries(['meshtasticAdmin']);
       if (response.data.warning) {
         showError(response.data.warning);
       } else {
@@ -63,7 +63,7 @@ function MeshtasticList() {
     try {
       const response = await meshtasticAPI.syncFromOts();
       const { created, updated, errors } = response.data;
-      queryClient.invalidateQueries(['meshtastic']);
+      queryClient.invalidateQueries(['meshtasticAdmin']);
       if (errors?.length) {
         showError(`Sync issues: ${errors.join(', ')}`);
       } else {
@@ -90,6 +90,17 @@ function MeshtasticList() {
   };
 
   if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+
+  // Show API errors if any
+  if (configsError) {
+    return (
+      <div className="admin-page">
+        <div className="alert alert-error">
+          Failed to load channels: {configsError.response?.data?.error || configsError.message}
+        </div>
+      </div>
+    );
+  }
 
   const configs = configsData?.configs || [];
 

@@ -106,15 +106,19 @@ def get_all_meshtastic_configs_admin():
 @jwt_required()
 def get_meshtastic_config(config_id):
     """Get Meshtastic config by ID"""
+    from app.rbac import has_any_role
+
     config = MeshtasticModel.get_by_id(config_id)
     if not config:
         return jsonify({'error': 'Meshtastic config not found'}), 404
 
-    # Check access (admin status does NOT grant automatic access)
-    current_user_id = int(get_jwt_identity())
-    user = UserModel.get_user_by_id(current_user_id)
+    # Admins can access any config
+    is_admin = has_any_role(['administrator', 'meshtastic_admin'])
 
-    if not config.isPublic:
+    if not is_admin and not config.isPublic:
+        current_user_id = int(get_jwt_identity())
+        user = UserModel.get_user_by_id(current_user_id)
+
         user_role_ids = [r.id for r in user.roles] if user else []
         config_role_ids = [r.id for r in config.roles]
 

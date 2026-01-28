@@ -106,15 +106,19 @@ def get_all_meshtastic_groups_admin():
 @jwt_required()
 def get_meshtastic_group(group_id):
     """Get Meshtastic channel group by ID"""
+    from app.rbac import has_any_role
+
     group = MeshtasticChannelGroup.get_by_id(group_id)
     if not group:
         return jsonify({'error': 'Channel group not found'}), 404
 
-    # Check access (admin status does NOT grant automatic access)
-    current_user_id = int(get_jwt_identity())
-    user = UserModel.get_user_by_id(current_user_id)
+    # Admins can access any group
+    is_admin = has_any_role(['administrator', 'meshtastic_admin'])
 
-    if not group.isPublic:
+    if not is_admin and not group.isPublic:
+        current_user_id = int(get_jwt_identity())
+        user = UserModel.get_user_by_id(current_user_id)
+
         # Check direct assignment
         has_direct_access = group in user.meshtastic_groups if user else False
 

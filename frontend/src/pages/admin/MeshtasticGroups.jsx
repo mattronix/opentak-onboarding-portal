@@ -17,7 +17,7 @@ function MeshtasticGroups() {
   const [error, setError] = useState('');
 
   // Fetch groups (admin endpoint returns all groups)
-  const { data: groupsData, isLoading } = useQuery({
+  const { data: groupsData, isLoading, error: groupsError } = useQuery({
     queryKey: ['meshtasticGroupsAdmin'],
     queryFn: async () => {
       const response = await meshtasticGroupsAPI.getAllAdmin();
@@ -26,7 +26,7 @@ function MeshtasticGroups() {
   });
 
   // Fetch all channels (channels can now be in multiple groups)
-  const { data: allChannelsData } = useQuery({
+  const { data: allChannelsData, error: channelsError } = useQuery({
     queryKey: ['meshtasticAdmin'],
     queryFn: async () => {
       const response = await meshtasticAPI.getAllAdmin();
@@ -156,6 +156,17 @@ function MeshtasticGroups() {
   };
 
   if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+
+  // Show API errors if any
+  if (groupsError) {
+    return (
+      <div className="admin-page">
+        <div className="alert alert-error">
+          Failed to load channel groups: {groupsError.response?.data?.error || groupsError.message}
+        </div>
+      </div>
+    );
+  }
 
   const groups = groupsData?.groups || [];
   const allChannels = allChannelsData?.configs || [];
