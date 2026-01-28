@@ -83,6 +83,7 @@ def get_settings():
         # Radio settings
         'claim_radio_enabled': get_bool_setting('claim_radio_enabled', False),
         'user_program_radio_enabled': get_bool_setting('user_program_radio_enabled', False),
+        'user_validate_radio_enabled': get_bool_setting('user_validate_radio_enabled', False),
         'user_radio_enrollment_enabled': get_bool_setting('user_radio_enrollment_enabled', False),
     }
 

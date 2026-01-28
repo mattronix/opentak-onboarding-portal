@@ -30,6 +30,11 @@ class MeshtasticSerialService {
     this.onDeviceInfoReceived = null; // Callback for instant form update
     this.onLog = null; // Callback for terminal log output
     this.hasReceivedUserInfo = false; // Flag to track if we've received our device's user info
+    this.lastPort = null; // Track last used port for cleanup
+    // Collected config data from events
+    this.collectedChannels = new Map();
+    this.collectedConfig = {};
+    this.configComplete = false;
   }
 
   /**
@@ -89,10 +94,24 @@ class MeshtasticSerialService {
       try {
         await this.disconnect();
         // Brief delay to ensure port is fully released
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (e) {
         // Ignore cleanup errors
       }
+    }
+
+    // Try to close any previously used port (but don't forget it - keep browser permission)
+    if (this.lastPort) {
+      try {
+        if (this.lastPort.readable || this.lastPort.writable) {
+          await this.lastPort.close().catch(() => {});
+          // Wait a bit for the port to fully close
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      } catch (e) {
+        // Port may already be closed
+      }
+      this.lastPort = null;
     }
 
     this.onStatusChange = onStatusChange;
@@ -100,6 +119,10 @@ class MeshtasticSerialService {
     this.onDeviceInfoReceived = onDeviceInfoReceived;
     this.onLog = onLog;
     this.hasReceivedUserInfo = false; // Reset flag for new connection
+    // Reset collected config data
+    this.collectedChannels = new Map();
+    this.collectedConfig = {};
+    this.configComplete = false;
 
     try {
       this._updateStatus('connecting', 'Requesting USB port...');
@@ -107,6 +130,10 @@ class MeshtasticSerialService {
 
       // Create transport (this will prompt user to select the serial port)
       this.transport = await TransportWebSerial.create(115200);
+      // Store port reference for cleanup
+      if (this.transport?.port) {
+        this.lastPort = this.transport.port;
+      }
       this._log('Serial port opened at 115200 baud', 'success');
 
       // Create the MeshDevice with the transport
@@ -242,7 +269,7 @@ class MeshtasticSerialService {
               ...this.deviceInfo,
               shortName: user.shortName || this.deviceInfo?.shortName,
               longName: user.longName || this.deviceInfo?.longName,
-              macAddr: user.macaddr || user.macAddr || user.id || this.deviceInfo?.macAddr,
+              macAddr: this._formatMacFromBytes(user.macaddr) || this._formatMacFromBytes(user.macAddr) || user.id || this.deviceInfo?.macAddr,
               hwModel: user.hwModel || this.deviceInfo?.hwModel,
             };
             this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}"`, 'success');
@@ -278,7 +305,7 @@ class MeshtasticSerialService {
                 ...this.deviceInfo,
                 shortName: nodeInfo.user.shortName || this.deviceInfo?.shortName,
                 longName: nodeInfo.user.longName || this.deviceInfo?.longName,
-                macAddr: nodeInfo.user.macaddr || nodeInfo.user.macAddr || this.deviceInfo?.macAddr,
+                macAddr: this._formatMacFromBytes(nodeInfo.user.macaddr) || this._formatMacFromBytes(nodeInfo.user.macAddr) || this.deviceInfo?.macAddr,
                 hwModel: nodeInfo.user.hwModel || this.deviceInfo?.hwModel,
               };
             }
@@ -290,6 +317,7 @@ class MeshtasticSerialService {
       if (this.device.events.onConfigComplete) {
         this.device.events.onConfigComplete.subscribe(() => {
           this._log('Config complete, checking final device state...', 'info');
+          this.configComplete = true;
           // Try to get info from device nodes if available
           if (this.device.nodes && this.deviceInfo?.nodeNum) {
             const myNode = this.device.nodes.get(this.deviceInfo.nodeNum);
@@ -299,11 +327,53 @@ class MeshtasticSerialService {
                 ...this.deviceInfo,
                 shortName: myNode.user.shortName || this.deviceInfo?.shortName,
                 longName: myNode.user.longName || this.deviceInfo?.longName,
-                macAddr: myNode.user.macaddr || myNode.user.macAddr || this.deviceInfo?.macAddr,
+                macAddr: this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr) || this.deviceInfo?.macAddr,
                 hwModel: myNode.user.hwModel || this.deviceInfo?.hwModel,
               };
             }
           }
+        });
+      }
+
+      // Subscribe to channel events to collect channel data
+      if (this.device.events.onChannelPacket) {
+        this.device.events.onChannelPacket.subscribe((channelPacket) => {
+          const channel = channelPacket.data || channelPacket;
+          const index = channel.index ?? channelPacket.index;
+          this._log(`Received channel ${index}: "${channel.settings?.name || channel.name || '(unnamed)'}"`, 'info');
+          console.log(`[onChannelPacket] Channel ${index}:`, channel);
+          this.collectedChannels.set(index, channel);
+        });
+      }
+
+      // Subscribe to config events to collect device config
+      if (this.device.events.onConfigPacket) {
+        this.device.events.onConfigPacket.subscribe((configPacket) => {
+          const config = configPacket.data || configPacket;
+          console.log('[onConfigPacket] Config packet:', config);
+          // Config comes in sections via payloadVariant
+          if (config.payloadVariant) {
+            const section = config.payloadVariant.case;
+            const value = config.payloadVariant.value;
+            this._log(`Received config: ${section}`, 'info');
+            console.log(`[onConfigPacket] Section ${section}:`, value);
+            this.collectedConfig[section] = value;
+          }
+        });
+      }
+
+      // Also try onLocalConfig if available
+      if (this.device.events.onLocalConfig) {
+        this.device.events.onLocalConfig.subscribe((localConfig) => {
+          console.log('[onLocalConfig] Local config:', localConfig);
+          // Merge into collectedConfig
+          if (localConfig.device) this.collectedConfig.device = localConfig.device;
+          if (localConfig.lora) this.collectedConfig.lora = localConfig.lora;
+          if (localConfig.bluetooth) this.collectedConfig.bluetooth = localConfig.bluetooth;
+          if (localConfig.position) this.collectedConfig.position = localConfig.position;
+          if (localConfig.power) this.collectedConfig.power = localConfig.power;
+          if (localConfig.network) this.collectedConfig.network = localConfig.network;
+          if (localConfig.display) this.collectedConfig.display = localConfig.display;
         });
       }
 
@@ -357,6 +427,17 @@ class MeshtasticSerialService {
       this.isConnected = false;
       this._log(`Error: ${error.message}`, 'error');
       this._updateStatus('error', `Connection failed: ${error.message}`);
+
+      // Provide more helpful error message for common issues
+      if (error.message.includes('Failed to open serial port')) {
+        const helpfulError = new Error(
+          'Failed to open serial port. Try: 1) Unplug and replug the radio, ' +
+          '2) Close other apps using the port, 3) Refresh the page. ' +
+          'Original error: ' + error.message
+        );
+        throw helpfulError;
+      }
+
       throw error;
     }
   }
@@ -435,7 +516,7 @@ class MeshtasticSerialService {
             ...this.deviceInfo,
             shortName: myNode.user.shortName || this.deviceInfo.shortName,
             longName: myNode.user.longName || this.deviceInfo.longName,
-            macAddr: myNode.user.macaddr || myNode.user.macAddr || this.deviceInfo.macAddr,
+            macAddr: this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr) || this.deviceInfo.macAddr,
             hwModel: myNode.user.hwModel || this.deviceInfo.hwModel,
           };
         }
@@ -450,7 +531,7 @@ class MeshtasticSerialService {
             ...this.deviceInfo,
             shortName: firstNode.user.shortName || this.deviceInfo?.shortName,
             longName: firstNode.user.longName || this.deviceInfo?.longName,
-            macAddr: firstNode.user.macaddr || firstNode.user.macAddr || this.deviceInfo?.macAddr,
+            macAddr: this._formatMacFromBytes(firstNode.user.macaddr) || this._formatMacFromBytes(firstNode.user.macAddr) || this.deviceInfo?.macAddr,
             hwModel: firstNode.user.hwModel || this.deviceInfo?.hwModel,
           };
         }
@@ -467,7 +548,7 @@ class MeshtasticSerialService {
         ...this.deviceInfo,
         shortName: this.device.user.shortName || this.deviceInfo?.shortName,
         longName: this.device.user.longName || this.deviceInfo?.longName,
-        macAddr: this.device.user.macaddr || this.device.user.macAddr || this.deviceInfo?.macAddr,
+        macAddr: this._formatMacFromBytes(this.device.user.macaddr) || this._formatMacFromBytes(this.device.user.macAddr) || this.deviceInfo?.macAddr,
       };
     }
 
@@ -488,46 +569,54 @@ class MeshtasticSerialService {
     const shouldLog = !!this.onLog;
     if (shouldLog) this._log('Disconnecting...', 'info');
 
-    // First try to close the device gracefully
-    if (this.device) {
-      try {
-        // Give the device a moment to finish any pending operations
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (e) {
-        console.error('Error closing device:', e);
-      }
-    }
-
     // Save port reference before disconnecting transport
     let port = null;
     if (this.transport?.port) {
       port = this.transport.port;
+      this.lastPort = port; // Keep reference for future cleanup attempts
     }
 
+    // First try to close the transport
     if (this.transport) {
       try {
         await this.transport.disconnect();
       } catch (e) {
         // Locked stream errors are common and can be ignored
-        if (!e.message?.includes('locked stream') && !e.message?.includes('locked')) {
+        if (!e.message?.includes('locked') && !e.message?.includes('stream')) {
           console.error('Error disconnecting transport:', e);
         }
       }
     }
 
-    // Try to forget the port to fully release it
+    // Try to close the port directly if transport disconnect didn't work
     if (port) {
       try {
-        await port.forget();
+        // Check if port is still open and close it
+        if (port.readable || port.writable) {
+          await port.close().catch(() => {});
+        }
       } catch (e) {
-        // Port may already be closed or forget not supported
+        // Port may already be closed
       }
+      // Keep the port reference for potential cleanup, but clear lastPort
+      // Don't call forget() - it revokes browser permission and causes issues
+      this.lastPort = null;
     }
 
+    // Clear all references
     this.device = null;
     this.transport = null;
     this.isConnected = false;
     this.deviceInfo = null;
+    this.hasReceivedUserInfo = false;
+    // Reset collected config data
+    this.collectedChannels = new Map();
+    this.collectedConfig = {};
+    this.configComplete = false;
+
+    // Brief delay to ensure OS releases the port
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     if (shouldLog) {
       this._log('Disconnected', 'success');
       this._updateStatus('disconnected', 'Disconnected from radio');
@@ -539,6 +628,263 @@ class MeshtasticSerialService {
    */
   getDeviceInfo() {
     return this.deviceInfo;
+  }
+
+  /**
+   * Read the current configuration from the connected radio
+   * Returns owner info, channels, and device config
+   */
+  async readCurrentConfig() {
+    if (!this.isConnected || !this.device) {
+      throw new Error('Not connected to radio');
+    }
+
+    this._log('Reading current configuration from radio...', 'info');
+
+    const config = {
+      owner: {
+        shortName: this.deviceInfo?.shortName || '',
+        longName: this.deviceInfo?.longName || '',
+      },
+      channels: [],
+      deviceConfig: {},
+    };
+
+    try {
+      // Wait for configure() to complete and for events to deliver data
+      let waitTime = 0;
+      const maxWait = 15000;
+      const pollInterval = 500;
+
+      // Wait for configComplete or for collected data to appear
+      while (!this.configComplete && this.collectedChannels.size === 0 && waitTime < maxWait) {
+        this._log(`Waiting for config data... (${waitTime}ms)`, 'info');
+        await this._delay(pollInterval);
+        waitTime += pollInterval;
+      }
+
+      // Give a bit more time for all config packets to arrive
+      await this._delay(1000);
+
+      // Debug: log collected data
+      this._log(`Collected ${this.collectedChannels.size} channels, config keys: ${Object.keys(this.collectedConfig).join(', ') || '(none)'}`, 'info');
+      console.log('[readCurrentConfig] collectedChannels:', this.collectedChannels);
+      console.log('[readCurrentConfig] collectedConfig:', this.collectedConfig);
+
+      // Build channels from collected data
+      if (this.collectedChannels.size > 0) {
+        this._log(`Processing ${this.collectedChannels.size} channels...`, 'info');
+        this.collectedChannels.forEach((channel, index) => {
+          console.log(`[readCurrentConfig] Processing channel ${index}:`, channel);
+
+          let name = '';
+          let role = index === 0 ? 'PRIMARY' : 'SECONDARY';
+          let psk = '';
+
+          // Try to get settings from various structures
+          const settings = channel.settings || channel;
+          if (settings) {
+            name = settings.name || '';
+            if (settings.psk) {
+              psk = this._formatPskForDisplay(settings.psk);
+            }
+          }
+
+          if (channel.role !== undefined) {
+            role = this._getChannelRoleName(channel.role);
+          }
+
+          const channelInfo = {
+            slot_number: index,
+            name: name,
+            role: role,
+            psk: psk,
+          };
+          config.channels.push(channelInfo);
+          this._log(`Channel ${index}: "${channelInfo.name}" (${channelInfo.role})`, 'info');
+        });
+      } else {
+        this._log('No channels collected from device', 'warn');
+      }
+
+      // Sort channels by slot number
+      config.channels.sort((a, b) => a.slot_number - b.slot_number);
+
+      // Build device config from collected data
+      if (Object.keys(this.collectedConfig).length > 0) {
+        this._log('Processing collected device config...', 'info');
+
+        if (this.collectedConfig.device) {
+          const deviceSection = this.collectedConfig.device;
+          config.deviceConfig.device = {
+            role: this._getDeviceRoleName(deviceSection.role),
+            serialEnabled: deviceSection.serialEnabled,
+            debugLogEnabled: deviceSection.debugLogEnabled,
+          };
+          this._log(`Device role: ${config.deviceConfig.device.role}`, 'info');
+        }
+
+        if (this.collectedConfig.lora) {
+          const loraSection = this.collectedConfig.lora;
+          config.deviceConfig.lora = {
+            region: this._getRegionName(loraSection.region),
+            modemPreset: this._getModemPresetName(loraSection.modemPreset),
+            txPower: loraSection.txPower,
+            hopLimit: loraSection.hopLimit,
+            txEnabled: loraSection.txEnabled,
+            overrideDutyCycle: loraSection.overrideDutyCycle,
+            configOkToMqtt: loraSection.configOkToMqtt,
+          };
+          this._log(`LoRa preset: ${config.deviceConfig.lora.modemPreset}, hopLimit: ${config.deviceConfig.lora.hopLimit}`, 'info');
+        }
+
+        if (this.collectedConfig.position) {
+          const positionSection = this.collectedConfig.position;
+          config.deviceConfig.position = {
+            gpsEnabled: positionSection.gpsEnabled,
+            fixedPosition: positionSection.fixedPosition,
+            positionBroadcastSecs: positionSection.positionBroadcastSecs,
+          };
+        }
+
+        if (this.collectedConfig.bluetooth) {
+          const btSection = this.collectedConfig.bluetooth;
+          config.deviceConfig.bluetooth = {
+            enabled: btSection.enabled,
+            mode: btSection.mode,
+            fixedPin: btSection.fixedPin,
+          };
+          this._log(`Bluetooth enabled: ${config.deviceConfig.bluetooth.enabled}`, 'info');
+        }
+
+        if (this.collectedConfig.network) {
+          const netSection = this.collectedConfig.network;
+          config.deviceConfig.network = {
+            wifiEnabled: netSection.wifiEnabled,
+            wifiSsid: netSection.wifiSsid,
+          };
+        }
+
+        if (this.collectedConfig.display) {
+          const displaySection = this.collectedConfig.display;
+          config.deviceConfig.display = {
+            screenOnSecs: displaySection.screenOnSecs,
+            gpsFormat: displaySection.gpsFormat,
+          };
+        }
+
+        if (this.collectedConfig.power) {
+          const powerSection = this.collectedConfig.power;
+          config.deviceConfig.power = {
+            isPowerSaving: powerSection.isPowerSaving,
+            onBatteryShutdownAfterSecs: powerSection.onBatteryShutdownAfterSecs,
+          };
+        }
+      } else {
+        this._log('No device config collected', 'warn');
+      }
+
+      this._log('Configuration read complete', 'success');
+      return config;
+    } catch (error) {
+      this._log(`Error reading config: ${error.message}`, 'error');
+      throw new Error(`Failed to read configuration: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get channel role name from enum value
+   */
+  _getChannelRoleName(role) {
+    const roles = {
+      0: 'DISABLED',
+      1: 'PRIMARY',
+      2: 'SECONDARY',
+    };
+    if (typeof role === 'string') return role;
+    return roles[role] || `UNKNOWN(${role})`;
+  }
+
+  /**
+   * Format PSK bytes for display (hex string)
+   */
+  _formatPskForDisplay(psk) {
+    if (!psk || psk.length === 0) return '(none)';
+    if (psk.length === 1 && psk[0] === 0) return '(none)';
+    if (psk.length === 1 && psk[0] === 1) return '(default)';
+    // Show first 4 and last 4 bytes for longer keys
+    const bytes = Array.from(psk);
+    if (bytes.length <= 8) {
+      return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    const first = bytes.slice(0, 4).map(b => b.toString(16).padStart(2, '0')).join('');
+    const last = bytes.slice(-4).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${first}...${last}`;
+  }
+
+  /**
+   * Get device role name from enum value
+   */
+  _getDeviceRoleName(role) {
+    const roles = {
+      0: 'CLIENT',
+      1: 'CLIENT_MUTE',
+      2: 'ROUTER',
+      3: 'ROUTER_CLIENT',
+      4: 'REPEATER',
+      5: 'TRACKER',
+      6: 'SENSOR',
+      7: 'TAK',
+      8: 'CLIENT_HIDDEN',
+      9: 'LOST_AND_FOUND',
+      10: 'TAK_TRACKER',
+    };
+    return roles[role] || `UNKNOWN(${role})`;
+  }
+
+  /**
+   * Get region name from enum value
+   */
+  _getRegionName(region) {
+    const regions = {
+      0: 'UNSET',
+      1: 'US',
+      2: 'EU_433',
+      3: 'EU_868',
+      4: 'CN',
+      5: 'JP',
+      6: 'ANZ',
+      7: 'KR',
+      8: 'TW',
+      9: 'RU',
+      10: 'IN',
+      11: 'NZ_865',
+      12: 'TH',
+      13: 'LORA_24',
+      14: 'UA_433',
+      15: 'UA_868',
+      16: 'MY_433',
+      17: 'MY_919',
+      18: 'SG_923',
+    };
+    return regions[region] || `UNKNOWN(${region})`;
+  }
+
+  /**
+   * Get modem preset name from enum value
+   */
+  _getModemPresetName(preset) {
+    const presets = {
+      0: 'LONG_FAST',
+      1: 'LONG_SLOW',
+      2: 'VERY_LONG_SLOW',
+      3: 'MEDIUM_SLOW',
+      4: 'MEDIUM_FAST',
+      5: 'SHORT_SLOW',
+      6: 'SHORT_FAST',
+      7: 'LONG_MODERATE',
+    };
+    return presets[preset] || `UNKNOWN(${preset})`;
   }
 
   /**
@@ -554,7 +900,7 @@ class MeshtasticSerialService {
     }
 
     const { radio, channels, yamlConfig } = config;
-    const totalSteps = channels.length + (yamlConfig ? 1 : 0) + 1; // channels + yaml + owner
+    const totalSteps = channels.length + (yamlConfig ? 1 : 0) + 2; // channels + yaml + owner + reboot
     let currentStep = 0;
 
     try {
@@ -574,6 +920,10 @@ class MeshtasticSerialService {
         await this._applyYamlConfig(yamlConfig);
       }
 
+      // Step 4: Reboot the radio to apply changes
+      this._updateProgress(++currentStep, totalSteps, 'Rebooting radio to apply changes...');
+      await this._rebootRadio();
+
       this._updateProgress(totalSteps, totalSteps, 'Programming complete!');
       this._updateStatus('success', 'Radio programmed successfully');
 
@@ -581,6 +931,51 @@ class MeshtasticSerialService {
     } catch (error) {
       this._updateStatus('error', `Programming failed: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Reboot the radio to apply configuration changes
+   */
+  async _rebootRadio() {
+    try {
+      this._log('Sending reboot command...', 'info');
+
+      // The MeshDevice has a reboot method
+      if (this.device.reboot) {
+        await this.device.reboot(2); // 2 second delay before reboot
+      } else if (this.device.sendCommand) {
+        // Alternative: send admin command to reboot
+        const adminMessage = create(Protobuf.Admin.AdminMessageSchema, {
+          payloadVariant: {
+            case: 'rebootSeconds',
+            value: 2
+          }
+        });
+        await this.device.sendPacket(
+          adminMessage,
+          Protobuf.Portnums.PortNum.ADMIN_APP,
+          'self'
+        );
+      }
+
+      this._log('Reboot command sent, radio will restart...', 'success');
+
+      // Give some time for the command to be sent
+      await this._delay(500);
+
+    } catch (error) {
+      this._log(`Reboot error (non-fatal): ${error.message}`, 'warn');
+      // Don't throw - reboot failing shouldn't fail the whole operation
+      // The user can manually reboot if needed
+    }
+
+    // Always do a full cleanup after reboot attempt to release the port
+    try {
+      this._log('Releasing serial port...', 'info');
+      await this.disconnect();
+    } catch (e) {
+      // Ignore cleanup errors
     }
   }
 
@@ -1026,11 +1421,30 @@ class MeshtasticSerialService {
   }
 
   /**
-   * Format MAC address from bytes object like { 0: 197, 1: 253, ... }
+   * Format MAC address from bytes object like { 0: 197, 1: 253, ... } or Uint8Array
    */
   _formatMacFromBytes(macaddr) {
     if (!macaddr) return null;
-    if (typeof macaddr === 'string') return macaddr;
+
+    // Already formatted string
+    if (typeof macaddr === 'string') {
+      // Check if it looks like comma-separated numbers (raw bytes as string)
+      if (/^\d+,\d+,\d+,\d+,\d+,\d+$/.test(macaddr)) {
+        const parts = macaddr.split(',').map(n => parseInt(n, 10));
+        if (parts.length >= 6) {
+          return parts.slice(0, 6).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
+        }
+      }
+      return macaddr;
+    }
+
+    // Handle Uint8Array or regular array
+    if (macaddr instanceof Uint8Array || Array.isArray(macaddr)) {
+      const arr = Array.from(macaddr);
+      if (arr.length >= 6) {
+        return arr.slice(0, 6).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
+      }
+    }
 
     // Handle object with numeric keys { 0: 197, 1: 253, ... }
     const bytes = [];
@@ -1046,9 +1460,19 @@ class MeshtasticSerialService {
       return bytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
     }
 
-    // Fallback: try Array.from if it's array-like
-    if (macaddr.length === 6) {
-      return Array.from(macaddr).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
+    // Fallback: try Array.from if it's array-like (has length property)
+    if (macaddr.length >= 6) {
+      const arr = Array.from(macaddr);
+      return arr.slice(0, 6).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
+    }
+
+    // Last resort: stringify and check for comma-separated numbers
+    const str = String(macaddr);
+    if (/^\d+,\d+,\d+,\d+,\d+,\d+/.test(str)) {
+      const parts = str.split(',').map(n => parseInt(n, 10));
+      if (parts.length >= 6) {
+        return parts.slice(0, 6).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(':');
+      }
     }
 
     return null;

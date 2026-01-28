@@ -506,3 +506,160 @@ def get_program_config(radio_id):
         } if user else None,
         'unresolved_placeholders': unresolved
     }), 200
+
+
+@api_v1.route('/radios/<int:radio_id>/compare-config', methods=['POST'])
+@jwt_required()
+def compare_config(radio_id):
+    """
+    Compare current radio config with target config.
+    Input: {
+        channel_group_id: int,
+        current_config: {
+            owner: { shortName, longName },
+            channels: [{ slot_number, name, psk }]
+        }
+    }
+    Output: {
+        has_changes: bool,
+        diff: {
+            owner: [{ field, current, target, changed }],
+            channels: [{ slot, currentName, targetName, changed, hasUrl }]
+        },
+        target_config: { ... }
+    }
+    """
+    from app.rbac import has_any_role
+    current_user_id = int(get_jwt_identity())
+    is_admin = has_any_role(['administrator', 'radio_admin'])
+
+    radio = RadioModel.get_by_id(radio_id)
+    if not radio:
+        return jsonify({'error': 'Radio not found'}), 404
+
+    # Check access
+    if not is_admin:
+        user_program_enabled = SystemSettingsModel.get_setting('user_program_radio_enabled', False)
+        if user_program_enabled in [True, 'true', 'True']:
+            if radio.assignedTo != current_user_id and radio.owner != current_user_id:
+                return jsonify({'error': 'You are not assigned to this radio'}), 403
+        else:
+            return jsonify({'error': 'Radio config comparison is not enabled for users'}), 403
+
+    if radio.radioType != 'meshtastic':
+        return jsonify({'error': 'Radio is not a Meshtastic device'}), 400
+
+    data = request.get_json() or {}
+    channel_group_id = data.get('channel_group_id')
+    current_config = data.get('current_config', {})
+
+    if not channel_group_id:
+        return jsonify({'error': 'channel_group_id is required'}), 400
+
+    # Get target config
+    group = MeshtasticChannelGroup.get_by_id(channel_group_id)
+    if not group:
+        return jsonify({'error': 'Channel group not found'}), 404
+
+    # Get assigned user for callsign placeholder
+    user = None
+    if radio.assignedTo:
+        user = UserModel.get_user_by_id(radio.assignedTo)
+    elif radio.owner:
+        user = UserModel.get_user_by_id(radio.owner)
+
+    # Build target channels
+    target_channels = []
+    for membership in sorted(group.channel_memberships, key=lambda m: m.slot_number or 0):
+        channel = membership.channel
+        target_channels.append({
+            'slot_number': membership.slot_number,
+            'name': channel.name,
+            'url': channel.url
+        })
+
+    # Resolve YAML config placeholders
+    yaml_config, _ = resolve_placeholders(group.yamlConfig, radio, user)
+
+    # Build diff
+    diff = {
+        'owner': [],
+        'channels': [],
+        'has_yaml_config': bool(yaml_config)
+    }
+
+    # Owner diff
+    current_owner = current_config.get('owner', {})
+    current_short = current_owner.get('shortName', '')
+    current_long = current_owner.get('longName', '')
+    target_short = radio.shortName or ''
+    target_long = radio.longName or ''
+
+    diff['owner'].append({
+        'field': 'Short Name',
+        'current': current_short or '(empty)',
+        'target': target_short or '(empty)',
+        'changed': current_short != target_short
+    })
+    diff['owner'].append({
+        'field': 'Long Name',
+        'current': current_long or '(empty)',
+        'target': target_long or '(empty)',
+        'changed': current_long != target_long
+    })
+
+    # Channels diff
+    current_channels = current_config.get('channels', [])
+    current_by_slot = {ch.get('slot_number'): ch for ch in current_channels}
+
+    for target_ch in target_channels:
+        slot = target_ch['slot_number']
+        current_ch = current_by_slot.get(slot, {})
+        current_name = current_ch.get('name', '')
+        target_name = target_ch['name'] or ''
+
+        diff['channels'].append({
+            'slot': slot,
+            'currentName': current_name or '(empty)',
+            'targetName': target_name or '(empty)',
+            'changed': current_name != target_name,
+            'hasUrl': bool(target_ch.get('url'))
+        })
+
+    # Check for extra current channels not in target
+    target_slots = {ch['slot_number'] for ch in target_channels}
+    for current_ch in current_channels:
+        slot = current_ch.get('slot_number')
+        if slot not in target_slots and current_ch.get('name'):
+            diff['channels'].append({
+                'slot': slot,
+                'currentName': current_ch['name'],
+                'targetName': '(will be removed)',
+                'changed': True,
+                'removing': True
+            })
+
+    # Sort channels by slot
+    diff['channels'].sort(key=lambda x: x['slot'])
+
+    # Determine if there are any changes
+    has_changes = (
+        any(o['changed'] for o in diff['owner']) or
+        any(c['changed'] for c in diff['channels']) or
+        diff['has_yaml_config']
+    )
+
+    return jsonify({
+        'has_changes': has_changes,
+        'diff': diff,
+        'target_config': {
+            'radio': {
+                'id': radio.id,
+                'name': radio.name,
+                'shortName': radio.shortName,
+                'longName': radio.longName,
+            },
+            'channels': target_channels,
+            'yaml_config': yaml_config
+        }
+    }), 200

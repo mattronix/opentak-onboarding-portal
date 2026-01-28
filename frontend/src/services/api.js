@@ -317,6 +317,13 @@ export const radiosAPI = {
       channel_group_id: channelGroupId,
       channel_id: channelId
     }),
+
+  // Compare current radio config with target config
+  compareConfig: (id, { channelGroupId, currentConfig }) =>
+    api.post(`/radios/${id}/compare-config`, {
+      channel_group_id: channelGroupId,
+      current_config: currentConfig
+    }),
 };
 
 // Packages API

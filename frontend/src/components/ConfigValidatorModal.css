@@ -1,0 +1,496 @@
+.modal.config-validator-modal {
+  max-width: calc(100vw - 40px) !important;
+  width: calc(100vw - 40px) !important;
+  margin: 20px auto;
+}
+
+.validator-step {
+  padding: 16px 0;
+}
+
+.validator-step h3 {
+  margin-bottom: 12px;
+}
+
+.validator-step p {
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.validator-instructions {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+/* Diff Container */
+.diff-container {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 13px;
+}
+
+.diff-summary {
+  margin-bottom: 20px;
+}
+
+.diff-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.diff-status.changes {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+}
+
+.diff-status.match {
+  background: #d4edda;
+  border: 1px solid #28a745;
+  color: #155724;
+}
+
+.diff-icon {
+  font-size: 18px;
+}
+
+/* Diff Sections */
+.diff-section {
+  margin-bottom: 24px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.diff-section h4 {
+  margin: 0;
+  padding: 10px 16px;
+  background: #f6f8fa;
+  border-bottom: 1px solid #ddd;
+  font-size: 13px;
+  font-weight: 600;
+  color: #24292f;
+}
+
+/* Diff Table */
+.diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.diff-table th,
+.diff-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.diff-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #666;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.diff-table th.current {
+  background: #ffeef0;
+  color: #cb2431;
+}
+
+.diff-table th.target {
+  background: #e6ffed;
+  color: #22863a;
+}
+
+.diff-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.diff-table tr.unchanged td {
+  color: #666;
+}
+
+.diff-table tr.changed td {
+  font-weight: 500;
+}
+
+.diff-table tr.changed td.current {
+  background: #ffeef0;
+  color: #cb2431;
+}
+
+.diff-table tr.changed td.target {
+  background: #e6ffed;
+  color: #22863a;
+}
+
+/* Diff Markers */
+.diff-marker {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 3px;
+  margin-right: 8px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.diff-marker.remove {
+  background: #ffdce0;
+  color: #cb2431;
+}
+
+.diff-marker.add {
+  background: #cdffd8;
+  color: #22863a;
+}
+
+.has-key {
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+/* YAML Preview */
+.yaml-preview {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 16px;
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Reuse styles from ProgramRadioModal */
+.config-validator-modal .group-select {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.config-validator-modal .group-option {
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.config-validator-modal .group-option:hover {
+  border-color: var(--primary-color, #0066cc);
+  background: #f8f9fa;
+}
+
+.config-validator-modal .group-option.selected {
+  border-color: var(--primary-color, #0066cc);
+  background: #e7f3ff;
+}
+
+.config-validator-modal .group-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.config-validator-modal .group-details {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: #666;
+}
+
+.config-validator-modal .channel-count {
+  color: #0066cc;
+}
+
+.config-validator-modal .has-config {
+  background: #d4edda;
+  color: #155724;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+/* Connecting overlay */
+.config-validator-modal .connecting-overlay {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.config-validator-modal .connecting-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.config-validator-modal .connecting-header h3 {
+  margin: 0;
+  color: var(--primary-color, #0066cc);
+}
+
+.config-validator-modal .connecting-message {
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.config-validator-modal .programming-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e9ecef;
+  border-top-color: var(--primary-color, #0066cc);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Terminal */
+.config-validator-modal .scan-terminal {
+  margin-top: 20px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1e1e1e;
+  text-align: left;
+}
+
+.config-validator-modal .terminal-header {
+  background: #333;
+  color: #ccc;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.config-validator-modal .terminal-content {
+  padding: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.config-validator-modal .terminal-line {
+  display: flex;
+  gap: 8px;
+  color: #d4d4d4;
+}
+
+.config-validator-modal .terminal-line.error {
+  color: #f48771;
+}
+
+.config-validator-modal .terminal-line.success {
+  color: #89d185;
+}
+
+.config-validator-modal .terminal-line.info {
+  color: #9cdcfe;
+}
+
+.config-validator-modal .terminal-time {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.config-validator-modal .terminal-msg {
+  word-break: break-word;
+}
+
+/* No Config Warning */
+.no-config-warning {
+  text-align: center;
+  padding: 24px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+}
+
+.no-config-warning .warning-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.no-config-warning h3 {
+  color: #856404;
+  margin-bottom: 8px;
+}
+
+.no-config-warning p {
+  color: #856404;
+  margin-bottom: 16px;
+}
+
+.no-config-warning .alternative-options {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+  margin-top: 16px;
+}
+
+.no-config-warning .alternative-options h4 {
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.no-config-warning .alternative-options ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.no-config-warning .alternative-options li {
+  margin-bottom: 12px;
+}
+
+.no-config-warning .alternative-options li p {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.no-config-warning .alternative-options a {
+  color: #0066cc;
+}
+
+/* YAML Comparison */
+.yaml-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.yaml-panel {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.yaml-header {
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 1px solid #ddd;
+}
+
+.current-panel .yaml-header {
+  background: #ffeef0;
+  color: #cb2431;
+}
+
+.target-panel .yaml-header {
+  background: #e6ffed;
+  color: #22863a;
+}
+
+.yaml-content {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Line-by-line diff styling */
+.diff-line {
+  display: flex;
+  padding: 2px 8px;
+  min-height: 18px;
+}
+
+.diff-line .line-number {
+  color: #666;
+  width: 28px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 12px;
+  -webkit-user-select: none;
+  user-select: none;
+  border-right: 1px solid #333;
+  margin-right: 12px;
+}
+
+.diff-line .line-text {
+  white-space: pre;
+  flex: 1;
+}
+
+/* Unchanged lines */
+.diff-line.unchanged {
+  background: transparent;
+}
+
+/* Removed lines (current panel - red) */
+.current-panel .diff-line.removed {
+  background: rgba(248, 81, 73, 0.2);
+}
+
+.current-panel .diff-line.removed .line-text {
+  color: #f85149;
+}
+
+.current-panel .diff-line.removed .line-number {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.15);
+}
+
+/* Added lines (target panel - green) */
+.target-panel .diff-line.added {
+  background: rgba(63, 185, 80, 0.2);
+}
+
+.target-panel .diff-line.added .line-text {
+  color: #3fb950;
+}
+
+.target-panel .diff-line.added .line-number {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.15);
+}
+
+/* Empty lines (where other side has content) */
+.diff-line.empty {
+  background: rgba(128, 128, 128, 0.1);
+}
+
+.diff-line.empty .line-text {
+  color: #666;
+}
+
+/* Diff key column */
+.diff-table .diff-key {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: #0366d6;
+}
+
+/* Responsive - stack YAML panels on small screens */
+@media (max-width: 768px) {
+  .yaml-comparison {
+    grid-template-columns: 1fr;
+  }
+}

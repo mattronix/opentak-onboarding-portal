@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { meshtasticSerial } from '../services/meshtasticSerial';
 import ProgramRadioModal from '../components/ProgramRadioModal';
 import EnrollRadioModal from '../components/EnrollRadioModal';
+import ConfigValidatorModal from '../components/ConfigValidatorModal';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -17,6 +18,7 @@ function Dashboard() {
   const [copiedMeshtastic, setCopiedMeshtastic] = useState(null);
   const [expandedSteps, setExpandedSteps] = useState(new Set([0])); // First step expanded by default
   const [programmingRadio, setProgrammingRadio] = useState(null);
+  const [validatingRadio, setValidatingRadio] = useState(null);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
 
   // Step expansion helpers
@@ -519,23 +521,36 @@ function Dashboard() {
           {loadingRadios ? (
             <p>Loading radios...</p>
           ) : userRadios.length > 0 ? (
-            <div className="radios-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginBottom: '1rem' }}>
+            <div className="radios-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', marginBottom: '1rem' }}>
               {userRadios.map((radio) => (
-                <span
-                  key={radio.id}
-                  className={`radio-badge ${settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'clickable' : ''}`}
-                  onClick={() => {
-                    if (settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && meshtasticSerial.getBrowserSupport().isSupported) {
-                      setProgrammingRadio(radio);
-                    }
-                  }}
-                  title={settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'Click to program this radio' : undefined}
-                >
-                  {radio.name} ({radio.platform})
-                  {settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && (
-                    <span className="program-hint"> - Click to Program</span>
+                <div key={radio.id} className="radio-card">
+                  <div className="radio-info">
+                    <span className="radio-name">{radio.name}</span>
+                    <span className="radio-platform">{radio.platform}</span>
+                  </div>
+                  {radio.platform === 'meshtastic' && meshtasticSerial.getBrowserSupport().isSupported && (settings?.user_program_radio_enabled || settings?.user_validate_radio_enabled) && (
+                    <div className="radio-actions">
+                      {settings?.user_validate_radio_enabled && (
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => setValidatingRadio(radio)}
+                          title="Compare radio config with target"
+                        >
+                          Validate
+                        </button>
+                      )}
+                      {settings?.user_program_radio_enabled && (
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => setProgrammingRadio(radio)}
+                          title="Program radio with config"
+                        >
+                          Program
+                        </button>
+                      )}
+                    </div>
                   )}
-                </span>
+                </div>
               ))}
             </div>
           ) : (
@@ -633,6 +648,14 @@ function Dashboard() {
         <ProgramRadioModal
           radio={programmingRadio}
           onClose={() => setProgrammingRadio(null)}
+        />
+      )}
+
+      {/* Config Validator Modal */}
+      {validatingRadio && (
+        <ConfigValidatorModal
+          radio={validatingRadio}
+          onClose={() => setValidatingRadio(null)}
         />
       )}
 

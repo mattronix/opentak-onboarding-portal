@@ -4,6 +4,7 @@ import { radiosAPI, usersAPI, settingsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { meshtasticSerial } from '../../services/meshtasticSerial';
 import ProgramRadioModal from '../../components/ProgramRadioModal';
+import ConfigValidatorModal from '../../components/ConfigValidatorModal';
 import '../../components/AdminTable.css';
 
 const FRONTEND_URL = window.location.origin;
@@ -14,6 +15,8 @@ function RadiosList() {
   const [showModal, setShowModal] = useState(false);
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [programmingRadio, setProgrammingRadio] = useState(null);
+  const [showValidateModal, setShowValidateModal] = useState(false);
+  const [validatingRadio, setValidatingRadio] = useState(null);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -310,15 +313,26 @@ function RadiosList() {
                   <td>
                     <div className="table-actions">
                       {radio.platform === 'meshtastic' && (
-                        <button
-                          className="btn btn-sm btn-primary"
-                          onClick={() => {
-                            setProgrammingRadio(radio);
-                            setShowProgramModal(true);
-                          }}
-                        >
-                          Program
-                        </button>
+                        <>
+                          <button
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => {
+                              setValidatingRadio(radio);
+                              setShowValidateModal(true);
+                            }}
+                          >
+                            Validate
+                          </button>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => {
+                              setProgrammingRadio(radio);
+                              setShowProgramModal(true);
+                            }}
+                          >
+                            Program
+                          </button>
+                        </>
                       )}
                       {claimRadioEnabled && !radio.assignedTo && (
                         <button
@@ -510,6 +524,17 @@ function RadiosList() {
           onClose={() => {
             setShowProgramModal(false);
             setProgrammingRadio(null);
+          }}
+        />
+      )}
+
+      {/* Config Validator Modal */}
+      {showValidateModal && validatingRadio && (
+        <ConfigValidatorModal
+          radio={validatingRadio}
+          onClose={() => {
+            setShowValidateModal(false);
+            setValidatingRadio(null);
           }}
         />
       )}

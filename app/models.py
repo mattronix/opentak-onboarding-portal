@@ -1166,6 +1166,12 @@ class SystemSettingsModel(db.Model):
                 'description': 'Allow users to program their assigned radios from the dashboard'
             },
             {
+                'key': 'user_validate_radio_enabled',
+                'value': 'false',
+                'category': 'radios',
+                'description': 'Allow users to validate their radio config against target from the dashboard'
+            },
+            {
                 'key': 'user_radio_enrollment_enabled',
                 'value': 'false',
                 'category': 'radios',
