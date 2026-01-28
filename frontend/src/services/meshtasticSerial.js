@@ -207,8 +207,8 @@ class MeshtasticSerialService {
           // Mark that we've received user info (prevents other nodes overwriting)
           if (!this.hasReceivedUserInfo) {
             this.hasReceivedUserInfo = true;
+            // Always call callback if it exists (used for instant resolution)
             if (this.onDeviceInfoReceived) {
-              this._log('Calling instant callback with device info', 'success');
               this.onDeviceInfoReceived(this.deviceInfo);
             }
           }
@@ -250,8 +250,8 @@ class MeshtasticSerialService {
             // Mark that we've received user info
             if (!this.hasReceivedUserInfo) {
               this.hasReceivedUserInfo = true;
+              // Always call callback if it exists (used for instant resolution)
               if (this.onDeviceInfoReceived) {
-                this._log('Calling instant callback with device info', 'success');
                 this.onDeviceInfoReceived(this.deviceInfo);
               }
             }
