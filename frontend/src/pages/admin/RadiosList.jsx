@@ -59,7 +59,7 @@ function RadiosList() {
   const { data: settingsData } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
-      const response = await settingsAPI.public.getAll();
+      const response = await settingsAPI.get();
       return response.data;
     },
   });

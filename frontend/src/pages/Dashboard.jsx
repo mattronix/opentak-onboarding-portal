@@ -68,12 +68,19 @@ function Dashboard() {
     },
   });
 
-  const { data: takProfiles } = useQuery({
+  const { data: takProfiles = [] } = useQuery({
     queryKey: ['takProfiles'],
     queryFn: async () => {
-      const response = await takProfilesAPI.getAll();
-      return response.data.profiles;
+      try {
+        const response = await takProfilesAPI.getAll();
+        const profiles = response.data?.profiles;
+        return Array.isArray(profiles) ? profiles : [];
+      } catch (err) {
+        console.error('Failed to fetch tak profiles:', err);
+        return [];
+      }
     },
+    placeholderData: [],
   });
 
   const { data: meshtasticConfigs = [] } = useQuery({
@@ -81,7 +88,8 @@ function Dashboard() {
     queryFn: async () => {
       try {
         const response = await meshtasticAPI.getAll();
-        return response.data?.configs || [];
+        const configs = response.data?.configs;
+        return Array.isArray(configs) ? configs : [];
       } catch (err) {
         console.error('Failed to fetch meshtastic configs:', err);
         return [];
@@ -96,7 +104,8 @@ function Dashboard() {
     queryFn: async () => {
       try {
         const response = await meshtasticGroupsAPI.getAll();
-        return response.data?.groups || [];
+        const groups = response.data?.groups;
+        return Array.isArray(groups) ? groups : [];
       } catch (err) {
         console.error('Failed to fetch meshtastic groups:', err);
         return [];
@@ -106,12 +115,19 @@ function Dashboard() {
     placeholderData: [],
   });
 
-  const { data: radios, isLoading: loadingRadios } = useQuery({
+  const { data: radios = [], isLoading: loadingRadios } = useQuery({
     queryKey: ['radios'],
     queryFn: async () => {
-      const response = await radiosAPI.getAll();
-      return response.data.radios;
+      try {
+        const response = await radiosAPI.getAll();
+        const radiosList = response.data?.radios;
+        return Array.isArray(radiosList) ? radiosList : [];
+      } catch (err) {
+        console.error('Failed to fetch radios:', err);
+        return [];
+      }
     },
+    placeholderData: [],
   });
 
   const { data: atakQrData, isLoading: loadingAtakQR, isFetching: fetchingAtakQR, error: atakError } = useQuery({
@@ -413,7 +429,7 @@ function Dashboard() {
   }
 
   // Step 5: Meshtastic Channel Groups (if any)
-  const groupsWithChannels = (meshtasticGroups || []).filter(g => g.channel_count > 0 && g.showOnHomepage !== false);
+  const groupsWithChannels = (Array.isArray(meshtasticGroups) ? meshtasticGroups : []).filter(g => g.channel_count > 0 && g.showOnHomepage !== false);
   if (groupsWithChannels.length > 0) {
     steps.push({
       index: stepIndex++,
@@ -424,7 +440,7 @@ function Dashboard() {
           <div className="meshtastic-grid" style={{ justifyContent: 'center' }}>
             {groupsWithChannels.map((group) => {
               const slotMap = {};
-              group.channels.forEach(c => { slotMap[c.slot_number] = c.name; });
+              (Array.isArray(group.channels) ? group.channels : []).forEach(c => { slotMap[c.slot_number] = c.name; });
               return (
                 <div key={group.id} style={{ flex: '1 1 calc(50% - 1rem)', minWidth: '420px', maxWidth: '520px', padding: '1.5rem', background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                   <h3>{group.name}</h3>
@@ -450,7 +466,7 @@ function Dashboard() {
                     </>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      {group.channels.filter(c => c.url).map((channel) => (
+                      {(Array.isArray(group.channels) ? group.channels : []).filter(c => c.url).map((channel) => (
                         <div key={channel.id} style={{ textAlign: 'center', padding: '0.5rem', background: '#f9f9f9', borderRadius: '4px' }}>
                           <p style={{ margin: '0 0 0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Slot {channel.slot_number}: {channel.name}</p>
                           <div className="qr-section">
@@ -473,7 +489,7 @@ function Dashboard() {
   }
 
   // Step 6: Meshtastic Channels (individual, not in groups)
-  const ungroupedChannels = meshtasticConfigs.filter(c => c.url && !c.group_id);
+  const ungroupedChannels = (Array.isArray(meshtasticConfigs) ? meshtasticConfigs : []).filter(c => c.url && !c.group_id);
   if (ungroupedChannels.length > 0) {
     steps.push({
       index: stepIndex++,
@@ -510,7 +526,7 @@ function Dashboard() {
   }
 
   // Step 7: Meshtastic Radios (if user has assigned radios or can register)
-  const userRadios = (radios || []).filter(r => r.assignedTo === user?.id);
+  const userRadios = (Array.isArray(radios) ? radios : []).filter(r => r.assignedTo === user?.id);
   const showRadiosStep = userRadios.length > 0 || settings?.user_radio_enrollment_enabled;
   if (showRadiosStep) {
     steps.push({

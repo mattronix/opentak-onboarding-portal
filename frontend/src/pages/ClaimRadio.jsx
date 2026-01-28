@@ -14,7 +14,7 @@ function ClaimRadio() {
   const { data: settingsData, isLoading: loadingSettings } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {
-      const response = await settingsAPI.public.getAll();
+      const response = await settingsAPI.get();
       return response.data;
     },
   });
