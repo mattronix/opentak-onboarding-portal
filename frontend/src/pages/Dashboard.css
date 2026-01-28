@@ -613,6 +613,24 @@
   border-radius: 4px;
   font-size: 0.9rem;
   border: 1px solid #ddd;
+  transition: all 0.2s;
+}
+
+.radio-badge.clickable {
+  cursor: pointer;
+  border-color: var(--accent-color, #ff9800);
+}
+
+.radio-badge.clickable:hover {
+  background: #e8e8e8;
+  border-color: var(--accent-color, #ff9800);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.program-hint {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 400;
 }
 
 .no-items {

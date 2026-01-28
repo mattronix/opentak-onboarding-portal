@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@meshtastic/core": "^2.6.7",
+    "@meshtastic/protobufs": "^2.7.8",
+    "@meshtastic/transport-web-serial": "^0.2.5",
     "@tanstack/react-query": "^5.90.3",
     "axios": "^1.12.2",
     "qrcode.react": "^4.2.0",
@@ -27,6 +30,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vite-plugin-node-polyfills": "^0.25.0"
   }
 }

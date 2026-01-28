@@ -613,6 +613,8 @@ class MeshtasticChannelGroup(db.Model):
     # Visibility and access
     isPublic: Mapped[bool] = mapped_column(nullable=True, default=False)
     showOnHomepage: Mapped[bool] = mapped_column(nullable=True, default=True)
+    # YAML config for radio device settings (supports placeholders: ${shortName}, ${longName}, ${mac}, ${callsign})
+    yamlConfig: Mapped[str] = mapped_column(db.Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
     updated_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -1150,6 +1152,18 @@ class SystemSettingsModel(db.Model):
                 'value': 'true',
                 'category': 'general',
                 'description': 'Show Meshtastic download icon on the dashboard'
+            },
+            {
+                'key': 'claim_radio_enabled',
+                'value': 'false',
+                'category': 'radios',
+                'description': 'Allow users to claim unowned radios by visiting a claim URL'
+            },
+            {
+                'key': 'user_program_radio_enabled',
+                'value': 'false',
+                'category': 'radios',
+                'description': 'Allow users to program their assigned radios from the dashboard'
             },
             # Installer QR Codes
             {

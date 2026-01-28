@@ -61,6 +61,7 @@ def get_meshtastic_groups():
             'combined_url': g.combined_url,
             'isPublic': g.isPublic,
             'showOnHomepage': g.showOnHomepage,
+            'yamlConfig': g.yamlConfig,
             'channel_count': len(g.channel_memberships),
             'channels': [{
                 'id': m.channel.id,
@@ -90,6 +91,7 @@ def get_all_meshtastic_groups_admin():
             'combined_url': g.combined_url,
             'isPublic': g.isPublic,
             'showOnHomepage': g.showOnHomepage,
+            'yamlConfig': g.yamlConfig,
             'channel_count': len(g.channel_memberships),
             'channels': [{
                 'id': m.channel.id,
@@ -137,6 +139,7 @@ def get_meshtastic_group(group_id):
         'combined_url': group.combined_url,
         'isPublic': group.isPublic,
         'showOnHomepage': group.showOnHomepage,
+        'yamlConfig': group.yamlConfig,
         'roles': [{'id': r.id, 'name': r.name, 'displayName': r.display_name} for r in group.roles],
         'channels': [{
             'id': m.channel.id,
@@ -182,6 +185,7 @@ def create_meshtastic_group():
             combined_url=data.get('combined_url'),
             isPublic=data.get('isPublic', False),
             showOnHomepage=data.get('showOnHomepage', True),
+            yamlConfig=data.get('yamlConfig'),
             roles=roles
         )
         db.session.add(group)
@@ -230,6 +234,8 @@ def update_meshtastic_group(group_id):
             group.isPublic = data['isPublic']
         if 'showOnHomepage' in data:
             group.showOnHomepage = data['showOnHomepage']
+        if 'yamlConfig' in data:
+            group.yamlConfig = data['yamlConfig']
 
         # Update roles if provided
         if 'roleIds' in data:

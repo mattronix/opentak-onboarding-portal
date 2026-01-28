@@ -254,7 +254,7 @@ function OnboardingCodesList() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editing ? 'Edit Onboarding Code' : 'Create Onboarding Code'}</h2>

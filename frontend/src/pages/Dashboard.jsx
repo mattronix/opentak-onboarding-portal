@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { takProfilesAPI, meshtasticAPI, meshtasticGroupsAPI, radiosAPI, settingsAPI, qrAPI } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
+import { meshtasticSerial } from '../services/meshtasticSerial';
+import ProgramRadioModal from '../components/ProgramRadioModal';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -13,6 +15,7 @@ function Dashboard() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
   const [copiedMeshtastic, setCopiedMeshtastic] = useState(null);
   const [expandedSteps, setExpandedSteps] = useState(new Set([0])); // First step expanded by default
+  const [programmingRadio, setProgrammingRadio] = useState(null);
 
   // Step expansion helpers
   const toggleStep = (stepIndex) => {
@@ -531,7 +534,21 @@ function Dashboard() {
             ) : radios && radios.length > 0 ? (
               <div className="radios-list">
                 {radios.filter(r => r.assignedTo === user?.id).map((radio) => (
-                  <span key={radio.id} className="radio-badge">{radio.name} ({radio.platform})</span>
+                  <span
+                    key={radio.id}
+                    className={`radio-badge ${settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'clickable' : ''}`}
+                    onClick={() => {
+                      if (settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && meshtasticSerial.getBrowserSupport().isSupported) {
+                        setProgrammingRadio(radio);
+                      }
+                    }}
+                    title={settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'Click to program this radio' : undefined}
+                  >
+                    {radio.name} ({radio.platform})
+                    {settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && (
+                      <span className="program-hint"> - Click to Program</span>
+                    )}
+                  </span>
                 ))}
                 {radios.filter(r => r.assignedTo === user?.id).length === 0 && <p className="no-items">No radios assigned</p>}
               </div>
@@ -590,6 +607,14 @@ function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Program Radio Modal */}
+      {programmingRadio && (
+        <ProgramRadioModal
+          radio={programmingRadio}
+          onClose={() => setProgrammingRadio(null)}
+        />
+      )}
     </div>
   );
 }

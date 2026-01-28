@@ -307,6 +307,13 @@ export const radiosAPI = {
 
   delete: (id) =>
     api.delete(`/radios/${id}`),
+
+  // Get programming config for Meshtastic radio
+  getProgramConfig: (id, { channelGroupId, channelId }) =>
+    api.post(`/radios/${id}/program-config`, {
+      channel_group_id: channelGroupId,
+      channel_id: channelId
+    }),
 };
 
 // Packages API

@@ -15,12 +15,13 @@ Fields synced with OTS:
 
 Fields kept locally only:
 - description
-- yamlConfig
 - isPublic
 - defaultRadioConfig
 - showOnHomepage
 - roles
 - users
+
+Note: yamlConfig is only supported at the Channel Group level, not individual channels.
 """
 
 from datetime import datetime

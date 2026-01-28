@@ -442,7 +442,7 @@ function PendingRegistrationsList() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{modalMode === 'create' ? 'Create Pending Registration' : 'Edit Pending Registration'}</h2>

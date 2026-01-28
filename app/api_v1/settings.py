@@ -80,6 +80,9 @@ def get_settings():
         'custom_logo_path': get_str_setting('custom_logo_path', ''),
         'logo_display_mode': get_str_setting('logo_display_mode', 'logo_and_text'),
         'default_logo_path': '/static/img/logo.png',
+        # Radio settings
+        'claim_radio_enabled': get_bool_setting('claim_radio_enabled', False),
+        'user_program_radio_enabled': get_bool_setting('user_program_radio_enabled', False),
     }
 
     return jsonify(settings), 200
@@ -142,7 +145,7 @@ def get_admin_settings():
 
         # Get settings by category
         settings_by_category = {}
-        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'general']
+        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'radios', 'general']
 
         for category in categories:
             settings = SystemSettingsModel.get_category_settings(category)

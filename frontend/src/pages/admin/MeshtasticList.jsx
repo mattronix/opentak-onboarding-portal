@@ -9,7 +9,7 @@ function MeshtasticList() {
   const { showError, showSuccess, confirm } = useNotification();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [formData, setFormData] = useState({ name: '', url: '', description: '', yamlConfig: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
+  const [formData, setFormData] = useState({ name: '', url: '', description: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
   const [error, setError] = useState('');
   const [syncing, setSyncing] = useState(false);
 
@@ -77,7 +77,7 @@ function MeshtasticList() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', url: '', description: '', yamlConfig: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
+    setFormData({ name: '', url: '', description: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
     setEditing(null);
     setError('');
   };
@@ -149,7 +149,7 @@ function MeshtasticList() {
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-sm btn-secondary" onClick={async () => {
-                        // Fetch full config details including yamlConfig
+                        // Fetch full config details
                         try {
                           const response = await meshtasticAPI.getById(config.id);
                           const fullConfig = response.data;
@@ -158,7 +158,6 @@ function MeshtasticList() {
                             name: fullConfig.name,
                             url: fullConfig.url || '',
                             description: fullConfig.description || '',
-                            yamlConfig: fullConfig.yamlConfig || '',
                             isPublic: fullConfig.isPublic || false,
                             defaultRadioConfig: fullConfig.defaultRadioConfig || false,
                             roleIds: fullConfig.roles?.map(r => r.id) || []
@@ -191,7 +190,7 @@ function MeshtasticList() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Edit Meshtastic Channel</h2>
@@ -223,16 +222,6 @@ function MeshtasticList() {
                 <div className="form-group">
                   <label>Description</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label>YAML Configuration (optional)</label>
-                  <textarea
-                    value={formData.yamlConfig}
-                    onChange={(e) => setFormData({...formData, yamlConfig: e.target.value})}
-                    placeholder="Optional YAML configuration for Meshtastic device"
-                    style={{ fontFamily: 'monospace', minHeight: '150px' }}
-                  />
-                  <span className="help-text">Additional device configuration in YAML format</span>
                 </div>
                 <div className="form-group">
                   <label className="checkbox-label">

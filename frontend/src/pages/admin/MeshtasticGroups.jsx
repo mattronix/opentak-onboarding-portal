@@ -12,7 +12,7 @@ function MeshtasticGroups() {
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', isPublic: false, roleIds: [] });
+  const [formData, setFormData] = useState({ name: '', description: '', isPublic: false, roleIds: [], yamlConfig: '' });
   const [slotData, setSlotData] = useState({ channelId: '', slotNumber: 0 });
   const [error, setError] = useState('');
 
@@ -109,7 +109,7 @@ function MeshtasticGroups() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', isPublic: false, roleIds: [] });
+    setFormData({ name: '', description: '', isPublic: false, roleIds: [], yamlConfig: '' });
     setEditing(null);
     setError('');
   };
@@ -228,7 +228,8 @@ function MeshtasticGroups() {
                         name: fullGroup.name,
                         description: fullGroup.description || '',
                         isPublic: fullGroup.isPublic || false,
-                        roleIds: fullGroup.roles?.map(r => r.id) || []
+                        roleIds: fullGroup.roles?.map(r => r.id) || [],
+                        yamlConfig: fullGroup.yamlConfig || ''
                       });
                       setShowModal(true);
                     } catch (err) {
@@ -335,7 +336,7 @@ function MeshtasticGroups() {
 
       {/* Create/Edit Group Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editing ? 'Edit' : 'Create'} Channel Group</h2>
@@ -392,6 +393,33 @@ function MeshtasticGroups() {
                     ))}
                   </div>
                 </div>
+                <div className="form-group">
+                  <label>Device Configuration (YAML)</label>
+                  <textarea
+                    value={formData.yamlConfig}
+                    onChange={(e) => setFormData({...formData, yamlConfig: e.target.value})}
+                    placeholder={`# Optional device settings for radio programming
+# Supports placeholders:
+#   \${shortName} - Radio's short name (4 chars)
+#   \${longName}  - Radio's long name
+#   \${mac}       - Radio's MAC address
+#   \${callsign}  - Assigned user's callsign
+#
+# Example:
+device:
+  role: CLIENT
+  serialEnabled: true
+lora:
+  region: EU_868
+  txPower: 20
+bluetooth:
+  enabled: true`}
+                    style={{ fontFamily: 'monospace', minHeight: '180px' }}
+                  />
+                  <span className="help-text">
+                    YAML configuration applied when programming radios with this channel group. Placeholders will be replaced with radio-specific values.
+                  </span>
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
@@ -406,7 +434,7 @@ function MeshtasticGroups() {
 
       {/* Add Channel to Slot Modal */}
       {showSlotModal && selectedGroup && (
-        <div className="modal-overlay" onClick={() => setShowSlotModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Add Channel to "{selectedGroup.name}"</h2>

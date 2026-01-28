@@ -278,7 +278,7 @@ function ApiKeysList() {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => !newKeyValue && setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>

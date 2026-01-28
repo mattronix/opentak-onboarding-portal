@@ -135,7 +135,6 @@ def get_meshtastic_config(config_id):
         'description': config.description,
         'url': config.url,
         'isPublic': config.isPublic,
-        'yamlConfig': config.yamlConfig,
         'defaultRadioConfig': config.defaultRadioConfig,
         'showOnHomepage': config.showOnHomepage,
         'ots_id': config.ots_id,

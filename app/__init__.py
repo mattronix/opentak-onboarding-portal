@@ -60,11 +60,7 @@ def create_app():
             'code': 'AUTH_REQUIRED'
         }), 401
 
-    # Register API blueprints (always enabled - API is the only mode)
-    from app.api_views import api_routes
-    app.register_blueprint(api_routes)
-
-    # Register new RESTful API v1
+    # Register RESTful API v1
     from app.api_v1 import api_v1
     app.register_blueprint(api_v1)
 

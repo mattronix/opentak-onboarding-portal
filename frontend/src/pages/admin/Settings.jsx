@@ -710,6 +710,16 @@ function Settings() {
           </div>
         </div>
 
+        {/* Radios Section */}
+        {settings.radios && settings.radios.length > 0 && (
+          <div className="settings-section">
+            <h2>Radios</h2>
+            <div className="settings-list">
+              {renderCategorySettings(settings.radios)}
+            </div>
+          </div>
+        )}
+
         {/* General Section */}
         {settings.general && settings.general.length > 0 && (
           <div className="settings-section">

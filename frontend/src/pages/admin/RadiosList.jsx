@@ -1,13 +1,19 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { radiosAPI, usersAPI } from '../../services/api';
+import { radiosAPI, usersAPI, settingsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { meshtasticSerial } from '../../services/meshtasticSerial';
+import ProgramRadioModal from '../../components/ProgramRadioModal';
 import '../../components/AdminTable.css';
+
+const FRONTEND_URL = window.location.origin;
 
 function RadiosList() {
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
   const [showModal, setShowModal] = useState(false);
+  const [showProgramModal, setShowProgramModal] = useState(false);
+  const [programmingRadio, setProgrammingRadio] = useState(null);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -24,6 +30,12 @@ function RadiosList() {
     owner: null
   });
   const [error, setError] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('');
+  const [scanLog, setScanLog] = useState([]);
+
+  // Check if Web Serial is supported
+  const browserSupport = meshtasticSerial.getBrowserSupport();
 
   const { data: radiosData, isLoading } = useQuery({
     queryKey: ['radios'],
@@ -40,6 +52,26 @@ function RadiosList() {
       return response.data;
     },
   });
+
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await settingsAPI.public.getAll();
+      return response.data;
+    },
+  });
+
+  const claimRadioEnabled = settingsData?.claim_radio_enabled || false;
+
+  const copyClaimUrl = async (radioId) => {
+    const claimUrl = `${FRONTEND_URL}/claim-radio/${radioId}`;
+    try {
+      await navigator.clipboard.writeText(claimUrl);
+      // Brief visual feedback could be added here
+    } catch (err) {
+      showError('Failed to copy URL to clipboard');
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => radiosAPI.create(data),
@@ -131,6 +163,111 @@ function RadiosList() {
     }
   };
 
+  const handleLearnFromUSB = async () => {
+    if (!browserSupport.isSupported) {
+      setError('Web Serial API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+      return;
+    }
+
+    // Disconnect any existing connection first
+    try {
+      await meshtasticSerial.disconnect();
+    } catch (e) {
+      // Ignore disconnect errors
+    }
+
+    setScanning(true);
+    setScanStatus('Connecting to radio...');
+    setError('');
+    setScanLog([]);
+
+    let gotData = false;
+
+    // Log handler for terminal output
+    const handleLog = (entry) => {
+      setScanLog(prev => [...prev, entry]);
+    };
+
+    try {
+      // Instant update callback - updates form as soon as data arrives
+      const handleInstantUpdate = (info) => {
+        gotData = true;
+        setScanning(false); // Stop scanning immediately
+
+        // Format name as "longName (shortName)"
+        const longName = info.longName || '';
+        const shortName = info.shortName || '';
+        let displayName = longName;
+        if (longName && shortName) {
+          displayName = `${longName} (${shortName})`;
+        } else if (shortName) {
+          displayName = shortName;
+        }
+
+        setScanStatus(`Done: ${displayName}`);
+        setFormData(prev => ({
+          ...prev,
+          platform: 'meshtastic',
+          radioType: 'meshtastic',
+          shortName: shortName || prev.shortName,
+          longName: longName || prev.longName,
+          softwareVersion: info.firmwareVersion || prev.softwareVersion,
+          model: info.hwModel ? String(info.hwModel) : prev.model,
+          name: displayName || prev.name,
+          mac: info.macAddr || prev.mac,
+        }));
+        // Disconnect in background
+        meshtasticSerial.disconnect().catch(() => {});
+      };
+
+      // Connect with instant callback and log handler
+      await meshtasticSerial.connect(
+        (status, message) => {
+          if (!gotData) setScanStatus(message);
+        },
+        null,
+        handleInstantUpdate,
+        handleLog
+      );
+
+      // If we already got data, we're done
+      if (gotData) return;
+
+      // Otherwise wait a bit for data
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (!gotData) {
+        const finalInfo = meshtasticSerial.getDeviceInfo();
+        if (finalInfo?.shortName || finalInfo?.longName) {
+          setScanStatus('Device info loaded!');
+        } else {
+          setScanStatus('Connected but limited info available.');
+        }
+        await meshtasticSerial.disconnect();
+      }
+    } catch (err) {
+      console.error('Scan error:', err);
+      setError(`Failed to read from radio: ${err.message}`);
+    } finally {
+      setScanning(false);
+      if (!gotData) {
+        setTimeout(() => setScanStatus(''), 3000);
+      }
+    }
+  };
+
+  // Helper to format MAC address from bytes
+  const formatMacAddress = (macBytes) => {
+    if (!macBytes) return '';
+    if (typeof macBytes === 'string') return macBytes;
+    if (macBytes instanceof Uint8Array || Array.isArray(macBytes)) {
+      return Array.from(macBytes)
+        .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+        .join(':');
+    }
+    return String(macBytes);
+  };
+
   if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
 
   const radios = radiosData?.radios || [];
@@ -172,6 +309,26 @@ function RadiosList() {
                   <td>{users.find(u => u.id === radio.assignedTo)?.username || '-'}</td>
                   <td>
                     <div className="table-actions">
+                      {radio.platform === 'meshtastic' && (
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => {
+                            setProgrammingRadio(radio);
+                            setShowProgramModal(true);
+                          }}
+                        >
+                          Program
+                        </button>
+                      )}
+                      {claimRadioEnabled && !radio.assignedTo && (
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => copyClaimUrl(radio.id)}
+                          title="Copy claim URL"
+                        >
+                          Copy Claim URL
+                        </button>
+                      )}
                       <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(radio)}>
                         Edit
                       </button>
@@ -192,7 +349,7 @@ function RadiosList() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editing ? 'Edit Radio' : 'Create Radio'}</h2>
@@ -201,6 +358,61 @@ function RadiosList() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
+
+                {/* Learn from USB button */}
+                {browserSupport.isSupported && (
+                  <div className="form-group" style={{
+                    padding: '12px',
+                    background: '#f0f7ff',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    border: '1px solid #cce0ff'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-info"
+                        onClick={handleLearnFromUSB}
+                        disabled={scanning}
+                        style={{ whiteSpace: 'nowrap' }}
+                      >
+                        {scanning ? 'Scanning...' : 'Learn from USB'}
+                      </button>
+                      <span style={{ color: '#666', fontSize: '0.9rem' }}>
+                        {scanStatus || 'Connect a Meshtastic radio via USB to auto-fill device info'}
+                      </span>
+                    </div>
+                    {/* Terminal Log Box */}
+                    {scanLog.length > 0 && (
+                      <div style={{
+                        marginTop: '12px',
+                        background: '#1e1e1e',
+                        borderRadius: '4px',
+                        padding: '8px 12px',
+                        fontFamily: 'Monaco, Menlo, monospace',
+                        fontSize: '11px',
+                        maxHeight: '120px',
+                        overflowY: 'auto',
+                        color: '#d4d4d4'
+                      }}>
+                        {scanLog.map((entry, i) => (
+                          <div key={i} style={{
+                            color: entry.type === 'success' ? '#4ec9b0' :
+                                   entry.type === 'error' ? '#f14c4c' :
+                                   entry.type === 'warn' ? '#cca700' : '#d4d4d4'
+                          }}>
+                            <span style={{ color: '#858585' }}>[{entry.timestamp}]</span> {entry.message}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!browserSupport.isSupported && (
+                  <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+                    USB scanning requires Chrome, Edge, or Opera browser.
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>Name *</label>
@@ -289,6 +501,17 @@ function RadiosList() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Program Radio Modal */}
+      {showProgramModal && programmingRadio && (
+        <ProgramRadioModal
+          radio={programmingRadio}
+          onClose={() => {
+            setShowProgramModal(false);
+            setProgrammingRadio(null);
+          }}
+        />
       )}
     </div>
   );

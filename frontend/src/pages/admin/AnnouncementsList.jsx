@@ -294,7 +294,7 @@ function AnnouncementsList() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
             <div className="modal-header">
               <h2>{editing ? 'Edit Announcement' : 'Create Announcement'}</h2>
@@ -442,7 +442,7 @@ function AnnouncementsList() {
 
       {/* Stats Modal */}
       {showStatsModal && selectedAnnouncement && (
-        <div className="modal-overlay" onClick={() => setShowStatsModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
             <div className="modal-header">
               <h2>Read Statistics</h2>
@@ -492,7 +492,7 @@ function AnnouncementsList() {
 
       {/* Preview Modal */}
       {showPreviewModal && selectedAnnouncement && (
-        <div className="modal-overlay" onClick={() => setShowPreviewModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
             <div className="modal-header">
               <h2>{selectedAnnouncement.title}</h2>

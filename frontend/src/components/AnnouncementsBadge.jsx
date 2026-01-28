@@ -126,7 +126,7 @@ function AnnouncementsBadge() {
       )}
 
       {selectedAnnouncement && (
-        <div className="announcement-modal-overlay" onClick={() => setSelectedAnnouncement(null)}>
+        <div className="announcement-modal-overlay">
           <div className="announcement-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{selectedAnnouncement.title}</h2>

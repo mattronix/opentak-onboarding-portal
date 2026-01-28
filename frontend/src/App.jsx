@@ -35,6 +35,7 @@ import ApiDocs from './pages/admin/ApiDocs';
 import AnnouncementHistory from './pages/AnnouncementHistory';
 import Profile from './pages/Profile';
 import Approvals from './pages/Approvals';
+import ClaimRadio from './pages/ClaimRadio';
 
 // Layout
 import Layout from './components/Layout';
@@ -204,6 +205,7 @@ function App() {
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="announcements" element={<AnnouncementHistory />} />
               <Route path="approvals" element={<Approvals />} />
+              <Route path="claim-radio/:radioId" element={<ClaimRadio />} />
 
               {/* Admin routes */}
               <Route
