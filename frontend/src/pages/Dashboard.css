@@ -906,3 +906,149 @@
     font-size: 0.9rem;
   }
 }
+
+/* Workflow Header */
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.workflow-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .workflow-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .workflow-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+.workflow-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.workflow-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  color: white;
+  transition: opacity 0.2s;
+  font-size: 0.9rem;
+}
+
+.workflow-btn:hover {
+  opacity: 0.9;
+}
+
+/* Collapsible Step Cards */
+.step-card.collapsible {
+  padding: 0;
+  overflow: hidden;
+}
+
+.step-card.collapsible .step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  cursor: pointer;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background 0.2s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.step-card.collapsible .step-header:hover {
+  background: #f0f0f0;
+}
+
+.step-card.collapsible .step-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .step-card.collapsible .step-header h2 {
+    font-size: 1.1rem;
+  }
+}
+
+.step-toggle {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: #666;
+  line-height: 1;
+  width: 30px;
+  text-align: center;
+}
+
+.step-card.collapsible .step-content {
+  padding: 1.5rem;
+  max-height: 5000px;
+  opacity: 1;
+  transition: max-height 0.4s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+  overflow: hidden;
+}
+
+.step-card.collapsible.collapsed .step-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.step-card.collapsible.collapsed .step-header {
+  border-bottom: none;
+}
+
+/* Step Navigation */
+.step-navigation {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.next-step-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  transition: opacity 0.2s, transform 0.2s;
+  font-size: 1rem;
+}
+
+.next-step-btn:hover {
+  opacity: 0.9;
+  transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+  .step-navigation {
+    justify-content: center;
+  }
+
+  .next-step-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
