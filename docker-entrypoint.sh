@@ -5,10 +5,17 @@ echo "Starting OpenTAK Onboarding Portal..."
 
 # Run database migrations
 echo "Running database migrations..."
-if flask db upgrade 2>&1 | grep -q "user_roles_old"; then
+MIGRATION_OUTPUT=$(flask db upgrade 2>&1) || true
+echo "$MIGRATION_OUTPUT"
+
+if echo "$MIGRATION_OUTPUT" | grep -q "user_roles_old"; then
     echo "Warning: Migration issue detected with user_roles_old reference"
     echo "Attempting to stamp database and continue..."
     flask db stamp head || echo "Could not stamp database"
+elif echo "$MIGRATION_OUTPUT" | grep -iE "^\[?ERROR|alembic.*Error|sqlalchemy.*Error"; then
+    echo "Warning: Migration error detected"
+    echo "Current migration state:"
+    flask db current || true
 else
     echo "Migrations completed successfully"
 fi

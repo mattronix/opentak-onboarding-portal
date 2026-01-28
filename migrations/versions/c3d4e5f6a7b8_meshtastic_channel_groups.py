@@ -47,17 +47,19 @@ def upgrade():
         sa.ForeignKeyConstraint(['group_id'], ['meshtastic_channel_groups.id'], )
     )
 
-    # Add group_id and slot_number to meshtastic table
-    op.add_column('meshtastic', sa.Column('group_id', sa.Integer(), nullable=True))
-    op.add_column('meshtastic', sa.Column('slot_number', sa.Integer(), nullable=True))
-    op.create_foreign_key('fk_meshtastic_group', 'meshtastic', 'meshtastic_channel_groups', ['group_id'], ['id'])
+    # Add group_id and slot_number to meshtastic table using batch mode for SQLite compatibility
+    with op.batch_alter_table('meshtastic', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('group_id', sa.Integer(), nullable=True))
+        batch_op.add_column(sa.Column('slot_number', sa.Integer(), nullable=True))
+        batch_op.create_foreign_key('fk_meshtastic_group', 'meshtastic_channel_groups', ['group_id'], ['id'])
 
 
 def downgrade():
-    # Remove foreign key and columns from meshtastic
-    op.drop_constraint('fk_meshtastic_group', 'meshtastic', type_='foreignkey')
-    op.drop_column('meshtastic', 'slot_number')
-    op.drop_column('meshtastic', 'group_id')
+    # Remove foreign key and columns from meshtastic using batch mode for SQLite compatibility
+    with op.batch_alter_table('meshtastic', schema=None) as batch_op:
+        batch_op.drop_constraint('fk_meshtastic_group', type_='foreignkey')
+        batch_op.drop_column('slot_number')
+        batch_op.drop_column('group_id')
 
     # Drop association tables
     op.drop_table('user_meshtastic_group_association')
