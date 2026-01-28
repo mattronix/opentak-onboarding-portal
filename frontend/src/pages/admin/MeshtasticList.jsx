@@ -6,16 +6,17 @@ import '../../components/AdminTable.css';
 
 function MeshtasticList() {
   const queryClient = useQueryClient();
-  const { showError, confirm } = useNotification();
+  const { showError, showSuccess, confirm } = useNotification();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [formData, setFormData] = useState({ name: '', url: '', description: '', yamlConfig: '', isPublic: false, defaultRadioConfig: false, showOnHomepage: false, roleIds: [] });
+  const [formData, setFormData] = useState({ name: '', url: '', description: '', yamlConfig: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
   const [error, setError] = useState('');
+  const [syncing, setSyncing] = useState(false);
 
   const { data: configsData, isLoading } = useQuery({
-    queryKey: ['meshtastic'],
+    queryKey: ['meshtasticAdmin'],
     queryFn: async () => {
-      const response = await meshtasticAPI.getAll();
+      const response = await meshtasticAPI.getAllAdmin();
       return response.data;
     },
   });
@@ -26,16 +27,6 @@ function MeshtasticList() {
       const response = await rolesAPI.getAll();
       return response.data;
     },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data) => meshtasticAPI.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['meshtastic']);
-      setShowModal(false);
-      resetForm();
-    },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create config'),
   });
 
   const updateMutation = useMutation({
@@ -54,8 +45,39 @@ function MeshtasticList() {
     onError: (err) => showError(err.response?.data?.error || 'Failed to delete config'),
   });
 
+  const syncToOtsMutation = useMutation({
+    mutationFn: (id) => meshtasticAPI.syncToOts(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries(['meshtastic']);
+      if (response.data.warning) {
+        showError(response.data.warning);
+      } else {
+        showSuccess('Config pushed to OTS successfully');
+      }
+    },
+    onError: (err) => showError(err.response?.data?.error || 'Failed to push config to OTS'),
+  });
+
+  const handleSyncFromOts = async () => {
+    setSyncing(true);
+    try {
+      const response = await meshtasticAPI.syncFromOts();
+      const { created, updated, errors } = response.data;
+      queryClient.invalidateQueries(['meshtastic']);
+      if (errors?.length) {
+        showError(`Sync issues: ${errors.join(', ')}`);
+      } else {
+        showSuccess(`Sync complete: ${created} created, ${updated} updated`);
+      }
+    } catch (err) {
+      showError(err.response?.data?.error || 'Failed to sync from OTS');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const resetForm = () => {
-    setFormData({ name: '', url: '', description: '', yamlConfig: '', isPublic: false, defaultRadioConfig: false, showOnHomepage: false, roleIds: [] });
+    setFormData({ name: '', url: '', description: '', yamlConfig: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
     setEditing(null);
     setError('');
   };
@@ -64,8 +86,6 @@ function MeshtasticList() {
     e.preventDefault();
     if (editing) {
       updateMutation.mutate({ id: editing.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
     }
   };
 
@@ -76,18 +96,26 @@ function MeshtasticList() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Meshtastic Configurations</h1>
-        <button className="btn btn-primary" onClick={() => {resetForm(); setShowModal(true);}}>+ Add Config</button>
+        <div>
+          <h1>Meshtastic Channels</h1>
+          <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            Individual channels synced from OTS. <a href="/admin/meshtastic/groups">Manage channel groups</a>
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={handleSyncFromOts} disabled={syncing}>
+          {syncing ? 'Syncing...' : 'Sync from OTS'}
+        </button>
       </div>
       <div className="admin-table-container">
         {configs.length === 0 ? (
-          <div className="empty-state">No configurations found</div>
+          <div className="empty-state">No channels found. Click "Sync from OTS" to import channels from OpenTAK Server.</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Description</th>
+                <th>OTS Sync</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -96,6 +124,17 @@ function MeshtasticList() {
                 <tr key={config.id}>
                   <td><strong>{config.name}</strong></td>
                   <td>{config.description || '-'}</td>
+                  <td>
+                    {config.synced_at ? (
+                      <span className="badge badge-success" title={`Last synced: ${new Date(config.synced_at).toLocaleString()}`}>
+                        Synced
+                      </span>
+                    ) : config.url ? (
+                      <span className="badge badge-warning">Not synced</span>
+                    ) : (
+                      <span className="badge badge-secondary">No URL</span>
+                    )}
+                  </td>
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-sm btn-secondary" onClick={async () => {
@@ -111,7 +150,6 @@ function MeshtasticList() {
                             yamlConfig: fullConfig.yamlConfig || '',
                             isPublic: fullConfig.isPublic || false,
                             defaultRadioConfig: fullConfig.defaultRadioConfig || false,
-                            showOnHomepage: fullConfig.showOnHomepage || false,
                             roleIds: fullConfig.roles?.map(r => r.id) || []
                           });
                           setShowModal(true);
@@ -119,6 +157,15 @@ function MeshtasticList() {
                           showError('Failed to load config details: ' + (err.response?.data?.error || err.message));
                         }
                       }}>Edit</button>
+                      {!config.synced_at && config.url && (
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => syncToOtsMutation.mutate(config.id)}
+                          disabled={syncToOtsMutation.isPending}
+                        >
+                          Push to OTS
+                        </button>
+                      )}
                       <button className="btn btn-sm btn-danger" onClick={async () => {
                         const confirmed = await confirm(`Delete "${config.name}"?`, 'Delete Config');
                         if (confirmed) deleteMutation.mutate(config.id);
@@ -136,34 +183,45 @@ function MeshtasticList() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editing ? 'Edit' : 'Create'} Meshtastic Config</h2>
+              <h2>Edit Meshtastic Channel</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
                 <div className="form-group">
-                  <label>Name *</label>
-                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                </div>
-                <div className="form-group">
-                  <label>YAML Configuration *</label>
-                  <textarea
-                    value={formData.yamlConfig}
-                    onChange={(e) => setFormData({...formData, yamlConfig: e.target.value})}
-                    placeholder="Enter YAML configuration for Meshtastic device"
-                    required
-                    style={{ fontFamily: 'monospace', minHeight: '150px' }}
+                  <label>Channel URL</label>
+                  <input
+                    type="text"
+                    value={formData.url}
+                    disabled={true}
                   />
-                  <span className="help-text">Enter valid YAML configuration</span>
+                  <span className="help-text">Channel URL is synced from OTS and cannot be changed.</span>
                 </div>
                 <div className="form-group">
-                  <label>URL</label>
-                  <input type="url" value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value})} placeholder="Optional configuration URL" />
+                  <label>Name (optional)</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    disabled={editing?.synced_at}
+                    placeholder="Will be derived from channel if not provided"
+                  />
+                  {editing?.synced_at && <span className="help-text">Name is synced from OTS and cannot be changed.</span>}
                 </div>
                 <div className="form-group">
                   <label>Description</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>YAML Configuration (optional)</label>
+                  <textarea
+                    value={formData.yamlConfig}
+                    onChange={(e) => setFormData({...formData, yamlConfig: e.target.value})}
+                    placeholder="Optional YAML configuration for Meshtastic device"
+                    style={{ fontFamily: 'monospace', minHeight: '150px' }}
+                  />
+                  <span className="help-text">Additional device configuration in YAML format</span>
                 </div>
                 <div className="form-group">
                   <label className="checkbox-label">
@@ -175,12 +233,6 @@ function MeshtasticList() {
                   <label className="checkbox-label">
                     <input type="checkbox" checked={formData.defaultRadioConfig} onChange={(e) => setFormData({...formData, defaultRadioConfig: e.target.checked})} />
                     Default Radio Configuration
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input type="checkbox" checked={formData.showOnHomepage} onChange={(e) => setFormData({...formData, showOnHomepage: e.target.checked})} />
-                    Show on Homepage
                   </label>
                 </div>
                 <div className="form-group">
@@ -197,7 +249,7 @@ function MeshtasticList() {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>{editing ? 'Update' : 'Create'}</button>
+                <button type="submit" className="btn btn-primary" disabled={updateMutation.isPending}>Update</button>
               </div>
             </form>
           </div>

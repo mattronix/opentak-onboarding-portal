@@ -300,15 +300,10 @@
 }
 
 .qr-code {
-  width: 150px;
-  height: 150px;
   border: 2px solid #ddd;
   border-radius: 8px;
   padding: 10px;
   background: white;
-  max-width: 100%;
-  height: auto;
-  aspect-ratio: 1;
 }
 
 @media (max-width: 480px) {
@@ -678,15 +673,17 @@
 
 /* Meshtastic Grid (inside step-card) */
 .meshtastic-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   margin-top: 1rem;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
   .meshtastic-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
     gap: 1rem;
   }
 }
@@ -697,6 +694,8 @@
   border-radius: 8px;
   border: 1px solid #e0e0e0;
   text-align: center;
+  min-width: 280px;
+  max-width: 350px;
 }
 
 @media (max-width: 768px) {

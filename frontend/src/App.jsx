@@ -26,6 +26,7 @@ import OnboardingCodesList from './pages/admin/OnboardingCodesList';
 import PendingRegistrationsList from './pages/admin/PendingRegistrationsList';
 import TakProfilesList from './pages/admin/TakProfilesList';
 import MeshtasticList from './pages/admin/MeshtasticList';
+import MeshtasticGroups from './pages/admin/MeshtasticGroups';
 import RadiosList from './pages/admin/RadiosList';
 import Settings from './pages/admin/Settings';
 import AnnouncementsList from './pages/admin/AnnouncementsList';
@@ -258,6 +259,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <MeshtasticList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/meshtastic/groups"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <MeshtasticGroups />
                   </ProtectedRoute>
                 }
               />

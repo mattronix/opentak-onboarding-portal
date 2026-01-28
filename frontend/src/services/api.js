@@ -214,6 +214,10 @@ export const meshtasticAPI = {
   getAll: () =>
     api.get('/meshtastic'),
 
+  // Admin endpoint - returns ALL channels without role filtering
+  getAllAdmin: () =>
+    api.get('/meshtastic/admin'),
+
   getById: (id) =>
     api.get(`/meshtastic/${id}`),
 
@@ -223,8 +227,62 @@ export const meshtasticAPI = {
   update: (id, data) =>
     api.put(`/meshtastic/${id}`, data),
 
+  delete: (id, deleteFromOts = true) =>
+    api.delete(`/meshtastic/${id}?deleteFromOts=${deleteFromOts}`),
+
+  // Sync all configs from OTS to local database
+  syncFromOts: () =>
+    api.post('/meshtastic/sync'),
+
+  // Push a single config to OTS
+  syncToOts: (id) =>
+    api.post(`/meshtastic/${id}/sync`),
+
+  // Get ungrouped channels
+  getUngrouped: () =>
+    api.get('/meshtastic/ungrouped'),
+};
+
+// Meshtastic Channel Groups API
+export const meshtasticGroupsAPI = {
+  getAll: () =>
+    api.get('/meshtastic/groups'),
+
+  // Admin endpoint - returns ALL groups without role filtering
+  getAllAdmin: () =>
+    api.get('/meshtastic/groups/admin'),
+
+  getById: (id) =>
+    api.get(`/meshtastic/groups/${id}`),
+
+  create: (data) =>
+    api.post('/meshtastic/groups', data),
+
+  update: (id, data) =>
+    api.put(`/meshtastic/groups/${id}`, data),
+
   delete: (id) =>
-    api.delete(`/meshtastic/${id}`),
+    api.delete(`/meshtastic/groups/${id}`),
+
+  // Add a channel to a group at a specific slot
+  addChannel: (groupId, channelId, slotNumber) =>
+    api.post(`/meshtastic/groups/${groupId}/channels`, { channel_id: channelId, slot_number: slotNumber }),
+
+  // Remove a channel from a group
+  removeChannel: (groupId, channelId) =>
+    api.delete(`/meshtastic/groups/${groupId}/channels/${channelId}`),
+
+  // Update a channel's slot within a group
+  updateChannelSlot: (groupId, channelId, slotNumber) =>
+    api.put(`/meshtastic/groups/${groupId}/channels/${channelId}/slot`, { slot_number: slotNumber }),
+
+  // Regenerate combined URL for a group
+  regenerateUrl: (groupId) =>
+    api.post(`/meshtastic/groups/${groupId}/regenerate-url`),
+
+  // Regenerate combined URLs for all groups
+  regenerateAllUrls: () =>
+    api.post('/meshtastic/groups/regenerate-all-urls'),
 };
 
 // Radios API

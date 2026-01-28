@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime, String, CheckConstraint
+from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime, String, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -64,6 +64,23 @@ role_meshtastic_association = Table(
     Column('role_id', Integer, ForeignKey('user_roles.id')),
     Column('meshtastic_id', Integer, ForeignKey('meshtastic.id'))
 )
+
+# Association tables for Meshtastic Channel Groups
+role_meshtastic_group_association = Table(
+    'role_meshtastic_group_association',
+    db.metadata,
+    Column('role_id', Integer, ForeignKey('user_roles.id')),
+    Column('group_id', Integer, ForeignKey('meshtastic_channel_groups.id'))
+)
+
+user_meshtastic_group_association = Table(
+    'user_meshtastic_group_association',
+    db.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('group_id', Integer, ForeignKey('meshtastic_channel_groups.id'))
+)
+
+# ChannelGroupMembership is defined below as a proper model class for the association object pattern
 
 # Association tables for announcements
 announcement_role_association = Table(
@@ -478,13 +495,28 @@ class OnboardingCodeModel(db.Model):
 class MeshtasticModel(db.Model):
     __tablename__ = "meshtastic"
     id: Mapped[int] = mapped_column(primary_key=True)
-    description: Mapped[str] = mapped_column(nullable=True)
+    # OTS sync fields
+    ots_id: Mapped[int] = mapped_column(nullable=True, unique=True)  # ID from OTS for syncing
+    synced_at: Mapped[datetime.datetime] = mapped_column(nullable=True)  # Last sync timestamp
+    # Fields synced with OTS
     name: Mapped[str] = mapped_column(unique=True, nullable=True)
-    url: Mapped[str] = mapped_column(unique=False)
-    isPublic: Mapped[bool] = mapped_column(nullable=True, default=True)
-    yamlConfig: Mapped[str] = mapped_column(nullable=True)
+    description: Mapped[str] = mapped_column(nullable=True)
+    url: Mapped[str] = mapped_column(unique=False, nullable=True)  # channel_url in OTS
+    # Local-only fields (not synced with OTS)
+    isPublic: Mapped[bool] = mapped_column(nullable=True, default=False)
+    yamlConfig: Mapped[str] = mapped_column(nullable=True)  # Optional YAML config
     defaultRadioConfig: Mapped[bool] = mapped_column(nullable=True, default=False)
-    showOnHomepage: Mapped[bool] = mapped_column(nullable=True, default=True)
+    showOnHomepage: Mapped[bool] = mapped_column(nullable=True, default=False)
+    # DEPRECATED: Old single-group fields - kept for migration compatibility
+    # Use group_memberships relationship instead for multiple group support
+    group_id: Mapped[int] = mapped_column(ForeignKey('meshtastic_channel_groups.id'), nullable=True)
+    slot_number: Mapped[int] = mapped_column(nullable=True)  # 0-7, slot 0 is primary channel
+
+    # Old relationship - kept for backwards compatibility during migration
+    group = relationship("MeshtasticChannelGroup", back_populates="channels", foreign_keys=[group_id])
+
+    # New many-to-many relationship through ChannelGroupMembership
+    group_memberships = relationship("ChannelGroupMembership", back_populates="channel", cascade="all, delete-orphan")
 
     @validates('defaultRadioConfig')
     def validate_default_radio_config(self, key, value):
@@ -507,20 +539,36 @@ class MeshtasticModel(db.Model):
     )
     
     @staticmethod
-    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, yamlConfig=None, defaultRadioConfig=None, showOnHomepage=None, isPublic=None):
+    def create_meshtastic(name=None, description=None, users=[], roles=[], url=None, yamlConfig=None, defaultRadioConfig=None, showOnHomepage=None, isPublic=None, ots_id=None):
         try:
-            meshtastic = MeshtasticModel(description=description, name=name, roles=roles, url=url, users=users, yamlConfig=yamlConfig, defaultRadioConfig=defaultRadioConfig, showOnHomepage=showOnHomepage, isPublic=isPublic)
+            meshtastic = MeshtasticModel(
+                name=name,
+                description=description,
+                url=url,
+                roles=roles,
+                users=users,
+                yamlConfig=yamlConfig,
+                defaultRadioConfig=defaultRadioConfig,
+                showOnHomepage=showOnHomepage,
+                isPublic=isPublic,
+                ots_id=ots_id
+            )
             db.session.add(meshtastic)
             db.session.commit()
             return meshtastic
         except IntegrityError as e:
             db.session.rollback()
             print(f"IntegrityError: {e}")
-            return {"error": "onboarding_code.exists"}
+            return {"error": "meshtastic.exists"}
         except Exception as e:
             db.session.rollback()
             print(f"Error: {e}")
-            return {"error": "onboarding_code.exists"}
+            return {"error": "meshtastic.create.failed"}
+
+    @staticmethod
+    def get_by_ots_id(ots_id):
+        """Get a Meshtastic config by its OTS ID"""
+        return MeshtasticModel.query.filter_by(ots_id=ots_id).first()
 
     @staticmethod
     def get_by_id(meshtastic_id):
@@ -548,7 +596,107 @@ class MeshtasticModel(db.Model):
             return {"message": "meshtastic code deleted successfully"}
         else:
             return {"error": "meshtastic.not.exist"}
-        
+
+
+class MeshtasticChannelGroup(db.Model):
+    """
+    A group of Meshtastic channels (up to 8 slots).
+    Slot 0 is the primary channel, slots 1-7 are secondary channels.
+    All channels in a group share the same LoRa modem configuration.
+    """
+    __tablename__ = "meshtastic_channel_groups"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(nullable=True)
+    # Combined URL that sets up all channels in the group (optional, generated from channels)
+    combined_url: Mapped[str] = mapped_column(nullable=True)
+    # Visibility and access
+    isPublic: Mapped[bool] = mapped_column(nullable=True, default=False)
+    showOnHomepage: Mapped[bool] = mapped_column(nullable=True, default=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    # DEPRECATED: Old direct relationship - kept for migration
+    channels = relationship("MeshtasticModel", back_populates="group", order_by="MeshtasticModel.slot_number", foreign_keys="MeshtasticModel.group_id")
+
+    # New many-to-many relationship through ChannelGroupMembership
+    channel_memberships = relationship("ChannelGroupMembership", back_populates="group", cascade="all, delete-orphan", order_by="ChannelGroupMembership.slot_number")
+
+    # Role and user access
+    roles = relationship(
+        "UserRoleModel",
+        secondary=role_meshtastic_group_association,
+        backref="meshtastic_groups"
+    )
+    users = relationship(
+        "UserModel",
+        secondary=user_meshtastic_group_association,
+        backref="meshtastic_groups"
+    )
+
+    @staticmethod
+    def get_by_id(group_id):
+        return MeshtasticChannelGroup.query.get(group_id)
+
+    @staticmethod
+    def get_all():
+        return MeshtasticChannelGroup.query.all()
+
+    def get_channels_by_slot(self):
+        """Returns a dict of slot_number -> channel for easy access (using new membership model)"""
+        return {m.slot_number: m.channel for m in self.channel_memberships if m.slot_number is not None}
+
+    def get_channel_memberships_by_slot(self):
+        """Returns a dict of slot_number -> membership for easy access"""
+        return {m.slot_number: m for m in self.channel_memberships}
+
+    def get_primary_channel(self):
+        """Returns the primary channel (slot 0)"""
+        for m in self.channel_memberships:
+            if m.slot_number == 0:
+                return m.channel
+        return None
+
+    def validate_slot(self, slot_number, exclude_channel_id=None):
+        """Check if a slot number is valid (0-7) and available"""
+        if slot_number < 0 or slot_number > 7:
+            return False, "Slot number must be between 0 and 7"
+        for m in self.channel_memberships:
+            if m.slot_number == slot_number and m.channel_id != exclude_channel_id:
+                return False, f"Slot {slot_number} is already occupied by channel '{m.channel.name}'"
+        return True, None
+
+    @property
+    def channel_count(self):
+        """Return the number of channels in this group"""
+        return len(self.channel_memberships)
+
+
+class ChannelGroupMembership(db.Model):
+    """
+    Association object for channel-group many-to-many relationship.
+    Stores the slot_number for each channel within each group.
+    """
+    __tablename__ = "channel_group_membership"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    channel_id: Mapped[int] = mapped_column(ForeignKey('meshtastic.id'), nullable=False)
+    group_id: Mapped[int] = mapped_column(ForeignKey('meshtastic_channel_groups.id'), nullable=False)
+    slot_number: Mapped[int] = mapped_column(nullable=False)  # 0-7, slot position within this group
+
+    # Relationships
+    channel = relationship("MeshtasticModel", back_populates="group_memberships")
+    group = relationship("MeshtasticChannelGroup", back_populates="channel_memberships")
+
+    __table_args__ = (
+        UniqueConstraint('group_id', 'slot_number', name='unique_group_slot'),
+        UniqueConstraint('channel_id', 'group_id', name='unique_channel_group'),
+    )
+
+    @staticmethod
+    def get_by_channel_and_group(channel_id, group_id):
+        return ChannelGroupMembership.query.filter_by(channel_id=channel_id, group_id=group_id).first()
+
+
 class PackageModel(db.Model):
     __tablename__ = "packages"
     id: Mapped[int] = mapped_column(primary_key=True)

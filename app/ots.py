@@ -22,8 +22,9 @@ class OTSClient:
     _points = _apibase + "/point"
     _reset = _user + "/password/reset"
     _atak_qr_string = _apibase + "/atak_qr_string"
+    _meshtastic = _apibase + "/meshtastic"
 
-    
+
     def __init__(self, url, username, password):
         self.base_url = url
         self.username = username
@@ -299,5 +300,38 @@ class OTSClient:
         if max_uses is not None:
             body["max"] = max_uses
         return self.request_handler(method="POST", endpoint=self._itak_qr_string, body=body)
+
+    # Meshtastic endpoints - uses /api/meshtastic/channel
+    _meshtastic_channel = _meshtastic + "/channel"
+
+    def get_meshtastic_channels(self, page=None, page_size=None, name=None, url=None):
+        """Get all Meshtastic channels from OTS"""
+        params = {}
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        if name is not None:
+            params["name"] = name
+        if url is not None:
+            params["url"] = url
+        return self.request_handler(method="GET", endpoint=self._meshtastic_channel, params=params)
+
+    def create_meshtastic_channel(self, url, name=None):
+        """Create a new Meshtastic channel in OTS using the meshtastic:// URL"""
+        body = {'url': url}
+        if name is not None:
+            body['name'] = name
+        return self.request_handler(method="POST", endpoint=self._meshtastic_channel, body=body)
+
+    def delete_meshtastic_channel(self, url):
+        """Delete a Meshtastic channel from OTS by URL"""
+        params = {'url': url}
+        return self.request_handler(method="DELETE", endpoint=self._meshtastic_channel, params=params)
+
+    def generate_meshtastic_psk(self):
+        """Generate a new PSK for Meshtastic channel encryption"""
+        endpoint = self._meshtastic + "/generate_psk"
+        return self.request_handler(method="GET", endpoint=endpoint)
 
 otsClient = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)

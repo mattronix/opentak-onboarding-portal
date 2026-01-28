@@ -18,6 +18,7 @@ Flask-QRcode==3.2.0
 flask_menu==1.0.1
 Flask-WTF==1.2.1
 PyYAML==6.0.2
+meshtastic==2.5.6
 
 # Testing dependencies
 pytest==8.4.2

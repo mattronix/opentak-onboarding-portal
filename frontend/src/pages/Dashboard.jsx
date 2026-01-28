@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { takProfilesAPI, meshtasticAPI, radiosAPI, settingsAPI, qrAPI } from '../services/api';
+import { takProfilesAPI, meshtasticAPI, meshtasticGroupsAPI, radiosAPI, settingsAPI, qrAPI } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
 import './Dashboard.css';
 
@@ -30,12 +30,34 @@ function Dashboard() {
     },
   });
 
-  const { data: meshtasticConfigs, isLoading: loadingMeshtastic } = useQuery({
-    queryKey: ['meshtastic'],
+  const { data: meshtasticConfigs = [], isLoading: loadingMeshtastic } = useQuery({
+    queryKey: ['dashboardMeshtastic'],
     queryFn: async () => {
-      const response = await meshtasticAPI.getAll();
-      return response.data.configs;
+      try {
+        const response = await meshtasticAPI.getAll();
+        return response.data?.configs || [];
+      } catch (err) {
+        console.error('Failed to fetch meshtastic configs:', err);
+        return [];
+      }
     },
+    retry: false,
+    placeholderData: [],
+  });
+
+  const { data: meshtasticGroups = [] } = useQuery({
+    queryKey: ['dashboardMeshtasticGroups'],
+    queryFn: async () => {
+      try {
+        const response = await meshtasticGroupsAPI.getAll();
+        return response.data?.groups || [];
+      } catch (err) {
+        console.error('Failed to fetch meshtastic groups:', err);
+        return [];
+      }
+    },
+    retry: false,
+    placeholderData: [],
   });
 
   const { data: radios, isLoading: loadingRadios } = useQuery({
@@ -570,12 +592,115 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Step: Meshtastic Configs - only show if configs exist */}
-          {meshtasticConfigs && meshtasticConfigs.length > 0 && (
+          {/* Step: Meshtastic Channel Groups - groups that have channels */}
+          {(meshtasticGroups || []).filter(g => g.channel_count > 0).length > 0 && (
             <div className="step-card">
-              <h2>{2 + (hasAnyQRCode ? 1 : 0) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0) + (takProfiles && takProfiles.length > 0 ? 1 : 0)}. Meshtastic Configs</h2>
-              <div className="meshtastic-grid">
-                {meshtasticConfigs.map((config) => (
+              <h2>{2 + (hasAnyQRCode ? 1 : 0) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0) + (takProfiles && takProfiles.length > 0 ? 1 : 0)}. Meshtastic Channel Groups</h2>
+              <p style={{ color: '#666', marginBottom: '1rem' }}>Scan to configure channels in the group.</p>
+              <div className="meshtastic-grid" style={{ justifyContent: 'center' }}>
+                {(meshtasticGroups || []).filter(g => g.channel_count > 0).map((group) => {
+                  // Build slot map for showing all 8 slots
+                  const slotMap = {};
+                  group.channels.forEach(c => {
+                    slotMap[c.slot_number] = c.name;
+                  });
+
+                  return (
+                  <div key={group.id} style={{ flex: '1 1 calc(50% - 1rem)', minWidth: '420px', maxWidth: '520px', padding: '1.5rem', background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <h3>{group.name}</h3>
+                    {group.description && <p style={{ color: '#666' }}>{group.description}</p>}
+                    {group.combined_url ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '2rem', margin: '1rem 0' }}>
+                          <div className="qr-section" style={{ flexShrink: 0 }}>
+                            <QRCodeSVG
+                              value={group.combined_url}
+                              size={300}
+                              level="H"
+                              includeMargin={true}
+                              className="qr-code"
+                              imageSettings={{
+                                src: `${API_BASE_URL}/static/img/meshtastic.png`,
+                                height: 50,
+                                width: 50,
+                                excavate: true,
+                              }}
+                            />
+                          </div>
+                          {/* Slot list on the right */}
+                          <div style={{ padding: '1rem 0', minWidth: '180px' }}>
+                            <p style={{ margin: '0 0 1rem', fontSize: '1.1rem', color: '#333', fontWeight: 600 }}>Slots:</p>
+                            {[0, 1, 2, 3, 4, 5, 6, 7].map(slot => (
+                              <p key={slot} style={{ margin: '0.5rem 0', fontSize: '1.1rem', color: slotMap[slot] ? '#333' : '#999' }}>
+                                {slot}: {slotMap[slot] ? <strong>{slotMap[slot]}</strong> : <em>unused</em>}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="qr-actions">
+                          <button
+                            onClick={() => window.location.href = group.combined_url}
+                            className="open-btn"
+                            style={{ background: accentColor }}
+                          >
+                            Open in Meshtastic
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      /* Show individual channel QR codes when no combined URL */
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {group.channels.filter(c => c.url).map((channel) => (
+                          <div key={channel.id} style={{ textAlign: 'center', padding: '0.5rem', background: '#f9f9f9', borderRadius: '4px' }}>
+                            <p style={{ margin: '0 0 0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>
+                              Slot {channel.slot_number}: {channel.name}
+                            </p>
+                            <div className="qr-section">
+                              <QRCodeSVG
+                                value={channel.url}
+                                size={150}
+                                level="H"
+                                includeMargin={true}
+                                className="qr-code"
+                                imageSettings={{
+                                  src: `${API_BASE_URL}/static/img/meshtastic.png`,
+                                  height: 30,
+                                  width: 30,
+                                  excavate: true,
+                                }}
+                              />
+                            </div>
+                            <div className="qr-actions" style={{ marginTop: '0.5rem' }}>
+                              <button
+                                onClick={() => window.location.href = channel.url}
+                                className="open-btn"
+                                style={{ background: accentColor, fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+                              >
+                                Open in Meshtastic
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {group.channels.filter(c => !c.url).length > 0 && (
+                          <p style={{ fontSize: '0.8rem', color: '#999', margin: 0 }}>
+                            {group.channels.filter(c => !c.url).length} channel(s) without URL
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step: Meshtastic Channels - individual channels that have a URL and not in a group */}
+          {meshtasticConfigs && meshtasticConfigs.filter(c => c.url && !c.group_id).length > 0 && (
+            <div className="step-card">
+              <h2>{2 + (hasAnyQRCode ? 1 : 0) + (settings?.callsign_qr_code_enabled && user?.callsign ? 1 : 0) + (takProfiles && takProfiles.length > 0 ? 1 : 0) + ((meshtasticGroups || []).filter(g => g.channel_count > 0).length > 0 ? 1 : 0)}. Meshtastic Channels</h2>
+              <div className="meshtastic-grid" style={{ justifyContent: 'center' }}>
+                {meshtasticConfigs.filter(c => c.url && !c.group_id).map((config) => (
                   <div key={config.id} className="meshtastic-config-item">
                     <h3>{config.name}</h3>
                     {config.url && (

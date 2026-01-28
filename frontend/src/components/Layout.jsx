@@ -125,7 +125,8 @@ function Layout() {
                 {hasModuleAccess('onboarding_codes') && <Link to="/admin/onboarding-codes">Onboarding Codes</Link>}
                 {hasModuleAccess('pending_registrations') && <Link to="/admin/pending-registrations">Registrations</Link>}
                 {hasModuleAccess('tak_profiles') && <Link to="/admin/tak-profiles">TAK Profiles</Link>}
-                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic">Meshtastic</Link>}
+                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic">Meshtastic Channels</Link>}
+                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic/groups">Meshtastic Channel Groups</Link>}
                 {hasModuleAccess('radios') && <Link to="/admin/radios">Radios</Link>}
                 {hasModuleAccess('announcements') && <Link to="/admin/announcements">Announcements</Link>}
                 {hasModuleAccess('settings') && <Link to="/admin/settings">Settings</Link>}
