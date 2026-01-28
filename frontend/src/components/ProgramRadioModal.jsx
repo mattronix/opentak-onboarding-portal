@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { radiosAPI, meshtasticGroupsAPI } from '../services/api';
 import { meshtasticSerial } from '../services/meshtasticSerial';
@@ -17,6 +17,8 @@ function ProgramRadioModal({ radio, onClose }) {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [scanLog, setScanLog] = useState([]);
+  const [isProgramming, setIsProgramming] = useState(false);
+  const terminalRef = useRef(null);
 
   // Check browser support
   const browserSupport = meshtasticSerial.getBrowserSupport();
@@ -38,6 +40,13 @@ function ProgramRadioModal({ radio, onClose }) {
       }
     };
   }, []);
+
+  // Auto-scroll terminal to bottom when new log entries are added
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [scanLog]);
 
   // Fetch preview config when a group is selected
   const handleSelectGroup = async (groupId) => {
@@ -96,6 +105,7 @@ function ProgramRadioModal({ radio, onClose }) {
 
   const startProgramming = async () => {
     setError('');
+    setIsProgramming(true);
     try {
       // Get programming config from backend
       const configResponse = await radiosAPI.getProgramConfig(radio.id, {
@@ -115,13 +125,19 @@ function ProgramRadioModal({ radio, onClose }) {
     } catch (err) {
       setError(err.message);
       setStep(4);
+    } finally {
+      setIsProgramming(false);
     }
   };
 
-  const handleDisconnect = async () => {
-    await meshtasticSerial.disconnect();
-    setDeviceInfo(null);
-    setConnectionStatus('disconnected');
+  const handleClose = () => {
+    if (isProgramming) {
+      const confirmed = window.confirm(
+        'Programming is in progress!\n\nClosing now may leave your radio in an incomplete state.\n\nAre you sure you want to cancel?'
+      );
+      if (!confirmed) return;
+    }
+    onClose();
   };
 
   const groups = groupsData?.groups || [];
@@ -131,7 +147,7 @@ function ProgramRadioModal({ radio, onClose }) {
       <div className="modal program-radio-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Program Radio: {radio.name}</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-close" onClick={handleClose} disabled={isProgramming}>×</button>
         </div>
 
         <div className="modal-body">
@@ -273,42 +289,72 @@ function ProgramRadioModal({ radio, onClose }) {
               {/* Step 2: Connect to Radio */}
               {step === 2 && (
                 <div className="program-step">
-                  <h3>Connect to Radio</h3>
-                  <p>Connect your Meshtastic radio via USB and click the button below.</p>
-
-                  <div className="connection-status">
-                    <div className={`status-indicator ${connectionStatus}`}></div>
-                    <span>{statusMessage || 'Ready to connect'}</span>
-                  </div>
-
-                  <div className="connection-instructions">
-                    <ol>
-                      <li>Connect your Meshtastic radio to your computer via USB</li>
-                      <li>Click "Connect Radio" and select the serial port</li>
-                      <li>Wait for the connection to be established</li>
-                    </ol>
-                  </div>
-
-                  <button
-                    className="btn btn-primary btn-lg"
-                    onClick={handleConnect}
-                    disabled={connectionStatus === 'connecting'}
-                  >
-                    {connectionStatus === 'connecting' ? 'Connecting...' : 'Connect Radio'}
-                  </button>
-
-                  {scanLog.length > 0 && (
-                    <div className="scan-terminal">
-                      <div className="terminal-header">Connection Log</div>
-                      <div className="terminal-content">
-                        {scanLog.map((entry, idx) => (
-                          <div key={idx} className={`terminal-line ${entry.type}`}>
-                            <span className="terminal-time">[{entry.timestamp}]</span>
-                            <span className="terminal-msg">{entry.message}</span>
-                          </div>
-                        ))}
+                  {connectionStatus === 'connecting' ? (
+                    /* Show loading overlay when connecting */
+                    <div className="connecting-overlay">
+                      <div className="connecting-header">
+                        <div className="programming-spinner"></div>
+                        <h3>Connecting to Radio...</h3>
                       </div>
+                      <p className="connecting-message">Please wait while we establish connection</p>
+                      <div className="connecting-status">
+                        {statusMessage || 'Initializing...'}
+                      </div>
+                      {scanLog.length > 0 && (
+                        <div className="scan-terminal" style={{ marginTop: '20px', textAlign: 'left' }}>
+                          <div className="terminal-header">Connection Log</div>
+                          <div className="terminal-content" ref={terminalRef}>
+                            {scanLog.map((entry, idx) => (
+                              <div key={idx} className={`terminal-line ${entry.type}`}>
+                                <span className="terminal-time">[{entry.timestamp}]</span>
+                                <span className="terminal-msg">{entry.message}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    /* Show connection instructions when not connecting */
+                    <>
+                      <h3>Connect to Radio</h3>
+                      <p>Connect your Meshtastic radio via USB and click the button below.</p>
+
+                      <div className="connection-status">
+                        <div className={`status-indicator ${connectionStatus}`}></div>
+                        <span>{statusMessage || 'Ready to connect'}</span>
+                      </div>
+
+                      <div className="connection-instructions">
+                        <ol>
+                          <li>Connect your Meshtastic radio to your computer via USB</li>
+                          <li>Click "Connect Radio" and select the serial port</li>
+                          <li>Wait for the connection to be established</li>
+                        </ol>
+                      </div>
+
+                      <button
+                        className="btn btn-primary btn-lg"
+                        onClick={handleConnect}
+                        disabled={connectionStatus === 'connecting'}
+                      >
+                        Connect Radio
+                      </button>
+
+                      {scanLog.length > 0 && (
+                        <div className="scan-terminal">
+                          <div className="terminal-header">Connection Log</div>
+                          <div className="terminal-content" ref={terminalRef}>
+                            {scanLog.map((entry, idx) => (
+                              <div key={idx} className={`terminal-line ${entry.type}`}>
+                                <span className="terminal-time">[{entry.timestamp}]</span>
+                                <span className="terminal-msg">{entry.message}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -316,11 +362,18 @@ function ProgramRadioModal({ radio, onClose }) {
               {/* Step 3: Programming */}
               {step === 3 && (
                 <div className="program-step">
-                  <h3>Programming Radio</h3>
+                  <div className="programming-header">
+                    <div className="programming-spinner"></div>
+                    <h3>Configuring Radio...</h3>
+                  </div>
+
+                  <div className="programming-warning">
+                    <strong>Please wait</strong> — Do not disconnect or close this window
+                  </div>
 
                   {deviceInfo && (
                     <div className="device-info">
-                      <strong>Connected Device:</strong>
+                      <strong>Device:</strong>
                       <span>{deviceInfo.longName || deviceInfo.shortName || 'Unknown'}</span>
                       {deviceInfo.firmwareVersion && (
                         <span className="firmware">v{deviceInfo.firmwareVersion}</span>
@@ -336,10 +389,10 @@ function ProgramRadioModal({ radio, onClose }) {
                       ></div>
                     </div>
                     <div className="progress-text">
-                      {progress.message || 'Starting...'}
+                      {progress.message || 'Starting configuration...'}
                     </div>
                     <div className="progress-count">
-                      {progress.current} / {progress.total}
+                      {progress.total > 0 ? `${progress.current} / ${progress.total}` : 'Preparing...'}
                     </div>
                   </div>
                 </div>
@@ -373,7 +426,7 @@ function ProgramRadioModal({ radio, onClose }) {
         <div className="modal-footer">
           {step === 1 && (
             <>
-              <button className="btn btn-secondary" onClick={onClose}>
+              <button className="btn btn-secondary" onClick={handleClose}>
                 Cancel
               </button>
               <button
@@ -388,16 +441,20 @@ function ProgramRadioModal({ radio, onClose }) {
 
           {step === 2 && (
             <>
-              <button className="btn btn-secondary" onClick={() => setStep(1)}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setStep(1)}
+                disabled={connectionStatus === 'connecting'}
+              >
                 Back
               </button>
             </>
           )}
 
           {step === 3 && (
-            <button className="btn btn-secondary" onClick={handleDisconnect}>
-              Cancel
-            </button>
+            <div className="programming-footer-notice">
+              Configuration in progress...
+            </div>
           )}
 
           {step === 4 && (
@@ -410,7 +467,7 @@ function ProgramRadioModal({ radio, onClose }) {
                   Try Again
                 </button>
               )}
-              <button className="btn btn-primary" onClick={onClose}>
+              <button className="btn btn-primary" onClick={handleClose}>
                 Close
               </button>
             </>

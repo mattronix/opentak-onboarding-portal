@@ -224,8 +224,9 @@ class MeshtasticSerialService {
           // The user field contains: id, longName, shortName, macaddr, hwModel, etc.
           const nodeNum = nodeInfoPacket.num || nodeInfoPacket.data?.num;
 
-          // Only process if this is our device
-          const isOurNode = !this.deviceInfo?.nodeNum || nodeNum === this.deviceInfo?.nodeNum;
+          // Accept first packet OR packets from our known node
+          const isFirstPacket = !this.hasReceivedUserInfo;
+          const isOurNode = this.deviceInfo?.nodeNum && nodeNum === this.deviceInfo?.nodeNum;
 
           // Try to get user from various paths
           let user = null;
@@ -235,11 +236,8 @@ class MeshtasticSerialService {
             user = nodeInfoPacket.data.user;
           }
 
-          if (user) {
+          if (user && (user.shortName || user.longName) && (isFirstPacket || isOurNode)) {
             this._log(`Node info for node ${nodeNum}: shortName="${user.shortName}", longName="${user.longName}"`, 'info');
-          }
-
-          if (user && isOurNode) {
             this.deviceInfo = {
               ...this.deviceInfo,
               shortName: user.shortName || this.deviceInfo?.shortName,
@@ -248,7 +246,16 @@ class MeshtasticSerialService {
               hwModel: user.hwModel || this.deviceInfo?.hwModel,
             };
             this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}"`, 'success');
-          } else if (user && !isOurNode) {
+
+            // Mark that we've received user info
+            if (!this.hasReceivedUserInfo) {
+              this.hasReceivedUserInfo = true;
+              if (this.onDeviceInfoReceived) {
+                this._log('Calling instant callback with device info', 'success');
+                this.onDeviceInfoReceived(this.deviceInfo);
+              }
+            }
+          } else if (user && !isFirstPacket && !isOurNode) {
             this._log(`Ignoring nodeInfoPacket from other node ${nodeNum}`, 'info');
           }
         });
@@ -302,13 +309,45 @@ class MeshtasticSerialService {
 
       // Start processing
       this._log('Starting device configuration...', 'info');
-      await this.device.configure();
-      this._log('Device configured, requesting info...', 'info');
 
+      // Create a promise that resolves when we receive device info
+      const deviceInfoPromise = new Promise((resolve) => {
+        // Store the original callback
+        const originalCallback = this.onDeviceInfoReceived;
+
+        // Set up a callback that resolves our promise
+        this.onDeviceInfoReceived = (info) => {
+          this._log('Device info received via callback, proceeding immediately...', 'success');
+          if (originalCallback) originalCallback(info);
+          resolve(info);
+        };
+
+        // Also set up a check for hasReceivedUserInfo in case it was set before this
+        const checkExisting = setInterval(() => {
+          if (this.hasReceivedUserInfo && this.deviceInfo) {
+            clearInterval(checkExisting);
+            this._log('Device info already received, proceeding...', 'success');
+            resolve(this.deviceInfo);
+          }
+        }, 50);
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          clearInterval(checkExisting);
+          this._log('Timeout waiting for device info, proceeding with available data...', 'warn');
+          resolve(this.deviceInfo || {});
+        }, 10000);
+      });
+
+      // Start configure (don't await - let it run in background)
+      const configurePromise = this.device.configure();
+      configurePromise.catch(err => {
+        console.warn('Configure completed with error (non-blocking):', err);
+      });
+
+      // Wait for device info (will resolve as soon as callback fires)
       this._updateStatus('connecting', 'Waiting for device info...');
-
-      // Wait for device info
-      await this._waitForDeviceInfo();
+      await deviceInfoPromise;
 
       this._updateStatus('connected', 'Connected to radio');
       this._log('Connection complete', 'success');
@@ -325,34 +364,44 @@ class MeshtasticSerialService {
   /**
    * Wait for device info to be received
    */
-  async _waitForDeviceInfo(timeout = 2000) {
-    return new Promise((resolve, reject) => {
+  async _waitForDeviceInfo(timeout = 3000) {
+    return new Promise((resolve) => {
       const startTime = Date.now();
 
       const checkInfo = () => {
         // Try to get more info from the device nodes map
         this._tryGetMoreInfo();
 
-        // Consider it ready when we have some meaningful info (nodeNum or shortName/longName)
-        const hasUserInfo = this.deviceInfo && (
-          this.deviceInfo.shortName ||
-          this.deviceInfo.longName
-        );
+        // Resolve immediately if we've received user info from event handlers
+        if (this.hasReceivedUserInfo) {
+          this._log('Device info received, proceeding...', 'success');
+          resolve(this.deviceInfo);
+          return;
+        }
 
-        if (hasUserInfo) {
-          console.log('Found user info, resolving:', this.deviceInfo);
+        // Consider ready when we have nodeNum AND user info
+        const hasNodeNum = this.deviceInfo?.nodeNum;
+        const hasUserInfo = this.deviceInfo?.shortName || this.deviceInfo?.longName;
+
+        if (hasNodeNum && hasUserInfo) {
+          this._log('Device info complete, proceeding...', 'success');
+          resolve(this.deviceInfo);
+        } else if (hasNodeNum && Date.now() - startTime > 1000) {
+          // If we have nodeNum but no user info after 1s, proceed anyway
+          this._log('Proceeding with available device info...', 'info');
           resolve(this.deviceInfo);
         } else if (Date.now() - startTime > timeout) {
-          // If timeout but we still have something, use it
-          console.log('Timeout reached, using whatever we have:', this.deviceInfo);
+          // Hard timeout - proceed with whatever we have
+          this._log('Timeout waiting for device info, proceeding...', 'warn');
           resolve(this.deviceInfo || {});
         } else {
-          setTimeout(checkInfo, 150);
+          // Check more frequently for faster response
+          setTimeout(checkInfo, 50);
         }
       };
 
-      // Start checking after a short initial delay
-      setTimeout(checkInfo, 100);
+      // Start checking immediately
+      checkInfo();
     });
   }
 

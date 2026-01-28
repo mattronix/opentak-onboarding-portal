@@ -6,6 +6,7 @@ import { takProfilesAPI, meshtasticAPI, meshtasticGroupsAPI, radiosAPI, settings
 import { QRCodeSVG } from 'qrcode.react';
 import { meshtasticSerial } from '../services/meshtasticSerial';
 import ProgramRadioModal from '../components/ProgramRadioModal';
+import EnrollRadioModal from '../components/EnrollRadioModal';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -16,6 +17,7 @@ function Dashboard() {
   const [copiedMeshtastic, setCopiedMeshtastic] = useState(null);
   const [expandedSteps, setExpandedSteps] = useState(new Set([0])); // First step expanded by default
   const [programmingRadio, setProgrammingRadio] = useState(null);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
 
   // Step expansion helpers
   const toggleStep = (stepIndex) => {
@@ -409,7 +411,7 @@ function Dashboard() {
   }
 
   // Step 5: Meshtastic Channel Groups (if any)
-  const groupsWithChannels = (meshtasticGroups || []).filter(g => g.channel_count > 0);
+  const groupsWithChannels = (meshtasticGroups || []).filter(g => g.channel_count > 0 && g.showOnHomepage !== false);
   if (groupsWithChannels.length > 0) {
     steps.push({
       index: stepIndex++,
@@ -505,6 +507,53 @@ function Dashboard() {
     });
   }
 
+  // Step 7: Meshtastic Radios (if user has assigned radios or can register)
+  const userRadios = (radios || []).filter(r => r.assignedTo === user?.id);
+  const showRadiosStep = userRadios.length > 0 || settings?.user_radio_enrollment_enabled;
+  if (showRadiosStep) {
+    steps.push({
+      index: stepIndex++,
+      title: 'Your Meshtastic Radios',
+      content: (
+        <div style={{ textAlign: 'center' }}>
+          {loadingRadios ? (
+            <p>Loading radios...</p>
+          ) : userRadios.length > 0 ? (
+            <div className="radios-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginBottom: '1rem' }}>
+              {userRadios.map((radio) => (
+                <span
+                  key={radio.id}
+                  className={`radio-badge ${settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'clickable' : ''}`}
+                  onClick={() => {
+                    if (settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && meshtasticSerial.getBrowserSupport().isSupported) {
+                      setProgrammingRadio(radio);
+                    }
+                  }}
+                  title={settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'Click to program this radio' : undefined}
+                >
+                  {radio.name} ({radio.platform})
+                  {settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && (
+                    <span className="program-hint"> - Click to Program</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: '#666', marginBottom: '1rem' }}>No radios assigned to you yet.</p>
+          )}
+          {settings?.user_radio_enrollment_enabled && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowEnrollModal(true)}
+            >
+              + Register Radio
+            </button>
+          )}
+        </div>
+      )
+    });
+  }
+
   const totalSteps = steps.length;
 
   return (
@@ -526,35 +575,6 @@ function Dashboard() {
                 </span>
               )) || <span className="role-badge" style={{ background: primaryColor }}>user</span>}
             </div>
-          </div>
-          <div className="info-card">
-            <h3>Assigned Radios</h3>
-            {loadingRadios ? (
-              <p>Loading...</p>
-            ) : radios && radios.length > 0 ? (
-              <div className="radios-list">
-                {radios.filter(r => r.assignedTo === user?.id).map((radio) => (
-                  <span
-                    key={radio.id}
-                    className={`radio-badge ${settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'clickable' : ''}`}
-                    onClick={() => {
-                      if (settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && meshtasticSerial.getBrowserSupport().isSupported) {
-                        setProgrammingRadio(radio);
-                      }
-                    }}
-                    title={settings?.user_program_radio_enabled && radio.platform === 'meshtastic' ? 'Click to program this radio' : undefined}
-                  >
-                    {radio.name} ({radio.platform})
-                    {settings?.user_program_radio_enabled && radio.platform === 'meshtastic' && (
-                      <span className="program-hint"> - Click to Program</span>
-                    )}
-                  </span>
-                ))}
-                {radios.filter(r => r.assignedTo === user?.id).length === 0 && <p className="no-items">No radios assigned</p>}
-              </div>
-            ) : (
-              <p className="no-items">No radios assigned</p>
-            )}
           </div>
         </div>
         <div className="action-buttons">
@@ -613,6 +633,16 @@ function Dashboard() {
         <ProgramRadioModal
           radio={programmingRadio}
           onClose={() => setProgrammingRadio(null)}
+        />
+      )}
+
+      {/* Enroll Radio Modal */}
+      {showEnrollModal && (
+        <EnrollRadioModal
+          onClose={() => setShowEnrollModal(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries(['radios']);
+          }}
         />
       )}
     </div>

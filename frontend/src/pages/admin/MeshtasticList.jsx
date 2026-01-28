@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { meshtasticAPI, rolesAPI } from '../../services/api';
+import { meshtasticAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import '../../components/AdminTable.css';
 
@@ -9,7 +9,7 @@ function MeshtasticList() {
   const { showError, showSuccess, confirm } = useNotification();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [formData, setFormData] = useState({ name: '', url: '', description: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
+  const [formData, setFormData] = useState({ name: '', url: '', description: '' });
   const [error, setError] = useState('');
   const [syncing, setSyncing] = useState(false);
 
@@ -17,14 +17,6 @@ function MeshtasticList() {
     queryKey: ['meshtasticAdmin'],
     queryFn: async () => {
       const response = await meshtasticAPI.getAllAdmin();
-      return response.data;
-    },
-  });
-
-  const { data: rolesData } = useQuery({
-    queryKey: ['roles'],
-    queryFn: async () => {
-      const response = await rolesAPI.getAll();
       return response.data;
     },
   });
@@ -77,7 +69,7 @@ function MeshtasticList() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', url: '', description: '', isPublic: false, defaultRadioConfig: false, roleIds: [] });
+    setFormData({ name: '', url: '', description: '' });
     setEditing(null);
     setError('');
   };
@@ -157,10 +149,7 @@ function MeshtasticList() {
                           setFormData({
                             name: fullConfig.name,
                             url: fullConfig.url || '',
-                            description: fullConfig.description || '',
-                            isPublic: fullConfig.isPublic || false,
-                            defaultRadioConfig: fullConfig.defaultRadioConfig || false,
-                            roleIds: fullConfig.roles?.map(r => r.id) || []
+                            description: fullConfig.description || ''
                           });
                           setShowModal(true);
                         } catch (err) {
@@ -222,29 +211,6 @@ function MeshtasticList() {
                 <div className="form-group">
                   <label>Description</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input type="checkbox" checked={formData.isPublic} onChange={(e) => setFormData({...formData, isPublic: e.target.checked})} />
-                    Public (visible to all users)
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input type="checkbox" checked={formData.defaultRadioConfig} onChange={(e) => setFormData({...formData, defaultRadioConfig: e.target.checked})} />
-                    Default Radio Configuration
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>Roles</label>
-                  <div className="checkbox-list">
-                    {rolesData?.roles?.map(role => (
-                      <label key={role.id} className="checkbox-label">
-                        <input type="checkbox" checked={formData.roleIds.includes(role.id)} onChange={() => setFormData(prev => ({...prev, roleIds: prev.roleIds.includes(role.id) ? prev.roleIds.filter(r => r !== role.id) : [...prev.roleIds, role.id]}))} />
-                        {role.displayName || role.name}
-                      </label>
-                    ))}
-                  </div>
                 </div>
               </div>
               <div className="modal-footer">

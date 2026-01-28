@@ -305,6 +305,9 @@ export const radiosAPI = {
   claim: (id) =>
     api.post(`/radios/${id}/claim`),
 
+  enroll: (data) =>
+    api.post('/radios/enroll', data),
+
   delete: (id) =>
     api.delete(`/radios/${id}`),
 

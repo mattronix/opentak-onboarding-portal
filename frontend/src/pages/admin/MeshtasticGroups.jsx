@@ -12,7 +12,7 @@ function MeshtasticGroups() {
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', isPublic: false, roleIds: [], yamlConfig: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', isPublic: false, showOnHomepage: true, roleIds: [], yamlConfig: '' });
   const [slotData, setSlotData] = useState({ channelId: '', slotNumber: 0 });
   const [error, setError] = useState('');
 
@@ -109,7 +109,7 @@ function MeshtasticGroups() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', isPublic: false, roleIds: [], yamlConfig: '' });
+    setFormData({ name: '', description: '', isPublic: false, showOnHomepage: true, roleIds: [], yamlConfig: '' });
     setEditing(null);
     setError('');
   };
@@ -228,6 +228,7 @@ function MeshtasticGroups() {
                         name: fullGroup.name,
                         description: fullGroup.description || '',
                         isPublic: fullGroup.isPublic || false,
+                        showOnHomepage: fullGroup.showOnHomepage !== false,
                         roleIds: fullGroup.roles?.map(r => r.id) || [],
                         yamlConfig: fullGroup.yamlConfig || ''
                       });
@@ -371,6 +372,16 @@ function MeshtasticGroups() {
                       onChange={(e) => setFormData({...formData, isPublic: e.target.checked})}
                     />
                     Public (visible to all users)
+                  </label>
+                </div>
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.showOnHomepage}
+                      onChange={(e) => setFormData({...formData, showOnHomepage: e.target.checked})}
+                    />
+                    Show on homepage
                   </label>
                 </div>
                 <div className="form-group">

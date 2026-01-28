@@ -1165,6 +1165,12 @@ class SystemSettingsModel(db.Model):
                 'category': 'radios',
                 'description': 'Allow users to program their assigned radios from the dashboard'
             },
+            {
+                'key': 'user_radio_enrollment_enabled',
+                'value': 'false',
+                'category': 'radios',
+                'description': 'Allow users to register their own radios via USB from the dashboard'
+            },
             # Installer QR Codes
             {
                 'key': 'atak_installer_qr_enabled',

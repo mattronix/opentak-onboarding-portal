@@ -1,0 +1,123 @@
+.enroll-radio-modal {
+  max-width: 550px;
+  width: 90%;
+}
+
+.enroll-description {
+  color: #666;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.usb-scan-section {
+  padding: 16px;
+  background: #f0f7ff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #cce0ff;
+}
+
+.usb-scan-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.scan-status {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Terminal Log */
+.scan-terminal {
+  margin-top: 12px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.terminal-header {
+  background: #333;
+  color: #ccc;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.terminal-content {
+  padding: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.terminal-line {
+  display: flex;
+  gap: 8px;
+  color: #d4d4d4;
+}
+
+.terminal-line.error {
+  color: #f48771;
+}
+
+.terminal-line.success {
+  color: #89d185;
+}
+
+.terminal-line.info {
+  color: #9cdcfe;
+}
+
+.terminal-time {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.terminal-msg {
+  word-break: break-word;
+}
+
+/* Form Divider */
+.form-divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0 16px;
+  color: #666;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-divider::before,
+.form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ddd;
+}
+
+.form-divider span {
+  padding: 0 12px;
+}
+
+/* Form Row */
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+@media (max-width: 500px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

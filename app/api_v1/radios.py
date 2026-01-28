@@ -19,6 +19,39 @@ def require_admin_role():
     return None
 
 
+def check_radio_duplicates(data, exclude_id=None):
+    """
+    Check for duplicate radio fields (name, shortName, longName, mac).
+    Returns error response tuple if duplicate found, None otherwise.
+    exclude_id: ID of radio to exclude from checks (for updates)
+    """
+    # Check name
+    if data.get('name'):
+        existing = RadioModel.query.filter_by(name=data['name']).first()
+        if existing and (exclude_id is None or existing.id != exclude_id):
+            return jsonify({'error': 'Radio with this name already exists'}), 409
+
+    # Check shortName (only if provided and non-empty)
+    if data.get('shortName'):
+        existing = RadioModel.query.filter_by(shortName=data['shortName']).first()
+        if existing and (exclude_id is None or existing.id != exclude_id):
+            return jsonify({'error': f'Radio with short name "{data["shortName"]}" already exists'}), 409
+
+    # Check longName (only if provided and non-empty)
+    if data.get('longName'):
+        existing = RadioModel.query.filter_by(longName=data['longName']).first()
+        if existing and (exclude_id is None or existing.id != exclude_id):
+            return jsonify({'error': f'Radio with long name "{data["longName"]}" already exists'}), 409
+
+    # Check MAC (only if provided and non-empty)
+    if data.get('mac'):
+        existing = RadioModel.query.filter_by(mac=data['mac']).first()
+        if existing and (exclude_id is None or existing.id != exclude_id):
+            return jsonify({'error': 'Radio with this MAC address already exists'}), 409
+
+    return None
+
+
 @api_v1.route('/radios', methods=['GET'])
 @jwt_required()
 def get_radios():
@@ -108,16 +141,10 @@ def create_radio():
         if not data.get(field):
             return jsonify({'error': f'{field} is required'}), 400
 
-    # Check if name already exists
-    existing = RadioModel.get_by_name(data['name'])
-    if existing:
-        return jsonify({'error': 'Radio with this name already exists'}), 409
-
-    # Check if MAC already exists
-    if data.get('mac'):
-        existing_mac = RadioModel.query.filter_by(mac=data['mac']).first()
-        if existing_mac:
-            return jsonify({'error': 'Radio with this MAC address already exists'}), 409
+    # Check for duplicates (name, shortName, longName, mac)
+    duplicate_error = check_radio_duplicates(data)
+    if duplicate_error:
+        return duplicate_error
 
     try:
         radio = RadioModel.create(
@@ -165,12 +192,13 @@ def update_radio(radio_id):
 
     data = request.get_json()
 
+    # Check for duplicates (excluding this radio)
+    duplicate_error = check_radio_duplicates(data, exclude_id=radio_id)
+    if duplicate_error:
+        return duplicate_error
+
     try:
         if data.get('name'):
-            # Check for name conflict
-            existing = RadioModel.get_by_name(data['name'])
-            if existing and existing.id != radio_id:
-                return jsonify({'error': 'Radio with this name already exists'}), 409
             radio.name = data['name']
 
         if 'description' in data:
@@ -190,10 +218,6 @@ def update_radio(radio_id):
         if 'longName' in data:
             radio.longName = data['longName']
         if 'mac' in data:
-            # Check for MAC conflict
-            existing_mac = RadioModel.query.filter_by(mac=data['mac']).first()
-            if existing_mac and existing_mac.id != radio_id:
-                return jsonify({'error': 'Radio with this MAC already exists'}), 409
             radio.mac = data['mac']
         if 'role' in data:
             radio.role = data['role']
@@ -272,6 +296,62 @@ def claim_radio(radio_id):
 
     except Exception as e:
         return jsonify({'error': f'Failed to claim radio: {str(e)}'}), 400
+
+
+@api_v1.route('/radios/enroll', methods=['POST'])
+@jwt_required()
+def enroll_radio():
+    """
+    User self-enrollment of a radio.
+    Requires user_radio_enrollment_enabled setting to be true.
+    The current user becomes both owner and assignedTo.
+    """
+    # Check if user enrollment is enabled
+    user_enrollment_enabled = SystemSettingsModel.get_setting('user_radio_enrollment_enabled', False)
+    if user_enrollment_enabled not in [True, 'true', 'True']:
+        return jsonify({'error': 'User radio enrollment is not enabled'}), 403
+
+    current_user_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    if not data.get('name'):
+        return jsonify({'error': 'Radio name is required'}), 400
+
+    # Check for duplicates (name, shortName, longName, mac)
+    duplicate_error = check_radio_duplicates(data)
+    if duplicate_error:
+        return duplicate_error
+
+    try:
+        radio = RadioModel.create(
+            name=data['name'],
+            platform=data.get('platform', ''),
+            radioType=data.get('radioType', 'meshtastic'),
+            description=data.get('description', ''),
+            software_version=data.get('softwareVersion', ''),
+            model=data.get('model', ''),
+            vendor=data.get('vendor', ''),
+            shortName=data.get('shortName', ''),
+            longName=data.get('longName', ''),
+            mac=data.get('mac', ''),
+            role=data.get('role', ''),
+            publicKey=data.get('publicKey', ''),
+            privateKey=data.get('privateKey', ''),
+            assignedTo=current_user_id,
+            owner=current_user_id
+        )
+
+        return jsonify({
+            'message': 'Radio enrolled successfully',
+            'radio': {
+                'id': radio.id,
+                'name': radio.name,
+                'mac': radio.mac
+            }
+        }), 201
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to enroll radio: {str(e)}'}), 400
 
 
 @api_v1.route('/radios/<int:radio_id>', methods=['DELETE'])
