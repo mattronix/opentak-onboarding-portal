@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { radiosAPI, usersAPI, settingsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { meshtasticSerial } from '../../services/meshtasticSerial';
+import { getModelOptions } from '../../constants/hardwareModels';
 import ProgramRadioModal from '../../components/ProgramRadioModal';
 import ConfigValidatorModal from '../../components/ConfigValidatorModal';
 import '../../components/AdminTable.css';
@@ -20,8 +21,7 @@ function RadiosList() {
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    platform: 'meshtastic',
-    radioType: '',
+    radioType: 'meshtastic',
     description: '',
     softwareVersion: '',
     model: '',
@@ -66,16 +66,17 @@ function RadiosList() {
 
   const claimRadioEnabled = settingsData?.claim_radio_enabled || false;
 
-  const copyClaimUrl = async (radioId) => {
+  const copyClaimUrl = async (radio) => {
     try {
-      // Get the claim token from the API
-      const response = await radiosAPI.getClaimToken(radioId);
-      const token = response.data.claim_token;
-      const claimUrl = `${FRONTEND_URL}/claim-radio/${token}`;
+      if (!radio.meshtasticId) {
+        showError('Radio has no node ID (MAC address not set)');
+        return;
+      }
+      const claimUrl = `${FRONTEND_URL}/claim-radio/${encodeURIComponent(radio.meshtasticId)}`;
       await navigator.clipboard.writeText(claimUrl);
       // Brief visual feedback could be added here
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to copy URL to clipboard');
+      showError('Failed to copy URL to clipboard');
     }
   };
 
@@ -108,8 +109,7 @@ function RadiosList() {
   const resetForm = () => {
     setFormData({
       name: '',
-      platform: 'meshtastic',
-      radioType: '',
+      radioType: 'meshtastic',
       description: '',
       softwareVersion: '',
       model: '',
@@ -122,6 +122,8 @@ function RadiosList() {
     });
     setEditing(null);
     setError('');
+    setScanStatus('');
+    setScanLog([]);
   };
 
   const handleEdit = async (radio) => {
@@ -132,8 +134,7 @@ function RadiosList() {
       setEditing(fullRadio);
       setFormData({
         name: fullRadio.name || '',
-        platform: fullRadio.platform || 'meshtastic',
-        radioType: fullRadio.radioType || '',
+        radioType: fullRadio.radioType || 'meshtastic',
         description: fullRadio.description || '',
         softwareVersion: fullRadio.softwareVersion || '',
         model: fullRadio.model || '',
@@ -145,6 +146,8 @@ function RadiosList() {
         owner: fullRadio.owner || null
       });
       setError('');
+      setScanStatus('');
+      setScanLog([]);
       setShowModal(true);
     } catch (err) {
       showError('Failed to load radio details: ' + (err.response?.data?.error || err.message));
@@ -155,9 +158,10 @@ function RadiosList() {
     e.preventDefault();
     setError('');
 
-    // Convert empty strings to null for user IDs
+    // Convert empty strings to null for user IDs and set platform based on radioType
     const submitData = {
       ...formData,
+      platform: formData.radioType === 'meshtastic' ? 'meshtastic' : 'other',
       assignedTo: formData.assignedTo || null,
       owner: formData.owner || null
     };
@@ -218,7 +222,7 @@ function RadiosList() {
           shortName: shortName || prev.shortName,
           longName: longName || prev.longName,
           softwareVersion: info.firmwareVersion || prev.softwareVersion,
-          model: info.hwModel ? String(info.hwModel) : prev.model,
+          model: info.model || prev.model,
           name: displayName || prev.name,
           mac: info.macAddr || prev.mac,
         }));
@@ -300,6 +304,7 @@ function RadiosList() {
                 <th>Type</th>
                 <th>Model</th>
                 <th>MAC</th>
+                <th>Node ID</th>
                 <th>Assigned To</th>
                 <th>Actions</th>
               </tr>
@@ -312,10 +317,11 @@ function RadiosList() {
                   <td>{radio.radioType || '-'}</td>
                   <td>{radio.model || '-'}</td>
                   <td>{radio.mac || '-'}</td>
+                  <td><code>{radio.meshtasticId || '-'}</code></td>
                   <td>{users.find(u => u.id === radio.assignedTo)?.username || '-'}</td>
                   <td>
                     <div className="table-actions">
-                      {radio.platform === 'meshtastic' && (
+                      {radio.radioType === 'meshtastic' && (
                         <>
                           <button
                             className="btn btn-sm btn-secondary"
@@ -337,10 +343,10 @@ function RadiosList() {
                           </button>
                         </>
                       )}
-                      {claimRadioEnabled && !radio.assignedTo && (
+                      {claimRadioEnabled && !radio.assignedTo && radio.meshtasticId && (
                         <button
                           className="btn btn-sm btn-info"
-                          onClick={() => copyClaimUrl(radio.id)}
+                          onClick={() => copyClaimUrl(radio)}
                           title="Copy claim URL"
                         >
                           Copy Claim URL
@@ -376,8 +382,16 @@ function RadiosList() {
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
 
-                {/* Learn from USB button */}
-                {browserSupport.isSupported && (
+                <div className="form-group">
+                  <label>Radio Type *</label>
+                  <select value={formData.radioType} onChange={(e) => setFormData({...formData, radioType: e.target.value, model: ''})} required>
+                    <option value="meshtastic">Meshtastic</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* Learn from USB button - only show for Meshtastic radios */}
+                {formData.radioType === 'meshtastic' && browserSupport.isSupported && (
                   <div className="form-group" style={{
                     padding: '12px',
                     background: '#f0f7ff',
@@ -425,7 +439,7 @@ function RadiosList() {
                     )}
                   </div>
                 )}
-                {!browserSupport.isSupported && (
+                {formData.radioType === 'meshtastic' && !browserSupport.isSupported && (
                   <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
                     USB scanning requires Chrome, Edge, or Opera browser.
                   </div>
@@ -437,27 +451,22 @@ function RadiosList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Platform *</label>
-                  <select value={formData.platform} onChange={(e) => setFormData({...formData, platform: e.target.value})} required>
-                    <option value="meshtastic">Meshtastic</option>
-                    <option value="atak">ATAK</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Radio Type</label>
-                  <input type="text" value={formData.radioType} onChange={(e) => setFormData({...formData, radioType: e.target.value})} placeholder="e.g., LoRa, UHF" />
-                </div>
-
-                <div className="form-group">
                   <label>Description</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
                 </div>
 
                 <div className="form-group">
                   <label>Model</label>
-                  <input type="text" value={formData.model} onChange={(e) => setFormData({...formData, model: e.target.value})} placeholder="e.g., T-Beam, Heltec" />
+                  {formData.radioType === 'meshtastic' ? (
+                    <select value={formData.model} onChange={(e) => setFormData({...formData, model: e.target.value})}>
+                      <option value="">Select model...</option>
+                      {getModelOptions().map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input type="text" value={formData.model} onChange={(e) => setFormData({...formData, model: e.target.value})} placeholder="Enter model name" />
+                  )}
                 </div>
 
                 <div className="form-group">

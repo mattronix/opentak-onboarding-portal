@@ -96,7 +96,7 @@ function EnrollRadioModal({ onClose, onSuccess }) {
           shortName: shortName || prev.shortName,
           longName: longName || prev.longName,
           softwareVersion: info.firmwareVersion || prev.softwareVersion,
-          model: info.hwModel ? String(info.hwModel) : prev.model,
+          model: info.model || prev.model,
           name: displayName || prev.name,
           mac: info.macAddr || prev.mac
         }));
@@ -163,13 +163,27 @@ function EnrollRadioModal({ onClose, onSuccess }) {
           <div className="modal-body">
             {error && <div className="alert alert-error">{error}</div>}
 
-            <p className="enroll-description">
-              Connect your Meshtastic radio via USB to automatically detect its information,
-              or enter the details manually below.
-            </p>
+            <div className="form-group">
+              <label>Radio Type *</label>
+              <select
+                value={formData.radioType}
+                onChange={(e) => setFormData({...formData, radioType: e.target.value, platform: e.target.value === 'meshtastic' ? 'meshtastic' : 'other'})}
+                required
+              >
+                <option value="meshtastic">Meshtastic</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
 
-            {/* Learn from USB button */}
-            {browserSupport.isSupported ? (
+            {formData.radioType === 'meshtastic' && (
+              <p className="enroll-description">
+                Connect your Meshtastic radio via USB to automatically detect its information,
+                or enter the details manually below.
+              </p>
+            )}
+
+            {/* Learn from USB button - only for Meshtastic */}
+            {formData.radioType === 'meshtastic' && browserSupport.isSupported ? (
               <div className="usb-scan-section">
                 <div className="usb-scan-controls">
                   <button
@@ -200,11 +214,11 @@ function EnrollRadioModal({ onClose, onSuccess }) {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : formData.radioType === 'meshtastic' ? (
               <div className="alert alert-warning">
                 USB scanning requires Chrome, Edge, or Opera browser.
               </div>
-            )}
+            ) : null}
 
             <div className="form-divider">
               <span>Radio Details</span>
@@ -258,7 +272,7 @@ function EnrollRadioModal({ onClose, onSuccess }) {
                   type="text"
                   value={formData.model}
                   onChange={(e) => setFormData({...formData, model: e.target.value})}
-                  placeholder="e.g., TBEAM"
+                  placeholder="e.g., TRACKER_T1000_C"
                 />
               </div>
             </div>

@@ -5,7 +5,7 @@ import { radiosAPI, settingsAPI } from '../services/api';
 import './ClaimRadio.css';
 
 function ClaimRadio() {
-  const { token } = useParams();
+  const { nodeId } = useParams();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -19,18 +19,18 @@ function ClaimRadio() {
     },
   });
 
-  // Fetch radio info using claim token
+  // Fetch radio info using node ID
   const { data: radioData, isLoading: loadingRadio, error: radioError } = useQuery({
-    queryKey: ['radio-claim', token],
+    queryKey: ['radio-claim', nodeId],
     queryFn: async () => {
-      const response = await radiosAPI.getByClaimToken(token);
+      const response = await radiosAPI.getByNodeId(nodeId);
       return response.data;
     },
-    enabled: !!token,
+    enabled: !!nodeId,
   });
 
   const claimMutation = useMutation({
-    mutationFn: () => radiosAPI.claimByToken(token),
+    mutationFn: () => radiosAPI.claimByNodeId(nodeId),
     onSuccess: () => {
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 3000);
@@ -135,6 +135,7 @@ function ClaimRadio() {
               <span className="badge badge-primary">{radioData.platform}</span>
             )}
             {radioData?.model && <span className="detail">Model: {radioData.model}</span>}
+            {radioData?.meshtasticId && <span className="detail">Node ID: <code>{radioData.meshtasticId}</code></span>}
             {radioData?.shortName && <span className="detail">Short Name: {radioData.shortName}</span>}
             {radioData?.longName && <span className="detail">Long Name: {radioData.longName}</span>}
           </div>

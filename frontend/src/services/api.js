@@ -305,17 +305,17 @@ export const radiosAPI = {
   claim: (id) =>
     api.post(`/radios/${id}/claim`),
 
-  // Get claim token for a radio (admin only)
-  getClaimToken: (id) =>
-    api.get(`/radios/${id}/claim-token`),
+  // Get claim code for a radio (admin only) - returns node ID
+  getClaimCode: (id) =>
+    api.get(`/radios/${id}/claim-code`),
 
-  // Get radio info by claim token
-  getByClaimToken: (token) =>
-    api.get(`/radios/claim-by-token/${encodeURIComponent(token)}`),
+  // Get radio info by node ID (e.g., !ef123456)
+  getByNodeId: (nodeId) =>
+    api.get(`/radios/claim-by-node/${encodeURIComponent(nodeId)}`),
 
-  // Claim a radio by token
-  claimByToken: (token) =>
-    api.post(`/radios/claim-by-token/${encodeURIComponent(token)}`),
+  // Claim a radio by node ID
+  claimByNodeId: (nodeId) =>
+    api.post(`/radios/claim-by-node/${encodeURIComponent(nodeId)}`),
 
   enroll: (data) =>
     api.post('/radios/enroll', data),

@@ -11,6 +11,56 @@ from datetime import datetime
 import re
 
 
+# Meshtastic hardware model mapping (from HardwareModel protobuf enum)
+HARDWARE_MODELS = {
+    0: 'UNSET', 1: 'TLORA_V2', 2: 'TLORA_V1', 3: 'TLORA_V2_1_1P6', 4: 'TBEAM',
+    5: 'HELTEC_V2_0', 6: 'TBEAM_V0P7', 7: 'T_ECHO', 8: 'TLORA_V1_1P3', 9: 'RAK4631',
+    10: 'HELTEC_V2_1', 11: 'HELTEC_V1', 12: 'LILYGO_TBEAM_S3_CORE', 13: 'RAK11200',
+    14: 'NANO_G1', 15: 'TLORA_V2_1_1P8', 16: 'TLORA_T3_S3', 17: 'NANO_G1_EXPLORER',
+    18: 'NANO_G2_ULTRA', 19: 'LORA_TYPE', 20: 'WIPHONE', 21: 'WIO_WM1110',
+    22: 'RAK2560', 23: 'HELTEC_HRU_3601', 25: 'STATION_G1', 26: 'RAK11310',
+    27: 'SENSELORA_RP2040', 28: 'SENSELORA_S3', 29: 'CANARYONE', 30: 'RP2040_LORA',
+    31: 'STATION_G2', 32: 'LORA_RELAY_V1', 33: 'NRF52840DK', 34: 'PPR',
+    35: 'GENIEBLOCKS', 36: 'NRF52_UNKNOWN', 37: 'PORTDUINO', 38: 'ANDROID_SIM',
+    39: 'DIY_V1', 40: 'NRF52840_PCA10059', 41: 'DR_DEV', 42: 'M5STACK',
+    43: 'HELTEC_V3', 44: 'HELTEC_WSL_V3', 45: 'BETAFPV_2400_TX', 46: 'BETAFPV_900_NANO_TX',
+    47: 'RPI_PICO', 48: 'HELTEC_WIRELESS_TRACKER', 49: 'HELTEC_WIRELESS_PAPER',
+    50: 'T_DECK', 51: 'T_WATCH_S3', 52: 'PICOMPUTER_S3', 53: 'HELTEC_HT62',
+    54: 'EBYTE_ESP32_S3', 55: 'ESP32_S3_PICO', 56: 'CHATTER_2',
+    57: 'HELTEC_WIRELESS_PAPER_V1_0', 58: 'HELTEC_WIRELESS_TRACKER_V1_0', 59: 'UNPHONE',
+    60: 'TD_LORAC', 61: 'CDEBYTE_EORA_S3', 62: 'TWC_MESH_V4', 63: 'NRF52_PROMICRO_DIY',
+    64: 'RADIOMASTER_900_BANDIT_NANO', 65: 'HELTEC_CAPSULE_SENSOR_V3',
+    66: 'HELTEC_VISION_MASTER_T190', 67: 'HELTEC_VISION_MASTER_E213',
+    68: 'HELTEC_VISION_MASTER_E290', 69: 'HELTEC_MESH_NODE_T114', 70: 'SENSECAP_INDICATOR',
+    71: 'TRACKER_T1000_E', 72: 'RAK3172', 73: 'WIO_E5', 74: 'RADIOMASTER_900_BANDIT',
+    75: 'ME25LS01_4Y10TD', 76: 'RP2040_FEATHER_RFM95', 77: 'M5STACK_COREBASIC',
+    78: 'M5STACK_CORE2', 79: 'RPI_PICO2', 80: 'M5STACK_CORES3', 81: 'SEEED_XIAO_S3',
+    82: 'MS24SF1', 83: 'TLORA_C6', 84: 'WISMESH_TAP', 85: 'ROUTASTIC',
+    86: 'MESHLINK', 87: 'MESHLINK_GSM', 88: 'RAK_WISMESHTAP', 89: 'HELTEC_ESP32C3',
+    90: 'MESH_T_PHONE', 91: 'HELTEC_HT62_V2', 92: 'CROWPANEL_ESP32S3_LORA',
+    93: 'ROUTASTIC_ROUTERV2', 94: 'ROUTASTIC_ROUTERV3', 95: 'HELTEC_MESH_NODE_T114_V2',
+    96: 'HELTEC_CAPSULE_SENSOR_V3_2', 97: 'WISMESH_POCKET', 98: 'WISMESH_HUB',
+    99: 'TRACKER_T1000_C', 253: 'PRIVATE_HW',
+}
+
+
+def get_model_name(model_value):
+    """Convert model number to friendly name if it's a number"""
+    if model_value is None:
+        return None
+    # If it's already a string name (not a number), return as-is
+    if isinstance(model_value, str):
+        # Check if it's a numeric string
+        if model_value.isdigit():
+            num = int(model_value)
+            return HARDWARE_MODELS.get(num, f'UNKNOWN({num})')
+        return model_value
+    # If it's an int
+    if isinstance(model_value, int):
+        return HARDWARE_MODELS.get(model_value, f'UNKNOWN({model_value})')
+    return model_value
+
+
 def require_admin_role():
     """Check for radio_admin or administrator role"""
     from app.rbac import has_any_role
@@ -76,11 +126,12 @@ def get_radios():
             'radioType': r.radioType,
             'description': r.description,
             'softwareVersion': r.softwareVersion,
-            'model': r.model,
+            'model': get_model_name(r.model),
             'vendor': r.vendor,
             'shortName': r.shortName,
             'longName': r.longName,
             'mac': r.mac,
+            'meshtasticId': r.meshtastic_id,
             'assignedTo': r.assignedTo,
             'owner': r.owner,
             'createdAt': r.createdAt.isoformat() if r.createdAt else None,
@@ -112,11 +163,12 @@ def get_radio(radio_id):
         'radioType': radio.radioType,
         'description': radio.description,
         'softwareVersion': radio.softwareVersion,
-        'model': radio.model,
+        'model': get_model_name(radio.model),
         'vendor': radio.vendor,
         'shortName': radio.shortName,
         'longName': radio.longName,
         'mac': radio.mac,
+        'meshtasticId': radio.meshtastic_id,
         'role': radio.role,
         'publicKey': radio.publicKey,
         'assignedTo': radio.assignedTo,
@@ -298,12 +350,12 @@ def claim_radio(radio_id):
         return jsonify({'error': f'Failed to claim radio: {str(e)}'}), 400
 
 
-@api_v1.route('/radios/<int:radio_id>/claim-token', methods=['GET'])
+@api_v1.route('/radios/<int:radio_id>/claim-code', methods=['GET'])
 @jwt_required()
-def get_claim_token(radio_id):
+def get_claim_code(radio_id):
     """
-    Get the claim token for a radio (admin only).
-    The token is base64(mac|name|createdAt) and can be used to generate a claim URL.
+    Get the claim code for a radio (admin only).
+    The claim code is the radio's MAC address.
     """
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'radio_admin']):
@@ -313,44 +365,50 @@ def get_claim_token(radio_id):
     if not radio:
         return jsonify({'error': 'Radio not found'}), 404
 
-    token = radio.generate_claim_token()
-    return jsonify({'claim_token': token}), 200
+    claim_code = radio.get_claim_code()
+    if not claim_code:
+        return jsonify({'error': 'Radio has no MAC address set'}), 400
+
+    return jsonify({'claim_code': claim_code}), 200
 
 
-@api_v1.route('/radios/claim-by-token/<token>', methods=['GET'])
+@api_v1.route('/radios/claim-by-node/<path:node_id>', methods=['GET'])
 @jwt_required()
-def get_radio_by_claim_token(token):
+def get_radio_by_node_id(node_id):
     """
-    Get radio info by claim token (for claim page).
-    Returns basic radio info if token is valid.
+    Get radio info by Meshtastic node ID (for claim page).
+    Node ID format: !ef123456 (last 4 bytes of MAC as hex)
+    Returns basic radio info if node ID is valid.
     """
-    radio = RadioModel.get_by_claim_token(token)
+    radio = RadioModel.get_by_node_id(node_id)
     if not radio:
-        return jsonify({'error': 'Invalid or expired claim token'}), 404
+        return jsonify({'error': 'Radio not found'}), 404
 
     return jsonify({
         'id': radio.id,
         'name': radio.name,
         'platform': radio.platform,
-        'model': radio.model,
+        'model': get_model_name(radio.model),
         'shortName': radio.shortName,
         'longName': radio.longName,
+        'mac': radio.mac,
+        'meshtasticId': radio.meshtastic_id,
         'assignedTo': radio.assignedTo
     }), 200
 
 
-@api_v1.route('/radios/claim-by-token/<token>', methods=['POST'])
+@api_v1.route('/radios/claim-by-node/<path:node_id>', methods=['POST'])
 @jwt_required()
-def claim_radio_by_token(token):
+def claim_radio_by_node_id(node_id):
     """
-    Claim a radio using a claim token (assigns it to the current user).
-    The token is base64(mac|name|createdAt).
+    Claim a radio using its Meshtastic node ID (assigns it to the current user).
+    Node ID format: !ef123456
     """
     current_user_id = int(get_jwt_identity())
 
-    radio = RadioModel.get_by_claim_token(token)
+    radio = RadioModel.get_by_node_id(node_id)
     if not radio:
-        return jsonify({'error': 'Invalid or expired claim token'}), 404
+        return jsonify({'error': 'Radio not found'}), 404
 
     if radio.assignedTo:
         return jsonify({'error': 'Radio is already assigned to someone'}), 409
@@ -561,7 +619,8 @@ def get_program_config(radio_id):
             'shortName': radio.shortName,
             'longName': radio.longName,
             'mac': radio.mac,
-            'model': radio.model,
+            'meshtasticId': radio.meshtastic_id,
+            'model': get_model_name(radio.model),
             'vendor': radio.vendor,
             'softwareVersion': radio.softwareVersion
         },
@@ -726,6 +785,7 @@ def compare_config(radio_id):
                 'name': radio.name,
                 'shortName': radio.shortName,
                 'longName': radio.longName,
+                'meshtasticId': radio.meshtastic_id,
             },
             'channels': target_channels,
             'yaml_config': yaml_config

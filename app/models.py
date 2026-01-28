@@ -779,6 +779,22 @@ class RadioModel(db.Model):
     owner = Column(Integer, ForeignKey('users.id'), nullable=True)
     mac: Mapped[str] = mapped_column(unique=True, nullable=True)
     role: Mapped[str] = mapped_column(nullable=True)
+
+    @property
+    def meshtastic_id(self):
+        """
+        Generate Meshtastic node ID from MAC address.
+        The node ID is the last 4 bytes of MAC as hex, prefixed with '!'.
+        Example: MAC 'ab:cd:ef:12:34:56' -> '!ef123456'
+        Returns None if no MAC address is set.
+        """
+        if not self.mac:
+            return None
+        # Remove colons/dashes and get last 8 hex chars (4 bytes)
+        mac_clean = self.mac.replace(':', '').replace('-', '').lower()
+        if len(mac_clean) < 8:
+            return None
+        return f"!{mac_clean[-8:]}"
     publicKey: Mapped[str] = mapped_column(nullable=True)
     privateKey: Mapped[str] = mapped_column(nullable=True)
     createdAt: Mapped[datetime.datetime] = mapped_column(default=db.func.current_timestamp(), nullable=True)
@@ -831,48 +847,44 @@ class RadioModel(db.Model):
         else:
             return {"error": "object.not.found"}
 
-    def generate_claim_token(self):
+    def get_claim_code(self):
         """
-        Generate a base64 claim token from mac|name|createdAt.
-        This provides a non-guessable URL for claiming radios.
+        Get the claim code for this radio (the Meshtastic node ID).
+        Returns None if no MAC address is set.
         """
-        import base64
-        # Format: mac|name|createdAt_timestamp
-        created_ts = int(self.createdAt.timestamp()) if self.createdAt else 0
-        token_data = f"{self.mac or ''}|{self.name}|{created_ts}"
-        return base64.urlsafe_b64encode(token_data.encode()).decode()
+        return self.meshtastic_id if self.meshtastic_id else None
 
     @staticmethod
-    def get_by_claim_token(token):
+    def get_by_node_id(node_id):
         """
-        Decode a claim token and find the matching radio.
-        Returns the radio if found and token is valid, None otherwise.
+        Find a radio by its Meshtastic node ID (e.g., '!ef123456').
+        The node ID is the last 4 bytes of MAC as hex with '!' prefix.
+        Returns the radio if found, None otherwise.
         """
-        import base64
-        try:
-            token_data = base64.urlsafe_b64decode(token.encode()).decode()
-            parts = token_data.split('|')
-            if len(parts) != 3:
-                return None
-            mac, name, created_ts = parts
-
-            # Find radio by mac and name
-            radio = RadioModel.query.filter_by(mac=mac if mac else None, name=name).first()
-            if not radio:
-                # Try finding by name alone if mac is empty
-                if not mac:
-                    radio = RadioModel.query.filter_by(name=name).first()
-                if not radio:
-                    return None
-
-            # Verify createdAt timestamp matches
-            radio_ts = int(radio.createdAt.timestamp()) if radio.createdAt else 0
-            if str(radio_ts) != created_ts:
-                return None
-
-            return radio
-        except Exception:
+        if not node_id:
             return None
+
+        # Remove the ! prefix if present
+        node_hex = node_id.lstrip('!').lower()
+        if len(node_hex) != 8:
+            return None
+
+        # Search all radios and find one with matching node ID
+        radios = RadioModel.query.filter(RadioModel.mac.isnot(None)).all()
+        for radio in radios:
+            if radio.meshtastic_id and radio.meshtastic_id.lstrip('!').lower() == node_hex:
+                return radio
+        return None
+
+    @staticmethod
+    def get_by_mac(mac):
+        """
+        Find a radio by its MAC address.
+        Returns the radio if found, None otherwise.
+        """
+        if not mac:
+            return None
+        return RadioModel.query.filter_by(mac=mac).first()
 
 
 class PendingRegistrationModel(db.Model):

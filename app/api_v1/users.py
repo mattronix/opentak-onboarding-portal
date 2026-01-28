@@ -196,10 +196,10 @@ def create_user():
         user = UserModel.create_user(
             username=data['username'],
             email=data['email'],
-            firstName=data['firstName'],
-            lastName=data['lastName'],
+            firstname=data['firstName'],
+            lastname=data['lastName'],
             callsign=data['callsign'],
-            expiryDate=expiry_date
+            expirydate=expiry_date
         )
 
         # Add roles

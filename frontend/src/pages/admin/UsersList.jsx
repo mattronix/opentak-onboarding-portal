@@ -179,12 +179,12 @@ function UsersList() {
     const submitData = {
       username: username,
       email: formData.email,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       callsign: formData.callsign,
       password: formData.password,
-      expiry_date: formData.expiryDate || null,
-      role_ids: roleIds
+      expiryDate: formData.expiryDate || null,
+      roleIds: roleIds
     };
 
     // Remove password if empty on update

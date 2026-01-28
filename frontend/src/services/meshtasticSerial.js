@@ -190,14 +190,19 @@ class MeshtasticSerialService {
 
       this.device.events.onDeviceMetadataPacket.subscribe((metadata) => {
         const fw = metadata.data?.firmwareVersion || metadata.firmwareVersion;
+        const hwModelRaw = metadata.data?.hwModel || metadata.hwModel;
         if (fw) {
           this._log(`Firmware version: ${fw}`, 'info');
+        }
+        if (hwModelRaw !== undefined) {
+          this._log(`Hardware model: ${this._getHardwareModelName(hwModelRaw)}`, 'info');
         }
         if (metadata) {
           this.deviceInfo = {
             ...this.deviceInfo,
             firmwareVersion: fw,
-            hwModel: metadata.data?.hwModel || metadata.hwModel,
+            hwModel: hwModelRaw,
+            model: this._getHardwareModelName(hwModelRaw),
           };
         }
       });
@@ -216,15 +221,17 @@ class MeshtasticSerialService {
         if (data && (data.shortName || data.longName) && isOurNode) {
           // Only use actual macaddr field from device - never fallback
           const macFromDevice = data.macaddr ? this._formatMacFromBytes(data.macaddr) : null;
+          const hwModelRaw = data.hwModel || this.deviceInfo?.hwModel;
 
           this.deviceInfo = {
             ...this.deviceInfo,
             shortName: data.shortName || this.deviceInfo?.shortName,
             longName: data.longName || this.deviceInfo?.longName,
             macAddr: macFromDevice || this.deviceInfo?.macAddr,
-            hwModel: data.hwModel || this.deviceInfo?.hwModel,
+            hwModel: hwModelRaw,
+            model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
           };
-          this._log(`Updated deviceInfo: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}", mac="${this.deviceInfo.macAddr}"`, 'success');
+          this._log(`Updated deviceInfo: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}", mac="${this.deviceInfo.macAddr}", model="${this.deviceInfo.model}"`, 'success');
 
           // Mark that we've received user info (prevents other nodes overwriting)
           if (!this.hasReceivedUserInfo) {
@@ -264,15 +271,17 @@ class MeshtasticSerialService {
 
             // Only use actual macaddr field - never fallback to user.id which may be something else
             const macFromDevice = this._formatMacFromBytes(user.macaddr) || this._formatMacFromBytes(user.macAddr);
+            const hwModelRaw = user.hwModel || this.deviceInfo?.hwModel;
 
             this.deviceInfo = {
               ...this.deviceInfo,
               shortName: user.shortName || this.deviceInfo?.shortName,
               longName: user.longName || this.deviceInfo?.longName,
               macAddr: macFromDevice || this.deviceInfo?.macAddr,
-              hwModel: user.hwModel || this.deviceInfo?.hwModel,
+              hwModel: hwModelRaw,
+              model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
             };
-            this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}", mac="${this.deviceInfo.macAddr}"`, 'success');
+            this._log(`Updated from nodeInfoPacket: shortName="${this.deviceInfo.shortName}", longName="${this.deviceInfo.longName}", mac="${this.deviceInfo.macAddr}", model="${this.deviceInfo.model}"`, 'success');
 
             // Mark that we've received user info
             if (!this.hasReceivedUserInfo) {
@@ -302,6 +311,7 @@ class MeshtasticSerialService {
             if (nodeInfo?.user && isOurNode) {
               // Only use actual macaddr field from device
               const macFromDevice = this._formatMacFromBytes(nodeInfo.user.macaddr) || this._formatMacFromBytes(nodeInfo.user.macAddr);
+              const hwModelRaw = nodeInfo.user.hwModel || this.deviceInfo?.hwModel;
 
               this._log(`FromRadio nodeInfo (our node ${nodeNum}): shortName="${nodeInfo.user.shortName}", longName="${nodeInfo.user.longName}"`, 'info');
               this.deviceInfo = {
@@ -309,7 +319,8 @@ class MeshtasticSerialService {
                 shortName: nodeInfo.user.shortName || this.deviceInfo?.shortName,
                 longName: nodeInfo.user.longName || this.deviceInfo?.longName,
                 macAddr: macFromDevice || this.deviceInfo?.macAddr,
-                hwModel: nodeInfo.user.hwModel || this.deviceInfo?.hwModel,
+                hwModel: hwModelRaw,
+                model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
               };
             }
           }
@@ -327,14 +338,16 @@ class MeshtasticSerialService {
             if (myNode?.user) {
               // Only use actual macaddr field from device
               const macFromDevice = this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr);
+              const hwModelRaw = myNode.user.hwModel || this.deviceInfo?.hwModel;
 
-              this._log(`Config complete - our node: shortName="${myNode.user.shortName}", longName="${myNode.user.longName}", mac="${macFromDevice}"`, 'success');
+              this._log(`Config complete - our node: shortName="${myNode.user.shortName}", longName="${myNode.user.longName}", mac="${macFromDevice}", model="${this._getHardwareModelName(hwModelRaw)}"`, 'success');
               this.deviceInfo = {
                 ...this.deviceInfo,
                 shortName: myNode.user.shortName || this.deviceInfo?.shortName,
                 longName: myNode.user.longName || this.deviceInfo?.longName,
                 macAddr: macFromDevice || this.deviceInfo?.macAddr,
-                hwModel: myNode.user.hwModel || this.deviceInfo?.hwModel,
+                hwModel: hwModelRaw,
+                model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
               };
             }
           }
@@ -518,12 +531,14 @@ class MeshtasticSerialService {
         const myNode = this.device.nodes.get(this.deviceInfo.nodeNum);
         if (myNode?.user) {
           console.log('Found MY node in nodes map:', myNode);
+          const hwModelRaw = myNode.user.hwModel || this.deviceInfo.hwModel;
           this.deviceInfo = {
             ...this.deviceInfo,
             shortName: myNode.user.shortName || this.deviceInfo.shortName,
             longName: myNode.user.longName || this.deviceInfo.longName,
             macAddr: this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr) || this.deviceInfo.macAddr,
-            hwModel: myNode.user.hwModel || this.deviceInfo.hwModel,
+            hwModel: hwModelRaw,
+            model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo.model,
           };
         }
       }
@@ -533,12 +548,14 @@ class MeshtasticSerialService {
         const firstNode = this.device.nodes.values().next().value;
         if (firstNode?.user) {
           console.log('Using first node from map:', firstNode);
+          const hwModelRaw = firstNode.user.hwModel || this.deviceInfo?.hwModel;
           this.deviceInfo = {
             ...this.deviceInfo,
             shortName: firstNode.user.shortName || this.deviceInfo?.shortName,
             longName: firstNode.user.longName || this.deviceInfo?.longName,
             macAddr: this._formatMacFromBytes(firstNode.user.macaddr) || this._formatMacFromBytes(firstNode.user.macAddr) || this.deviceInfo?.macAddr,
-            hwModel: firstNode.user.hwModel || this.deviceInfo?.hwModel,
+            hwModel: hwModelRaw,
+            model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
           };
         }
       }
@@ -891,6 +908,117 @@ class MeshtasticSerialService {
       7: 'LONG_MODERATE',
     };
     return presets[preset] || `UNKNOWN(${preset})`;
+  }
+
+  /**
+   * Get hardware model name from enum value
+   * Based on Meshtastic HardwareModel protobuf enum
+   */
+  _getHardwareModelName(hwModel) {
+    const models = {
+      0: 'UNSET',
+      1: 'TLORA_V2',
+      2: 'TLORA_V1',
+      3: 'TLORA_V2_1_1P6',
+      4: 'TBEAM',
+      5: 'HELTEC_V2_0',
+      6: 'TBEAM_V0P7',
+      7: 'T_ECHO',
+      8: 'TLORA_V1_1P3',
+      9: 'RAK4631',
+      10: 'HELTEC_V2_1',
+      11: 'HELTEC_V1',
+      12: 'LILYGO_TBEAM_S3_CORE',
+      13: 'RAK11200',
+      14: 'NANO_G1',
+      15: 'TLORA_V2_1_1P8',
+      16: 'TLORA_T3_S3',
+      17: 'NANO_G1_EXPLORER',
+      18: 'NANO_G2_ULTRA',
+      19: 'LORA_TYPE',
+      20: 'WIPHONE',
+      21: 'WIO_WM1110',
+      22: 'RAK2560',
+      23: 'HELTEC_HRU_3601',
+      25: 'STATION_G1',
+      26: 'RAK11310',
+      27: 'SENSELORA_RP2040',
+      28: 'SENSELORA_S3',
+      29: 'CANARYONE',
+      30: 'RP2040_LORA',
+      31: 'STATION_G2',
+      32: 'LORA_RELAY_V1',
+      33: 'NRF52840DK',
+      34: 'PPR',
+      35: 'GENIEBLOCKS',
+      36: 'NRF52_UNKNOWN',
+      37: 'PORTDUINO',
+      38: 'ANDROID_SIM',
+      39: 'DIY_V1',
+      40: 'NRF52840_PCA10059',
+      41: 'DR_DEV',
+      42: 'M5STACK',
+      43: 'HELTEC_V3',
+      44: 'HELTEC_WSL_V3',
+      45: 'BETAFPV_2400_TX',
+      46: 'BETAFPV_900_NANO_TX',
+      47: 'RPI_PICO',
+      48: 'HELTEC_WIRELESS_TRACKER',
+      49: 'HELTEC_WIRELESS_PAPER',
+      50: 'T_DECK',
+      51: 'T_WATCH_S3',
+      52: 'PICOMPUTER_S3',
+      53: 'HELTEC_HT62',
+      54: 'EBYTE_ESP32_S3',
+      55: 'ESP32_S3_PICO',
+      56: 'CHATTER_2',
+      57: 'HELTEC_WIRELESS_PAPER_V1_0',
+      58: 'HELTEC_WIRELESS_TRACKER_V1_0',
+      59: 'UNPHONE',
+      60: 'TD_LORAC',
+      61: 'CDEBYTE_EORA_S3',
+      62: 'TWC_MESH_V4',
+      63: 'NRF52_PROMICRO_DIY',
+      64: 'RADIOMASTER_900_BANDIT_NANO',
+      65: 'HELTEC_CAPSULE_SENSOR_V3',
+      66: 'HELTEC_VISION_MASTER_T190',
+      67: 'HELTEC_VISION_MASTER_E213',
+      68: 'HELTEC_VISION_MASTER_E290',
+      69: 'HELTEC_MESH_NODE_T114',
+      70: 'SENSECAP_INDICATOR',
+      71: 'TRACKER_T1000_E',
+      72: 'RAK3172',
+      73: 'WIO_E5',
+      74: 'RADIOMASTER_900_BANDIT',
+      75: 'ME25LS01_4Y10TD',
+      76: 'RP2040_FEATHER_RFM95',
+      77: 'M5STACK_COREBASIC',
+      78: 'M5STACK_CORE2',
+      79: 'RPI_PICO2',
+      80: 'M5STACK_CORES3',
+      81: 'SEEED_XIAO_S3',
+      82: 'MS24SF1',
+      83: 'TLORA_C6',
+      84: 'WISMESH_TAP',
+      85: 'ROUTASTIC',
+      86: 'MESHLINK',
+      87: 'MESHLINK_GSM',
+      88: 'RAK_WISMESHTAP',
+      89: 'HELTEC_ESP32C3',
+      90: 'MESH_T_PHONE',
+      91: 'HELTEC_HT62_V2',
+      92: 'CROWPANEL_ESP32S3_LORA',
+      93: 'ROUTASTIC_ROUTERV2',
+      94: 'ROUTASTIC_ROUTERV3',
+      95: 'HELTEC_MESH_NODE_T114_V2',
+      96: 'HELTEC_CAPSULE_SENSOR_V3_2',
+      97: 'WISMESH_POCKET',
+      98: 'WISMESH_HUB',
+      99: 'TRACKER_T1000_C',
+      253: 'PRIVATE_HW',
+    };
+    if (typeof hwModel === 'string') return hwModel;
+    return models[hwModel] || `UNKNOWN(${hwModel})`;
   }
 
   /**
