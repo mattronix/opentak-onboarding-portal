@@ -1633,18 +1633,19 @@ class MeshtasticSerialService {
     const configObj = this._convertKeysToCamelCase(values);
     this._resolveEnums(section, configObj);
 
-    // Security section: skip PKI keys (publicKey, privateKey, adminKey) -
-    // these are per-device identity and shouldn't be overwritten from a template
+    // Security section: skip device identity keys (publicKey, privateKey) -
+    // these are per-device and shouldn't be overwritten from a template.
+    // adminKey is allowed through - it defines who can administer the device.
     if (section === 'security') {
       const skippedKeys = [];
-      for (const key of ['publicKey', 'privateKey', 'adminKey']) {
+      for (const key of ['publicKey', 'privateKey']) {
         if (key in configObj) {
           skippedKeys.push(key);
           delete configObj[key];
         }
       }
       if (skippedKeys.length > 0) {
-        this._log(`  Skipping device-specific security fields: ${skippedKeys.join(', ')}`, 'info');
+        this._log(`  Skipping device identity fields: ${skippedKeys.join(', ')}`, 'info');
       }
     }
 
