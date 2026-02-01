@@ -89,20 +89,14 @@ class MeshtasticSerialService {
       throw new Error('Web Serial API is not supported in this browser');
     }
 
-    // Clean up any existing connection first — use transport.disconnect()
-    // which properly releases stream locks, cancels readers, and closes the port.
-    if (this.transport) {
+    // Clean up any existing connection first using the full disconnect() flow
+    // which breaks stream locks, aborts writers, and uses forget() to release
+    // the USB device at the OS level.
+    if (this.transport || this.device) {
       try {
-        await this.transport.disconnect();
+        await this.disconnect();
       } catch (e) { /* ignore */ }
-      this.transport = null;
     }
-    this.device = null;
-    this.isConnected = false;
-    this.lastPort = null;
-
-    // Brief delay to ensure port is fully released by the OS
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     this.onStatusChange = onStatusChange;
     this.onProgress = onProgress;
@@ -118,31 +112,22 @@ class MeshtasticSerialService {
       this._updateStatus('connecting', 'Requesting USB port...');
       this._log('Requesting USB port selection...', 'info');
 
-      const port = await navigator.serial.requestPort();
+      let port = await navigator.serial.requestPort();
 
-      // Always close and reopen the port to ensure clean stream state.
-      // Reusing an already-open port leaves stale/consumed streams that cause
-      // the MeshDevice to receive no events on subsequent connections.
+      // disconnect() uses forget() which fully releases the USB device, so
+      // requestPort() should always return a fresh port. If the port is somehow
+      // still open (e.g. browser kept it, or disconnect wasn't called), forget
+      // it and re-request to get a clean one.
       if (port.readable || port.writable) {
-        this._log('Closing port from previous session...', 'info');
+        this._log('Port still open from previous session, releasing...', 'info');
         try {
-          await port.close();
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (e) {
-          this._log(`Port close warning: ${e.message}`, 'warn');
-        }
+          await port.forget();
+        } catch (e) { /* ignore */ }
+        await new Promise(resolve => setTimeout(resolve, 300));
+        port = await navigator.serial.requestPort();
       }
 
-      try {
-        await port.open({ baudRate: 115200 });
-      } catch (e) {
-        if (e.message?.includes('already open')) {
-          // close() failed silently — port is still open, use as last resort
-          this._log('Port still open after close attempt, reusing...', 'warn');
-        } else {
-          throw e;
-        }
-      }
+      await port.open({ baudRate: 115200 });
 
       this.transport = new TransportWebSerial(port);
       this.lastPort = port;
@@ -473,29 +458,37 @@ class MeshtasticSerialService {
       // Start processing
       this._log('Starting device configuration...', 'info');
 
-      // Create a promise that resolves when we receive device info
+      // Create a promise that resolves when we receive device info.
+      // Uses a `resolved` flag + doResolve helper to ensure the timeout and
+      // interval are always cleaned up on first resolve, preventing stale
+      // "Timeout waiting for device info" log messages on subsequent connections.
       const deviceInfoPromise = new Promise((resolve) => {
-        // Store the original callback
+        let resolved = false;
         const originalCallback = this.onDeviceInfoReceived;
 
-        // Set up a callback that resolves our promise
-        this.onDeviceInfoReceived = (info) => {
-          this._log('Device info received via callback, proceeding immediately...', 'success');
-          if (originalCallback) originalCallback(info);
+        const doResolve = (info, source) => {
+          if (resolved) return;
+          resolved = true;
+          clearInterval(checkExisting);
+          clearTimeout(timeoutId);
+          this._log(source, 'success');
           resolve(info);
         };
 
-        // Also set up a check for hasReceivedUserInfo in case it was set before this
+        this.onDeviceInfoReceived = (info) => {
+          if (originalCallback) originalCallback(info);
+          doResolve(info, 'Device info received via callback, proceeding...');
+        };
+
         const checkExisting = setInterval(() => {
           if (this.hasReceivedUserInfo && this.deviceInfo) {
-            clearInterval(checkExisting);
-            this._log('Device info already received, proceeding...', 'success');
-            resolve(this.deviceInfo);
+            doResolve(this.deviceInfo, 'Device info already received, proceeding...');
           }
         }, 50);
 
-        // Timeout after 10 seconds
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+          if (resolved) return;
+          resolved = true;
           clearInterval(checkExisting);
           this._log('Timeout waiting for device info, proceeding with available data...', 'warn');
           resolve(this.deviceInfo || {});
@@ -671,10 +664,31 @@ class MeshtasticSerialService {
     let port = null;
     if (this.transport?.connection) {
       port = this.transport.connection;
-      this.lastPort = port; // Keep reference for future cleanup attempts
     }
 
-    // First try to close the transport
+    // Break the transport's internal read loop by erroring fromDeviceController.
+    // TransportWebSerial holds a ReadableStream whose controller feeds data to
+    // MeshDevice. MeshDevice locks that stream with a reader, so calling
+    // _fromDevice.cancel() from the outside fails. Erroring the controller
+    // breaks the reader from the inside, unlocking the stream.
+    if (this.transport?.fromDeviceController) {
+      try {
+        this.transport.fromDeviceController.error(new Error('Disconnecting'));
+      } catch (e) { /* already errored/closed */ }
+    }
+
+    // Abort the write pipe (toDevice → serial port) via the transport's
+    // AbortController. This releases the writable side of the serial port.
+    if (this.transport?.abortController) {
+      try {
+        this.transport.abortController.abort();
+      } catch (e) { /* already aborted */ }
+    }
+
+    // Give the browser a moment to process the stream teardown
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Now that streams are unlocked, transport.disconnect() can close the port
     if (this.transport) {
       try {
         await this.transport.disconnect();
@@ -686,22 +700,22 @@ class MeshtasticSerialService {
       }
     }
 
-    // Try to close the port directly if transport disconnect didn't work
+    // Use forget() to fully release the USB serial device at the OS level.
+    // port.close() alone does NOT reset the Meshtastic device's USB serial
+    // state, causing the next connection to get stale/dead streams.
+    // forget() forces a full USB-level disconnect so the device sees a fresh
+    // connection next time. It revokes browser permission, but requestPort()
+    // always shows the picker anyway so there's no UX difference.
     if (port) {
       try {
-        // Check if port is still open and close it
-        if (port.readable || port.writable) {
-          await port.close().catch(() => {});
-        }
+        await port.forget();
       } catch (e) {
-        // Port may already be closed
+        // Port may already be closed/forgotten
       }
-      // Keep the port reference for potential cleanup, but clear lastPort
-      // Don't call forget() - it revokes browser permission and causes issues
-      this.lastPort = null;
     }
 
     // Clear all references
+    this.lastPort = null;
     this.device = null;
     this.transport = null;
     this.isConnected = false;
@@ -713,7 +727,7 @@ class MeshtasticSerialService {
     this.configComplete = false;
 
     // Brief delay to ensure OS releases the port
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     if (shouldLog) {
       this._log('Disconnected', 'success');

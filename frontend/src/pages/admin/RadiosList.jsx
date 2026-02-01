@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { radiosAPI, usersAPI, settingsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -11,6 +12,7 @@ import '../../components/AdminTable.css';
 const FRONTEND_URL = window.location.origin;
 
 function RadiosList() {
+  const { radioId } = useParams();
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
   const [showModal, setShowModal] = useState(false);
@@ -278,13 +280,10 @@ function RadiosList() {
   };
 
   const _showFoundRadio = (found) => {
-    setFindingRadio(false);
-    setHighlightedRadioId(found.id);
-    setTimeout(() => {
-      const row = document.getElementById(`radio-row-${found.id}`);
-      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-    setTimeout(() => setHighlightedRadioId(null), 5000);
+    // Full page navigation to /admin/radios/:id — this forces a complete
+    // browser refresh which guarantees all Web Serial port locks are released,
+    // so the "Program" button will get a clean serial connection.
+    window.location.href = `/admin/radios/${found.id}`;
   };
 
   const _showCreateForInfo = (info) => {
@@ -348,7 +347,7 @@ function RadiosList() {
         const info = meshtasticSerial.getDeviceInfo();
         if (info?.macAddr) {
           resolved = true;
-          meshtasticSerial.disconnect().catch(() => {});
+          try { await meshtasticSerial.disconnect(); } catch (e) { /* ignore */ }
           const found = _findRadioByMac(info.macAddr);
           if (found) {
             _showFoundRadio(found);
@@ -362,7 +361,7 @@ function RadiosList() {
       if (!resolved) {
         // MAC never arrived — use whatever info we have
         const info = meshtasticSerial.getDeviceInfo();
-        meshtasticSerial.disconnect().catch(() => {});
+        try { await meshtasticSerial.disconnect(); } catch (e) { /* ignore */ }
         if (info) {
           _showCreateForInfo(info);
         } else {
@@ -388,10 +387,26 @@ function RadiosList() {
     return String(macBytes);
   };
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
-
+  // Auto-highlight and scroll to a radio when navigating to /admin/radios/:radioId
+  // Must be above the early return so hooks run in the same order every render.
   const radios = radiosData?.radios || [];
   const users = usersData?.users || [];
+
+  useEffect(() => {
+    if (!radioId || radios.length === 0) return;
+    const id = parseInt(radioId, 10);
+    const found = radios.find(r => r.id === id);
+    if (found) {
+      setHighlightedRadioId(id);
+      setTimeout(() => {
+        const row = document.getElementById(`radio-row-${id}`);
+        if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      setTimeout(() => setHighlightedRadioId(null), 5000);
+    }
+  }, [radioId, radios.length]);
+
+  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
 
   return (
     <div className="admin-page">

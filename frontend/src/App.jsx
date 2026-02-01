@@ -281,6 +281,14 @@ function App() {
                 }
               />
               <Route
+                path="admin/radios/:radioId"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <RadiosList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="admin/settings"
                 element={
                   <ProtectedRoute adminOnly>
