@@ -395,6 +395,20 @@ function ProgramRadioModal({ radio, onClose }) {
                       {progress.total > 0 ? `${progress.current} / ${progress.total}` : 'Preparing...'}
                     </div>
                   </div>
+
+                  {scanLog.length > 0 && (
+                    <div className="scan-terminal" style={{ marginTop: '16px' }}>
+                      <div className="terminal-header">Programming Log</div>
+                      <div className="terminal-content" ref={terminalRef}>
+                        {scanLog.map((entry, idx) => (
+                          <div key={idx} className={`terminal-line ${entry.type}`}>
+                            <span className="terminal-time">[{entry.timestamp}]</span>
+                            <span className="terminal-msg">{entry.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -415,6 +429,20 @@ function ProgramRadioModal({ radio, onClose }) {
                       <div className="result-icon">&#10006;</div>
                       <h3>Programming Failed</h3>
                       <p>{error || 'An unknown error occurred'}</p>
+                    </div>
+                  )}
+
+                  {scanLog.length > 0 && (
+                    <div className="scan-terminal" style={{ marginTop: '16px' }}>
+                      <div className="terminal-header">Programming Log</div>
+                      <div className="terminal-content" ref={terminalRef}>
+                        {scanLog.map((entry, idx) => (
+                          <div key={idx} className={`terminal-line ${entry.type}`}>
+                            <span className="terminal-time">[{entry.timestamp}]</span>
+                            <span className="terminal-msg">{entry.message}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

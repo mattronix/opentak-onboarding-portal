@@ -514,6 +514,7 @@ function RadiosList() {
                     ))}
                   </select>
                 </div>
+
               </div>
 
               <div className="modal-footer">

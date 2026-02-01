@@ -186,6 +186,13 @@ class MeshtasticSerialService {
           ...this.deviceInfo,
           nodeNum: nodeInfo.myNodeNum,
         };
+        // Request device metadata to get firmware version
+        if (this.device.getMetadata) {
+          this._log('Requesting device metadata...', 'info');
+          this.device.getMetadata(nodeInfo.myNodeNum).catch(err => {
+            this._log(`Metadata request error (non-fatal): ${err.message}`, 'warn');
+          });
+        }
       });
 
       this.device.events.onDeviceMetadataPacket.subscribe((metadata) => {
@@ -236,9 +243,25 @@ class MeshtasticSerialService {
           // Mark that we've received user info (prevents other nodes overwriting)
           if (!this.hasReceivedUserInfo) {
             this.hasReceivedUserInfo = true;
-            // Always call callback if it exists (used for instant resolution)
+            // Wait briefly for firmware version from metadata request before calling callback
             if (this.onDeviceInfoReceived) {
-              this.onDeviceInfoReceived(this.deviceInfo);
+              const cb = this.onDeviceInfoReceived;
+              if (this.deviceInfo?.firmwareVersion) {
+                cb(this.deviceInfo);
+              } else {
+                // Give metadata response up to 1.5s to arrive
+                const waitForFw = () => {
+                  let waited = 0;
+                  const interval = setInterval(() => {
+                    waited += 100;
+                    if (this.deviceInfo?.firmwareVersion || waited >= 1500) {
+                      clearInterval(interval);
+                      cb(this.deviceInfo);
+                    }
+                  }, 100);
+                };
+                waitForFw();
+              }
             }
           }
         } else if (!isOurNode) {
@@ -286,9 +309,21 @@ class MeshtasticSerialService {
             // Mark that we've received user info
             if (!this.hasReceivedUserInfo) {
               this.hasReceivedUserInfo = true;
-              // Always call callback if it exists (used for instant resolution)
+              // Wait briefly for firmware version from metadata request before calling callback
               if (this.onDeviceInfoReceived) {
-                this.onDeviceInfoReceived(this.deviceInfo);
+                const cb = this.onDeviceInfoReceived;
+                if (this.deviceInfo?.firmwareVersion) {
+                  cb(this.deviceInfo);
+                } else {
+                  let waited = 0;
+                  const interval = setInterval(() => {
+                    waited += 100;
+                    if (this.deviceInfo?.firmwareVersion || waited >= 1500) {
+                      clearInterval(interval);
+                      cb(this.deviceInfo);
+                    }
+                  }, 100);
+                }
               }
             }
           } else if (user && !isOurNode) {
@@ -1034,29 +1069,52 @@ class MeshtasticSerialService {
     }
 
     const { radio, channels, yamlConfig } = config;
-    const totalSteps = channels.length + (yamlConfig ? 1 : 0) + 2; // channels + yaml + owner + reboot
+    const totalSteps = channels.length + (yamlConfig ? 1 : 0) + 3; // begin + channels + yaml + owner + commit
     let currentStep = 0;
 
     try {
-      // Step 1: Set owner info
-      this._updateProgress(++currentStep, totalSteps, 'Setting owner info...');
-      await this._setOwnerInfo(radio);
+      // Step 1: Open edit transaction BEFORE any changes.
+      // This tells the firmware to defer all saves/reboots until commitEditSettings().
+      // Without this, setChannel or setConfig may trigger an immediate reboot.
+      this._updateProgress(++currentStep, totalSteps, 'Opening settings transaction...');
+      this._log('Opening edit transaction (deferring reboots until commit)...', 'info');
+      await this.device.beginEditSettings();
+      await this._delay(1000); // Give firmware time to enter edit mode
+      this._log('Edit transaction open, pendingSettingsChanges=' + this.device.pendingSettingsChanges, 'info');
 
-      // Step 2: Program channels
+      // Step 2: Set owner info
+      this._updateProgress(++currentStep, totalSteps, 'Setting owner info...');
+      this._log('Setting owner info...', 'info');
+      await this._setOwnerInfo(radio);
+      this._log('Owner info set', 'success');
+
+      // Step 3+: Program channels
       for (const channel of channels) {
         this._updateProgress(++currentStep, totalSteps, `Programming channel ${channel.slot_number}: ${channel.name}...`);
+        this._log(`Programming channel ${channel.slot_number}: ${channel.name}...`, 'info');
         await this._setChannel(channel);
+        this._log(`Channel ${channel.slot_number} set`, 'success');
       }
 
-      // Step 3: Apply YAML config if provided
+      // Apply YAML config if provided
       if (yamlConfig) {
         this._updateProgress(++currentStep, totalSteps, 'Applying device configuration...');
         await this._applyYamlConfig(yamlConfig);
       }
 
-      // Step 4: Reboot the radio to apply changes
-      this._updateProgress(++currentStep, totalSteps, 'Rebooting radio to apply changes...');
-      await this._rebootRadio();
+      // FINAL STEP: Commit all pending settings and reboot.
+      // This is the ONLY point where the device should reboot.
+      this._updateProgress(++currentStep, totalSteps, 'Committing settings to flash (device will reboot)...');
+      this._log('Committing all settings to flash (device will reboot)...', 'info');
+      try {
+        await this.device.commitEditSettings();
+      } catch (e) {
+        // Device may disconnect during commit reboot - that's expected
+        this._log(`Commit completed (device rebooting): ${e.message || 'OK'}`, 'info');
+      }
+
+      // Wait for device to reboot and reconnect
+      await this._waitAndReconnect();
 
       this._updateProgress(totalSteps, totalSteps, 'Programming complete!');
       this._updateStatus('success', 'Radio programmed successfully');
@@ -1110,6 +1168,99 @@ class MeshtasticSerialService {
       await this.disconnect();
     } catch (e) {
       // Ignore cleanup errors
+    }
+  }
+
+  /**
+   * Wait for device to reboot after commitEditSettings, then reconnect.
+   * After a reboot the serial port streams close, so we need to re-open the port
+   * and create a fresh transport + device.
+   */
+  async _waitAndReconnect() {
+    this._log('Waiting for device to reboot...', 'info');
+
+    // Save the port reference before cleanup
+    const port = this.transport?.connection || this.lastPort;
+
+    if (!port) {
+      this._log('No port reference available for reconnect', 'warn');
+      try { await this.disconnect(); } catch (e) { /* ignore */ }
+      return;
+    }
+
+    // Clean up old connection without releasing port
+    try {
+      if (this.transport) {
+        this.transport.abortController?.abort();
+        if (this.transport.pipePromise) await this.transport.pipePromise.catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
+
+    // Wait for the device to fully reboot
+    await this._delay(3000);
+
+    // Try to close and re-open the port
+    let reconnected = false;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        this._log(`Reconnect attempt ${attempt}/5...`, 'info');
+
+        // Close the port if it's still open
+        try {
+          if (port.readable || port.writable) {
+            await port.close();
+          }
+        } catch (e) {
+          // May already be closed
+        }
+
+        await this._delay(1000);
+
+        // Re-open the port
+        await port.open({ baudRate: 115200 });
+        this._log('Serial port re-opened', 'success');
+
+        // Create new transport from the re-opened port
+        this.transport = new TransportWebSerial(port);
+        this.lastPort = port;
+
+        // Create new MeshDevice with new transport
+        this.device = new MeshDevice(this.transport);
+
+        // Re-subscribe to status events (minimal - just for tracking)
+        this.device.events.onDeviceStatus.subscribe((status) => {
+          let statusValue = status;
+          if (typeof status === 'object' && status !== null) {
+            statusValue = status.status !== undefined ? status.status : status;
+          }
+          const connectedValue = Types.DeviceStatusEnum?.DeviceConnected ?? 2;
+          const disconnectedValue = Types.DeviceStatusEnum?.DeviceDisconnected ?? 0;
+          if (statusValue === connectedValue) this.isConnected = true;
+          else if (statusValue === disconnectedValue) this.isConnected = false;
+        });
+
+        // Configure the device (syncs state)
+        this._log('Re-syncing device state...', 'info');
+        await this.device.configure();
+        await this._delay(2000);
+
+        this.isConnected = true;
+        reconnected = true;
+        this._log('Device reconnected and synced successfully', 'success');
+        break;
+      } catch (e) {
+        this._log(`Reconnect attempt ${attempt}/5 failed: ${e.message}`, 'warn');
+        await this._delay(2000);
+      }
+    }
+
+    if (!reconnected) {
+      this._log('Could not reconnect after reboot - settings were saved to flash', 'warn');
+      this._log('The radio will use the new settings on next power-on', 'info');
+      // Clean up
+      this.device = null;
+      this.transport = null;
+      this.isConnected = false;
     }
   }
 
@@ -1208,83 +1359,219 @@ class MeshtasticSerialService {
 
   /**
    * Apply YAML configuration to the radio
-   * The YAML config should be a Meshtastic-compatible device config
+   * The YAML config should be a Meshtastic-compatible device config.
+   * Supports both flat format (lora: ...) and wrapped format (config: lora: ...).
    */
   async _applyYamlConfig(yamlConfig) {
     if (!yamlConfig || yamlConfig.trim() === '') {
-      console.log('No YAML config to apply');
+      this._log('No YAML config to apply', 'warn');
       return;
     }
 
     try {
-      // Parse YAML config (simple key=value or YAML format)
-      const config = this._parseYamlConfig(yamlConfig);
+      const parsed = this._parseYamlConfig(yamlConfig);
 
-      // Apply each config section
-      if (config.device) {
-        await this._setDeviceConfig(config.device);
+      this._log(`Parsed YAML keys: ${Object.keys(parsed).join(', ')}`, 'info');
+
+      // Unwrap config: wrapper if present (Meshtastic export format)
+      let configSections = {};
+      let moduleConfigSections = {};
+
+      if (parsed.config && typeof parsed.config === 'object') {
+        configSections = parsed.config;
       }
-      if (config.position) {
-        await this._setPositionConfig(config.position);
+      if (parsed.module_config && typeof parsed.module_config === 'object') {
+        moduleConfigSections = parsed.module_config;
       }
-      if (config.power) {
-        await this._setPowerConfig(config.power);
+
+      // Also support flat format (sections at top level without config: wrapper)
+      const knownConfigSections = ['device', 'position', 'power', 'network', 'display', 'lora', 'bluetooth', 'security'];
+      const knownModuleSections = ['mqtt', 'serial', 'externalNotification', 'rangeTest', 'telemetry',
+        'cannedMessage', 'ambientLighting', 'detectionSensor', 'audio', 'remoteHardware',
+        'neighborInfo', 'storeForward', 'paxcounter'];
+      for (const key of Object.keys(parsed)) {
+        if (key === 'config' || key === 'module_config') continue;
+        // Convert snake_case section names to camelCase for matching
+        const camelKey = this._snakeToCamel(key);
+        if (knownConfigSections.includes(camelKey) && typeof parsed[key] === 'object') configSections[camelKey] = parsed[key];
+        else if (knownModuleSections.includes(camelKey) && typeof parsed[key] === 'object') moduleConfigSections[camelKey] = parsed[key];
       }
-      if (config.network) {
-        await this._setNetworkConfig(config.network);
+
+      // Convert any snake_case section names within config/module_config wrappers to camelCase
+      // (e.g., external_notification → externalNotification, store_forward → storeForward)
+      const convertedConfigSections = {};
+      for (const [key, value] of Object.entries(configSections)) {
+        convertedConfigSections[this._snakeToCamel(key)] = value;
       }
-      if (config.display) {
-        await this._setDisplayConfig(config.display);
+      configSections = convertedConfigSections;
+
+      const convertedModuleSections = {};
+      for (const [key, value] of Object.entries(moduleConfigSections)) {
+        convertedModuleSections[this._snakeToCamel(key)] = value;
       }
-      if (config.lora) {
-        await this._setLoRaConfig(config.lora);
+      moduleConfigSections = convertedModuleSections;
+
+      this._log(`Config sections: ${Object.keys(configSections).join(', ') || '(none)'}`, 'info');
+      if (Object.keys(moduleConfigSections).length > 0) {
+        this._log(`Module config sections: ${Object.keys(moduleConfigSections).join(', ')}`, 'info');
       }
-      if (config.bluetooth) {
-        await this._setBluetoothConfig(config.bluetooth);
+
+      // Apply config sections via setConfig()
+      // Send security last since it can be disruptive
+      const configOrder = Object.keys(configSections).sort((a, b) => {
+        if (a === 'security') return 1;
+        if (b === 'security') return -1;
+        return 0;
+      });
+
+      for (const section of configOrder) {
+        const values = configSections[section];
+        if (typeof values !== 'object' || values === null || Array.isArray(values)) {
+          if (Array.isArray(values)) this._log(`Skipping config.${section}: unexpected array value`, 'warn');
+          continue;
+        }
+        this._log(`Applying config.${section}...`, 'info');
+        try {
+          await this._setConfigSection(section, values);
+        } catch (e) {
+          this._log(`Error applying config.${section}: ${e.message}`, 'error');
+        }
       }
+
+      // Apply module config sections via setModuleConfig()
+      for (const [section, values] of Object.entries(moduleConfigSections)) {
+        if (typeof values !== 'object' || values === null || Array.isArray(values)) {
+          if (Array.isArray(values)) this._log(`Skipping module_config.${section}: unexpected array value`, 'warn');
+          continue;
+        }
+        this._log(`Applying module_config.${section}...`, 'info');
+        try {
+          await this._setModuleConfigSection(section, values);
+        } catch (e) {
+          this._log(`Error applying module_config.${section}: ${e.message}`, 'error');
+        }
+      }
+
+      this._log('All config sections applied successfully', 'success');
     } catch (error) {
-      console.error('Error applying YAML config:', error);
+      this._log(`Error applying YAML config: ${error.message}`, 'error');
       throw new Error(`Failed to apply config: ${error.message}`);
     }
   }
 
   /**
-   * Parse YAML-like config string into object
-   * Supports simple YAML format:
-   * section:
-   *   key: value
+   * Parse Meshtastic YAML config into a nested object.
+   * Handles indentation-based nesting, arrays (- item), and base64: values.
    */
   _parseYamlConfig(yamlString) {
-    const config = {};
-    let currentSection = null;
+    const root = {};
+    const stack = [{ indent: -1, obj: root }];
 
-    const lines = yamlString.split('\n');
-    for (const line of lines) {
+    for (const line of yamlString.split('\n')) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) continue;
 
-      // Check for section header (no leading spaces, ends with :)
-      if (!line.startsWith(' ') && !line.startsWith('\t') && trimmed.endsWith(':')) {
-        currentSection = trimmed.slice(0, -1).toLowerCase();
-        config[currentSection] = {};
-      } else if (currentSection && trimmed.includes(':')) {
-        // Key-value pair within a section
-        const colonIndex = trimmed.indexOf(':');
-        const key = trimmed.slice(0, colonIndex).trim();
-        let value = trimmed.slice(colonIndex + 1).trim();
+      const indent = line.search(/\S/);
 
-        // Parse value types
-        if (value === 'true') value = true;
-        else if (value === 'false') value = false;
-        else if (!isNaN(value) && value !== '') value = Number(value);
-        else if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-        else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+      // Handle array items (- value)
+      if (trimmed.startsWith('- ')) {
+        const itemValue = trimmed.slice(2).trim();
+        // Use > (not >=) so we don't pop entries at the same indent level -
+        // array items at the same indent as their parent key still belong to that key.
+        while (stack.length > 1 && stack[stack.length - 1].indent > indent) stack.pop();
+        const parent = stack[stack.length - 1];
 
-        config[currentSection][key] = value;
+        // Find the key this array belongs to
+        if (parent.lastKey && parent.obj[parent.lastKey] !== undefined) {
+          // Normal case: add to the last assigned key's value
+          if (!Array.isArray(parent.obj[parent.lastKey])) parent.obj[parent.lastKey] = [];
+          parent.obj[parent.lastKey].push(this._parseYamlValue(itemValue));
+        } else if (parent.parentKey) {
+          // Parent was a section header (e.g., admin_key:) with no value assignments yet.
+          // The array items should become the value of that key in the grandparent.
+          const grandparent = stack.length > 1 ? stack[stack.length - 2] : null;
+          if (grandparent && grandparent.obj[parent.parentKey] !== undefined) {
+            if (!Array.isArray(grandparent.obj[parent.parentKey])) {
+              grandparent.obj[parent.parentKey] = [];
+            }
+            grandparent.obj[parent.parentKey].push(this._parseYamlValue(itemValue));
+          }
+        }
+        continue;
+      }
+
+      const colonIndex = trimmed.indexOf(':');
+      if (colonIndex === -1) continue;
+
+      const key = trimmed.slice(0, colonIndex).trim();
+      const rawValue = trimmed.slice(colonIndex + 1).trim();
+
+      // Pop stack to correct nesting level
+      while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
+
+      const parent = stack[stack.length - 1].obj;
+
+      if (rawValue === '') {
+        // Section header (could be an object or could become an array if followed by - items)
+        const newObj = {};
+        parent[key] = newObj;
+        stack.push({ indent, obj: newObj, lastKey: null, parentKey: key });
+      } else {
+        parent[key] = this._parseYamlValue(rawValue);
+        stack[stack.length - 1].lastKey = key;
       }
     }
 
-    return config;
+    return root;
+  }
+
+  /**
+   * Convert snake_case keys to camelCase (protobuf convention).
+   * Meshtastic YAML exports use snake_case (e.g., hop_limit, tx_enabled)
+   * but @bufbuild/protobuf v2 expects camelCase (hopLimit, txEnabled).
+   */
+  _snakeToCamel(str) {
+    return str.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+  }
+
+  /**
+   * Convert all keys in an object from snake_case to camelCase (shallow).
+   */
+  _convertKeysToCamelCase(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj instanceof Uint8Array) {
+      return obj;
+    }
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const camelKey = this._snakeToCamel(key);
+      // Recursively convert nested objects (but not arrays or Uint8Array)
+      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Uint8Array)) {
+        result[camelKey] = this._convertKeysToCamelCase(value);
+      } else {
+        result[camelKey] = value;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Parse a single YAML value into the appropriate JS type
+   */
+  _parseYamlValue(value) {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value === 'null' || value === '~') return null;
+    if (value.startsWith('base64:')) {
+      try {
+        const b64 = value.slice(7);
+        return new Uint8Array(atob(b64).split('').map(c => c.charCodeAt(0)));
+      } catch (e) { return value; }
+    }
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      return value.slice(1, -1);
+    }
+    if (value !== '' && !isNaN(value)) return Number(value);
+    return value;
   }
 
   /**
@@ -1293,236 +1580,166 @@ class MeshtasticSerialService {
   _resolveEnumValue(enumObj, value) {
     if (typeof value === 'number') return value;
     if (typeof value === 'string') {
-      // Try direct lookup (e.g., 'TAK' -> 7)
       if (enumObj[value] !== undefined) return enumObj[value];
-      // Try uppercase
       if (enumObj[value.toUpperCase()] !== undefined) return enumObj[value.toUpperCase()];
     }
     return value;
   }
 
   /**
-   * Set device configuration
+   * Resolve known enum fields in a config object
    */
-  async _setDeviceConfig(deviceConfig) {
-    const configObj = {};
+  _resolveEnums(section, configObj) {
+    const enumMap = {
+      'device.role': Protobuf.Config.Config_DeviceConfig_Role,
+      'device.rebroadcastMode': Protobuf.Config.Config_DeviceConfig_RebroadcastMode,
+      'position.gpsMode': Protobuf.Config.Config_PositionConfig_GpsMode,
+      'lora.region': Protobuf.Config.Config_LoRaConfig_RegionCode,
+      'lora.modemPreset': Protobuf.Config.Config_LoRaConfig_ModemPreset,
+      'bluetooth.mode': Protobuf.Config.Config_BluetoothConfig_PairingMode,
+      'detectionSensor.detectionTriggerType': Protobuf.ModuleConfig.ModuleConfig_DetectionSensorConfig_TriggerType,
+    };
+    for (const [key, val] of Object.entries(configObj)) {
+      const enumKey = `${section}.${key}`;
+      if (enumMap[enumKey] && typeof val === 'string') {
+        configObj[key] = this._resolveEnumValue(enumMap[enumKey], val);
+      }
+    }
+    return configObj;
+  }
 
-    if (deviceConfig.role !== undefined) {
-      configObj.role = this._resolveEnumValue(
-        Protobuf.Config.Config_DeviceConfig_Role,
-        deviceConfig.role
-      );
+  /**
+   * Apply a config section via device.setConfig()
+   */
+  async _setConfigSection(section, values) {
+    const schemaMap = {
+      device: Protobuf.Config.Config_DeviceConfigSchema,
+      position: Protobuf.Config.Config_PositionConfigSchema,
+      power: Protobuf.Config.Config_PowerConfigSchema,
+      network: Protobuf.Config.Config_NetworkConfigSchema,
+      display: Protobuf.Config.Config_DisplayConfigSchema,
+      lora: Protobuf.Config.Config_LoRaConfigSchema,
+      bluetooth: Protobuf.Config.Config_BluetoothConfigSchema,
+      security: Protobuf.Config.Config_SecurityConfigSchema,
+    };
+
+    const schema = schemaMap[section];
+    if (!schema) {
+      this._log(`Unknown config section: ${section}, skipping`, 'warn');
+      return;
     }
-    if (deviceConfig.serialEnabled !== undefined) {
-      configObj.serialEnabled = deviceConfig.serialEnabled;
+
+    // Convert snake_case keys from YAML to camelCase for protobuf
+    const configObj = this._convertKeysToCamelCase(values);
+    this._resolveEnums(section, configObj);
+
+    // Security section: skip PKI keys (publicKey, privateKey, adminKey) -
+    // these are per-device identity and shouldn't be overwritten from a template
+    if (section === 'security') {
+      const skippedKeys = [];
+      for (const key of ['publicKey', 'privateKey', 'adminKey']) {
+        if (key in configObj) {
+          skippedKeys.push(key);
+          delete configObj[key];
+        }
+      }
+      if (skippedKeys.length > 0) {
+        this._log(`  Skipping device-specific security fields: ${skippedKeys.join(', ')}`, 'info');
+      }
     }
-    if (deviceConfig.debugLogEnabled !== undefined) {
-      configObj.debugLogEnabled = deviceConfig.debugLogEnabled;
+
+    // Remove empty objects (e.g., {} from empty YAML sections) that would cause protobuf issues
+    for (const [key, val] of Object.entries(configObj)) {
+      if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Uint8Array) && Object.keys(val).length === 0) {
+        delete configObj[key];
+      }
     }
+
+    this._log(`  ${section} fields: ${JSON.stringify(configObj)}`, 'info');
 
     if (Object.keys(configObj).length > 0) {
       const config = create(Protobuf.Config.ConfigSchema, {
         payloadVariant: {
-          case: 'device',
-          value: create(Protobuf.Config.Config_DeviceConfigSchema, configObj)
+          case: section,
+          value: create(schema, configObj)
         }
       });
       await this.device.setConfig(config);
+      this._log(`  ${section} config sent successfully`, 'success');
       await this._delay(300);
+    } else {
+      this._log(`  ${section} has no fields to apply, skipping`, 'info');
     }
   }
 
   /**
-   * Set position configuration
+   * Apply a module config section via device.setModuleConfig()
    */
-  async _setPositionConfig(posConfig) {
-    const configObj = {};
+  async _setModuleConfigSection(section, values) {
+    const schemaMap = {
+      mqtt: Protobuf.ModuleConfig.ModuleConfig_MQTTConfigSchema,
+      serial: Protobuf.ModuleConfig.ModuleConfig_SerialConfigSchema,
+      externalNotification: Protobuf.ModuleConfig.ModuleConfig_ExternalNotificationConfigSchema,
+      rangeTest: Protobuf.ModuleConfig.ModuleConfig_RangeTestConfigSchema,
+      telemetry: Protobuf.ModuleConfig.ModuleConfig_TelemetryConfigSchema,
+      cannedMessage: Protobuf.ModuleConfig.ModuleConfig_CannedMessageConfigSchema,
+      ambientLighting: Protobuf.ModuleConfig.ModuleConfig_AmbientLightingConfigSchema,
+      detectionSensor: Protobuf.ModuleConfig.ModuleConfig_DetectionSensorConfigSchema,
+      audio: Protobuf.ModuleConfig.ModuleConfig_AudioConfigSchema,
+      remoteHardware: Protobuf.ModuleConfig.ModuleConfig_RemoteHardwareConfigSchema,
+      neighborInfo: Protobuf.ModuleConfig.ModuleConfig_NeighborInfoConfigSchema,
+      storeForward: Protobuf.ModuleConfig.ModuleConfig_StoreForwardConfigSchema,
+      paxcounter: Protobuf.ModuleConfig.ModuleConfig_PaxcounterConfigSchema,
+    };
 
-    if (posConfig.gpsEnabled !== undefined) {
-      configObj.gpsEnabled = posConfig.gpsEnabled;
+    const schema = schemaMap[section];
+    if (!schema) {
+      this._log(`Unknown module config section: ${section}, skipping`, 'warn');
+      return;
     }
-    if (posConfig.fixedPosition !== undefined) {
-      configObj.fixedPosition = posConfig.fixedPosition;
-    }
-    if (posConfig.positionBroadcastSecs !== undefined) {
-      configObj.positionBroadcastSecs = posConfig.positionBroadcastSecs;
+
+    // Convert snake_case keys from YAML to camelCase for protobuf
+    const configObj = this._convertKeysToCamelCase(values);
+    this._resolveEnums(section, configObj);
+
+    this._log(`  ${section} fields: ${JSON.stringify(configObj)}`, 'info');
+
+    // Remove empty objects and handle nested sub-messages
+    for (const [key, val] of Object.entries(configObj)) {
+      if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Uint8Array)) {
+        // Remove empty objects
+        if (Object.keys(val).length === 0) {
+          delete configObj[key];
+          continue;
+        }
+        // Handle known nested sub-messages (e.g., mqtt.mapReportSettings)
+        const nestedSchemas = {
+          'mqtt.mapReportSettings': Protobuf.ModuleConfig.ModuleConfig_MapReportSettingsSchema,
+        };
+        const nestedKey = `${section}.${key}`;
+        if (nestedSchemas[nestedKey]) {
+          configObj[key] = create(nestedSchemas[nestedKey], val);
+        }
+      }
     }
 
     if (Object.keys(configObj).length > 0) {
-      const config = create(Protobuf.Config.ConfigSchema, {
+      // setModuleConfig doesn't call beginEditSettings automatically (unlike setConfig),
+      // so ensure the edit transaction is open
+      if (!this.device.pendingSettingsChanges) {
+        this._log('  Opening edit transaction for module config...', 'info');
+        await this.device.beginEditSettings();
+        await this._delay(200);
+      }
+
+      const moduleConfig = create(Protobuf.ModuleConfig.ModuleConfigSchema, {
         payloadVariant: {
-          case: 'position',
-          value: create(Protobuf.Config.Config_PositionConfigSchema, configObj)
+          case: section,
+          value: create(schema, configObj)
         }
       });
-      await this.device.setConfig(config);
-      await this._delay(300);
-    }
-  }
-
-  /**
-   * Set power configuration
-   */
-  async _setPowerConfig(powerConfig) {
-    const configObj = {};
-
-    if (powerConfig.isPowerSaving !== undefined) {
-      configObj.isPowerSaving = powerConfig.isPowerSaving;
-    }
-    if (powerConfig.onBatteryShutdownAfterSecs !== undefined) {
-      configObj.onBatteryShutdownAfterSecs = powerConfig.onBatteryShutdownAfterSecs;
-    }
-
-    if (Object.keys(configObj).length > 0) {
-      const config = create(Protobuf.Config.ConfigSchema, {
-        payloadVariant: {
-          case: 'power',
-          value: create(Protobuf.Config.Config_PowerConfigSchema, configObj)
-        }
-      });
-      await this.device.setConfig(config);
-      await this._delay(300);
-    }
-  }
-
-  /**
-   * Set network configuration
-   */
-  async _setNetworkConfig(netConfig) {
-    const configObj = {};
-
-    if (netConfig.wifiEnabled !== undefined) {
-      configObj.wifiEnabled = netConfig.wifiEnabled;
-    }
-    if (netConfig.wifiSsid !== undefined) {
-      configObj.wifiSsid = netConfig.wifiSsid;
-    }
-    if (netConfig.wifiPsk !== undefined) {
-      configObj.wifiPsk = netConfig.wifiPsk;
-    }
-
-    if (Object.keys(configObj).length > 0) {
-      const config = create(Protobuf.Config.ConfigSchema, {
-        payloadVariant: {
-          case: 'network',
-          value: create(Protobuf.Config.Config_NetworkConfigSchema, configObj)
-        }
-      });
-      await this.device.setConfig(config);
-      await this._delay(300);
-    }
-  }
-
-  /**
-   * Set display configuration
-   */
-  async _setDisplayConfig(displayConfig) {
-    const configObj = {};
-
-    if (displayConfig.screenOnSecs !== undefined) {
-      configObj.screenOnSecs = displayConfig.screenOnSecs;
-    }
-    if (displayConfig.gpsFormat !== undefined) {
-      configObj.gpsFormat = displayConfig.gpsFormat;
-    }
-
-    if (Object.keys(configObj).length > 0) {
-      const config = create(Protobuf.Config.ConfigSchema, {
-        payloadVariant: {
-          case: 'display',
-          value: create(Protobuf.Config.Config_DisplayConfigSchema, configObj)
-        }
-      });
-      await this.device.setConfig(config);
-      await this._delay(300);
-    }
-  }
-
-  /**
-   * Set LoRa configuration
-   */
-  async _setLoRaConfig(loraConfig) {
-    const configObj = {};
-
-    if (loraConfig.region !== undefined) {
-      configObj.region = this._resolveEnumValue(
-        Protobuf.Config.Config_LoRaConfig_RegionCode,
-        loraConfig.region
-      );
-    }
-    if (loraConfig.modemPreset !== undefined) {
-      configObj.modemPreset = this._resolveEnumValue(
-        Protobuf.Config.Config_LoRaConfig_ModemPreset,
-        loraConfig.modemPreset
-      );
-    }
-    if (loraConfig.txPower !== undefined) {
-      configObj.txPower = loraConfig.txPower;
-    }
-    if (loraConfig.bandwidth !== undefined) {
-      configObj.bandwidth = loraConfig.bandwidth;
-    }
-    if (loraConfig.spreadFactor !== undefined) {
-      configObj.spreadFactor = loraConfig.spreadFactor;
-    }
-    if (loraConfig.codingRate !== undefined) {
-      configObj.codingRate = loraConfig.codingRate;
-    }
-    if (loraConfig.hopLimit !== undefined) {
-      configObj.hopLimit = loraConfig.hopLimit;
-    }
-    if (loraConfig.txEnabled !== undefined) {
-      configObj.txEnabled = loraConfig.txEnabled;
-    }
-    if (loraConfig.overrideDutyCycle !== undefined) {
-      configObj.overrideDutyCycle = loraConfig.overrideDutyCycle;
-    }
-    if (loraConfig.overrideFrequency !== undefined) {
-      configObj.overrideFrequency = loraConfig.overrideFrequency;
-    }
-    if (loraConfig.sx126xRxBoostedGain !== undefined) {
-      configObj.sx126xRxBoostedGain = loraConfig.sx126xRxBoostedGain;
-    }
-    if (loraConfig.configOkToMqtt !== undefined) {
-      configObj.configOkToMqtt = loraConfig.configOkToMqtt;
-    }
-
-    if (Object.keys(configObj).length > 0) {
-      const config = create(Protobuf.Config.ConfigSchema, {
-        payloadVariant: {
-          case: 'lora',
-          value: create(Protobuf.Config.Config_LoRaConfigSchema, configObj)
-        }
-      });
-      await this.device.setConfig(config);
-      await this._delay(300);
-    }
-  }
-
-  /**
-   * Set Bluetooth configuration
-   */
-  async _setBluetoothConfig(btConfig) {
-    const configObj = {};
-
-    if (btConfig.enabled !== undefined) {
-      configObj.enabled = btConfig.enabled;
-    }
-    if (btConfig.mode !== undefined) {
-      configObj.mode = btConfig.mode;
-    }
-    if (btConfig.fixedPin !== undefined) {
-      configObj.fixedPin = btConfig.fixedPin;
-    }
-
-    if (Object.keys(configObj).length > 0) {
-      const config = create(Protobuf.Config.ConfigSchema, {
-        payloadVariant: {
-          case: 'bluetooth',
-          value: create(Protobuf.Config.Config_BluetoothConfigSchema, configObj)
-        }
-      });
-      await this.device.setConfig(config);
+      await this.device.setModuleConfig(moduleConfig);
+      this._log(`  ${section} module config sent successfully`, 'success');
       await this._delay(300);
     }
   }
