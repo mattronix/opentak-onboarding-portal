@@ -156,16 +156,17 @@ function ConfigValidatorModal({ radio, onClose }) {
       const currentLine = currentLines[i] || '';
       const targetLine = targetLines[i] || '';
       const isDifferent = currentLine !== targetLine;
+      const isNotRead = currentLine.includes('(not read)');
 
       currentDiff.push({
         text: currentLine,
-        type: isDifferent ? (currentLine ? 'removed' : 'empty') : 'unchanged',
+        type: isDifferent ? (isNotRead ? 'warning' : (currentLine ? 'removed' : 'empty')) : 'unchanged',
         lineNum: i + 1,
       });
 
       targetDiff.push({
         text: targetLine,
-        type: isDifferent ? (targetLine ? 'added' : 'empty') : 'unchanged',
+        type: isDifferent ? (isNotRead ? 'warning' : (targetLine ? 'added' : 'empty')) : 'unchanged',
         lineNum: i + 1,
       });
     }
@@ -199,24 +200,63 @@ function ConfigValidatorModal({ radio, onClose }) {
     return result;
   };
 
-  // Generate unified config objects for comparison
+  // Generate unified config objects for comparison.
+  // Only compares sections/fields that exist in the target — extra radio fields are ignored.
+  // Both sides are sorted identically for a meaningful side-by-side diff.
   const generateDiff = () => {
     if (!currentConfig || !targetConfig) return null;
 
-    // Build current config YAML object
+    // Parse target YAML config, unwrapping config:/module_config: wrappers
+    let targetDeviceConfig = targetConfig.yaml_config ? parseYamlConfig(targetConfig.yaml_config) : {};
+
+    if (targetDeviceConfig.config && typeof targetDeviceConfig.config === 'object') {
+      const inner = targetDeviceConfig.config;
+      delete targetDeviceConfig.config;
+      targetDeviceConfig = { ...targetDeviceConfig, ...inner };
+    }
+    // Handle both snake_case and camelCase versions of the wrapper key
+    const moduleConfigKey = targetDeviceConfig.moduleConfig ? 'moduleConfig' : 'module_config';
+    if (targetDeviceConfig[moduleConfigKey] && typeof targetDeviceConfig[moduleConfigKey] === 'object') {
+      const inner = targetDeviceConfig[moduleConfigKey];
+      delete targetDeviceConfig[moduleConfigKey];
+      targetDeviceConfig = { ...targetDeviceConfig, ...inner };
+    }
+
+    // Sort target sections alphabetically, and fields within each section
+    const sortedTargetSections = {};
+    for (const section of Object.keys(targetDeviceConfig).sort()) {
+      const sectionData = targetDeviceConfig[section];
+      if (sectionData && typeof sectionData === 'object') {
+        sortedTargetSections[section] = {};
+        for (const key of Object.keys(sectionData).sort()) {
+          sortedTargetSections[section][key] = sectionData[key];
+        }
+      }
+    }
+
+    // Build current config filtered to only include fields from the target.
+    // This ensures both sides have the same structure for line-by-line comparison.
+    const currentDeviceFiltered = {};
+    for (const [section, targetFields] of Object.entries(sortedTargetSections)) {
+      const currentSection = currentConfig.deviceConfig?.[section] || {};
+      currentDeviceFiltered[section] = {};
+      for (const key of Object.keys(targetFields)) {
+        currentDeviceFiltered[section][key] = currentSection[key] !== undefined
+          ? currentSection[key]
+          : '(not read)';
+      }
+    }
+
+    // Build both YAML objects with identical structure
     const currentYaml = {
       owner: {
         shortName: currentConfig.owner?.shortName || '',
         longName: currentConfig.owner?.longName || '',
       },
       channels: currentConfig.channels || [],
-      ...(currentConfig.deviceConfig || {}),
+      ...currentDeviceFiltered,
     };
 
-    // Parse target YAML config if available
-    const targetDeviceConfig = targetConfig.yaml_config ? parseYamlConfig(targetConfig.yaml_config) : {};
-
-    // Build target config YAML object
     const targetYaml = {
       owner: {
         shortName: targetConfig.radio?.shortName || '',
@@ -227,35 +267,36 @@ function ConfigValidatorModal({ radio, onClose }) {
         name: ch.name || '',
         role: ch.slot_number === 0 ? 'PRIMARY' : 'SECONDARY',
       })),
-      ...targetDeviceConfig,
+      ...sortedTargetSections,
     };
 
-    // Flatten both configs for comparison
+    // Flatten both configs for the diff table
     const currentFlat = flattenConfig(currentYaml);
     const targetFlat = flattenConfig(targetYaml);
 
-    // Find all unique keys
-    const allKeys = new Set([...Object.keys(currentFlat), ...Object.keys(targetFlat)]);
+    // Only compare keys that exist in the target (plus owner/channels which are always compared)
+    const targetKeys = new Set(Object.keys(targetFlat));
 
-    // Build diff entries
     const diffs = [];
-    for (const key of Array.from(allKeys).sort()) {
+    for (const key of Array.from(targetKeys).sort()) {
       const currentVal = currentFlat[key];
       const targetVal = targetFlat[key];
-      const currentStr = currentVal !== undefined ? String(currentVal) : '';
+      const currentStr = currentVal !== undefined ? String(currentVal) : '(not read)';
       const targetStr = targetVal !== undefined ? String(targetVal) : '';
+      const notRead = currentStr === '(not read)';
 
       diffs.push({
         key,
-        current: currentStr || '(not set)',
-        target: targetStr || '(not set)',
-        changed: currentStr !== targetStr,
-        onlyInCurrent: currentVal !== undefined && targetVal === undefined,
-        onlyInTarget: targetVal !== undefined && currentVal === undefined,
+        current: currentStr,
+        target: targetStr,
+        changed: !notRead && currentStr !== targetStr,
+        notRead,
+        onlyInCurrent: false,
+        onlyInTarget: currentVal === undefined,
       });
     }
 
-    // Get line arrays for diff comparison
+    // Get line arrays for side-by-side diff
     const currentLines = configToYamlLines(currentYaml);
     const targetLines = configToYamlLines(targetYaml);
     const { currentDiff, targetDiff } = computeLineDiff(currentLines, targetLines);
@@ -267,8 +308,13 @@ function ConfigValidatorModal({ radio, onClose }) {
       targetLines: targetDiff,
       diffs,
       hasChanges: diffs.some(d => d.changed),
+      notReadCount: diffs.filter(d => d.notRead).length,
     };
   };
+
+  // Convert a snake_case or lowercase string to camelCase.
+  // "ambient_lighting" → "ambientLighting", "mqtt" → "mqtt", "ambientLighting" → "ambientLighting"
+  const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
   // Parse simple YAML config into object
   const parseYamlConfig = (yamlString) => {
@@ -284,7 +330,7 @@ function ConfigValidatorModal({ radio, onClose }) {
 
       // Check for section header (no leading spaces, ends with :)
       if (!line.startsWith(' ') && !line.startsWith('\t') && trimmed.endsWith(':') && !trimmed.includes(': ')) {
-        currentSection = trimmed.slice(0, -1).toLowerCase();
+        currentSection = toCamelCase(trimmed.slice(0, -1));
         config[currentSection] = {};
       } else if (currentSection && trimmed.includes(':')) {
         // Key-value pair within a section
@@ -302,10 +348,10 @@ function ConfigValidatorModal({ radio, onClose }) {
         // Handle nested sections (e.g., "config:" followed by "bluetooth:")
         if (value === '' || value === undefined) {
           // This is a nested section
-          currentSection = key.toLowerCase();
+          currentSection = toCamelCase(key);
           config[currentSection] = config[currentSection] || {};
         } else {
-          config[currentSection][key] = value;
+          config[currentSection][toCamelCase(key)] = value;
         }
       }
     }
@@ -425,6 +471,12 @@ function ConfigValidatorModal({ radio, onClose }) {
                             <span>Configuration matches target</span>
                           </div>
                         )}
+                        {diff.notReadCount > 0 && (
+                          <div className="diff-status not-read">
+                            <span className="diff-icon">?</span>
+                            <span>{diff.notReadCount} settings could not be read from radio</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* YAML Side-by-Side Comparison with line-by-line diff */}
@@ -477,6 +529,34 @@ function ConfigValidatorModal({ radio, onClose }) {
                                     <span className="diff-marker add">+</span>
                                     {item.target}
                                   </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Unread settings - shown in yellow */}
+                      {diff.notReadCount > 0 && (
+                        <div className="diff-section not-read-section">
+                          <h4>Unread Settings ({diff.notReadCount})</h4>
+                          <table className="diff-table">
+                            <thead>
+                              <tr>
+                                <th>Key</th>
+                                <th className="not-read-col">Current</th>
+                                <th className="not-read-col">Target</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {diff.diffs.filter(d => d.notRead).map((item, idx) => (
+                                <tr key={idx} className="not-read">
+                                  <td className="diff-key">{item.key}</td>
+                                  <td className="not-read-col">
+                                    <span className="diff-marker warn">?</span>
+                                    (not read)
+                                  </td>
+                                  <td className="not-read-col">{item.target}</td>
                                 </tr>
                               ))}
                             </tbody>

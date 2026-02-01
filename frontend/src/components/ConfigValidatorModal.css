@@ -481,6 +481,69 @@
   color: #666;
 }
 
+/* Not-read status banner (yellow) */
+.diff-status.not-read {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+  margin-top: 8px;
+}
+
+/* Not-read section header */
+.not-read-section h4 {
+  background: #fff3cd !important;
+  color: #856404 !important;
+}
+
+/* Not-read table header columns */
+.diff-table th.not-read-col {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Not-read table rows */
+.diff-table tr.not-read td {
+  color: #856404;
+}
+
+.diff-table tr.not-read td.not-read-col {
+  background: #fffbe6;
+  color: #856404;
+}
+
+/* Yellow warning marker for unread */
+.diff-marker.warn {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Warning lines in YAML side-by-side (not read) */
+.current-panel .diff-line.warning {
+  background: rgba(255, 193, 7, 0.15);
+}
+
+.current-panel .diff-line.warning .line-text {
+  color: #ffc107;
+}
+
+.current-panel .diff-line.warning .line-number {
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.target-panel .diff-line.warning {
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.target-panel .diff-line.warning .line-text {
+  color: #d4a017;
+}
+
+.target-panel .diff-line.warning .line-number {
+  color: #d4a017;
+  background: rgba(255, 193, 7, 0.08);
+}
+
 /* Diff key column */
 .diff-table .diff-key {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;

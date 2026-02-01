@@ -36,6 +36,8 @@ function RadiosList() {
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
   const [scanLog, setScanLog] = useState([]);
+  const [findingRadio, setFindingRadio] = useState(false);
+  const [highlightedRadioId, setHighlightedRadioId] = useState(null);
 
   // Check if Web Serial is supported
   const browserSupport = meshtasticSerial.getBrowserSupport();
@@ -266,6 +268,114 @@ function RadiosList() {
     }
   };
 
+  const _findRadioByMac = (mac) => {
+    if (!mac || radios.length === 0) return null;
+    const normMac = mac.replace(/[:\-]/g, '').toLowerCase();
+    return radios.find(r => {
+      if (!r.mac) return false;
+      return r.mac.replace(/[:\-]/g, '').toLowerCase() === normMac;
+    }) || null;
+  };
+
+  const _showFoundRadio = (found) => {
+    setFindingRadio(false);
+    setHighlightedRadioId(found.id);
+    setTimeout(() => {
+      const row = document.getElementById(`radio-row-${found.id}`);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    setTimeout(() => setHighlightedRadioId(null), 5000);
+  };
+
+  const _showCreateForInfo = (info) => {
+    setFindingRadio(false);
+    const longName = info.longName || '';
+    const shortName = info.shortName || '';
+    let displayName = longName;
+    if (longName && shortName) displayName = `${longName} (${shortName})`;
+    else if (shortName) displayName = shortName;
+
+    setFormData({
+      name: displayName || '',
+      radioType: 'meshtastic',
+      description: '',
+      softwareVersion: info.firmwareVersion || '',
+      model: info.model || '',
+      vendor: '',
+      shortName: shortName,
+      longName: longName,
+      mac: info.macAddr || '',
+      assignedTo: null,
+      owner: null
+    });
+    setEditing(null);
+    setError('');
+    setScanStatus('');
+    setScanLog([]);
+    setShowModal(true);
+  };
+
+  const handleFindViaUSB = async () => {
+    if (!browserSupport.isSupported) {
+      showError('Web Serial API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+      return;
+    }
+
+    try {
+      await meshtasticSerial.disconnect();
+    } catch (e) { /* ignore */ }
+
+    setFindingRadio(true);
+    setHighlightedRadioId(null);
+
+    let resolved = false;
+
+    try {
+      // Don't act on instant callback — MAC may not be available yet.
+      // Instead, just track that we got connected.
+      const handleInstantUpdate = () => {};
+
+      await meshtasticSerial.connect(
+        () => {},
+        null,
+        handleInstantUpdate,
+        null
+      );
+
+      // Poll for MAC to arrive (up to 5 seconds)
+      for (let i = 0; i < 25; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const info = meshtasticSerial.getDeviceInfo();
+        if (info?.macAddr) {
+          resolved = true;
+          meshtasticSerial.disconnect().catch(() => {});
+          const found = _findRadioByMac(info.macAddr);
+          if (found) {
+            _showFoundRadio(found);
+          } else {
+            _showCreateForInfo(info);
+          }
+          break;
+        }
+      }
+
+      if (!resolved) {
+        // MAC never arrived — use whatever info we have
+        const info = meshtasticSerial.getDeviceInfo();
+        meshtasticSerial.disconnect().catch(() => {});
+        if (info) {
+          _showCreateForInfo(info);
+        } else {
+          showError('Could not read device info from radio');
+        }
+      }
+    } catch (err) {
+      showError(`Failed to read from radio: ${err.message}`);
+    } finally {
+      setFindingRadio(false);
+    }
+  };
+
   // Helper to format MAC address from bytes
   const formatMacAddress = (macBytes) => {
     if (!macBytes) return '';
@@ -287,9 +397,20 @@ function RadiosList() {
     <div className="admin-page">
       <div className="admin-header">
         <h1>Radios Management</h1>
-        <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-          + Add Radio
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {browserSupport.isSupported && (
+            <button
+              className="btn btn-secondary"
+              onClick={handleFindViaUSB}
+              disabled={findingRadio}
+            >
+              {findingRadio ? 'Scanning...' : 'Find via USB'}
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+            + Add Radio
+          </button>
+        </div>
       </div>
 
       <div className="admin-table-container">
@@ -311,7 +432,14 @@ function RadiosList() {
             </thead>
             <tbody>
               {radios.map(radio => (
-                <tr key={radio.id}>
+                <tr
+                  key={radio.id}
+                  id={`radio-row-${radio.id}`}
+                  style={highlightedRadioId === radio.id ? {
+                    background: '#fff3cd',
+                    transition: 'background 0.3s ease'
+                  } : {}}
+                >
                   <td><strong>{radio.name}</strong></td>
                   <td><span className="badge badge-primary">{radio.platform}</span></td>
                   <td>{radio.radioType || '-'}</td>
@@ -517,13 +645,43 @@ function RadiosList() {
 
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editing ? 'Update' : 'Create'} Radio
-                </button>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {editing && editing.radioType === 'meshtastic' && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setShowModal(false);
+                          setValidatingRadio(editing);
+                          setShowValidateModal(true);
+                        }}
+                      >
+                        Validate
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setShowModal(false);
+                          setProgrammingRadio(editing);
+                          setShowProgramModal(true);
+                        }}
+                      >
+                        Program
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                    {editing ? 'Update' : 'Create'} Radio
+                  </button>
+                </div>
               </div>
             </form>
           </div>

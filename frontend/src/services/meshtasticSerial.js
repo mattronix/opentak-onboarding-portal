@@ -13,7 +13,7 @@
 
 import { MeshDevice, Protobuf, Types } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
-import { fromBinary, create } from '@bufbuild/protobuf';
+import { fromBinary, create, toJson } from '@bufbuild/protobuf';
 
 // Debug: Log available Types to understand the library structure
 console.log('[MeshtasticSerial] Available Types:', Types);
@@ -89,30 +89,20 @@ class MeshtasticSerialService {
       throw new Error('Web Serial API is not supported in this browser');
     }
 
-    // Clean up any existing connection first
-    if (this.transport || this.device) {
+    // Clean up any existing connection first — use transport.disconnect()
+    // which properly releases stream locks, cancels readers, and closes the port.
+    if (this.transport) {
       try {
-        await this.disconnect();
-        // Brief delay to ensure port is fully released
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (e) {
-        // Ignore cleanup errors
-      }
+        await this.transport.disconnect();
+      } catch (e) { /* ignore */ }
+      this.transport = null;
     }
+    this.device = null;
+    this.isConnected = false;
+    this.lastPort = null;
 
-    // Try to close any previously used port (but don't forget it - keep browser permission)
-    if (this.lastPort) {
-      try {
-        if (this.lastPort.readable || this.lastPort.writable) {
-          await this.lastPort.close().catch(() => {});
-          // Wait a bit for the port to fully close
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      } catch (e) {
-        // Port may already be closed
-      }
-      this.lastPort = null;
-    }
+    // Brief delay to ensure port is fully released by the OS
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     this.onStatusChange = onStatusChange;
     this.onProgress = onProgress;
@@ -128,12 +118,34 @@ class MeshtasticSerialService {
       this._updateStatus('connecting', 'Requesting USB port...');
       this._log('Requesting USB port selection...', 'info');
 
-      // Create transport (this will prompt user to select the serial port)
-      this.transport = await TransportWebSerial.create(115200);
-      // Store port reference for cleanup
-      if (this.transport?.port) {
-        this.lastPort = this.transport.port;
+      const port = await navigator.serial.requestPort();
+
+      // Always close and reopen the port to ensure clean stream state.
+      // Reusing an already-open port leaves stale/consumed streams that cause
+      // the MeshDevice to receive no events on subsequent connections.
+      if (port.readable || port.writable) {
+        this._log('Closing port from previous session...', 'info');
+        try {
+          await port.close();
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (e) {
+          this._log(`Port close warning: ${e.message}`, 'warn');
+        }
       }
+
+      try {
+        await port.open({ baudRate: 115200 });
+      } catch (e) {
+        if (e.message?.includes('already open')) {
+          // close() failed silently — port is still open, use as last resort
+          this._log('Port still open after close attempt, reusing...', 'warn');
+        } else {
+          throw e;
+        }
+      }
+
+      this.transport = new TransportWebSerial(port);
+      this.lastPort = port;
       this._log('Serial port opened at 115200 baud', 'success');
 
       // Create the MeshDevice with the transport
@@ -167,11 +179,22 @@ class MeshtasticSerialService {
 
         // Check for connected/disconnected states
         const connectedValue = Types.DeviceStatusEnum?.DeviceConnected ?? Types.DeviceStatusEnum?.DEVICE_CONNECTED ?? 2;
+        const configuringValue = Types.DeviceStatusEnum?.DeviceConfiguring ?? 3;
+        const configuredValue = Types.DeviceStatusEnum?.DeviceConfigured ?? 4;
         const disconnectedValue = Types.DeviceStatusEnum?.DeviceDisconnected ?? Types.DeviceStatusEnum?.DEVICE_DISCONNECTED ?? 0;
 
-        if (statusValue === connectedValue || statusName === 'DeviceConnected' || statusName === 'DEVICE_CONNECTED') {
-          this.isConnected = true;
-          this._log('Device connected', 'success');
+        // Treat Connected, Configuring, and Configured all as "connected" —
+        // the DeviceConnected event can be swallowed by the MeshDevice's internal
+        // status transitions, but Configuring/Configured prove the device is live.
+        if (statusValue === connectedValue || statusValue === configuringValue || statusValue === configuredValue ||
+            statusName === 'DeviceConnected' || statusName === 'DEVICE_CONNECTED' ||
+            statusName === 'DeviceConfiguring' || statusName === 'DeviceConfigured') {
+          if (!this.isConnected) {
+            this.isConnected = true;
+            this._log('Device connected', 'success');
+          } else {
+            this._log(`Device status: ${statusName}`, 'info');
+          }
         } else if (statusValue === disconnectedValue || statusName === 'DeviceDisconnected' || statusName === 'DEVICE_DISCONNECTED') {
           this.isConnected = false;
           this._log('Device disconnected', 'warn');
@@ -416,6 +439,22 @@ class MeshtasticSerialService {
         });
       }
 
+      // Subscribe to module config events to collect module-level settings
+      // (mqtt, serial, telemetry, ambientLighting, detectionSensor, etc.)
+      if (this.device.events.onModuleConfigPacket) {
+        this.device.events.onModuleConfigPacket.subscribe((moduleConfigPacket) => {
+          const moduleConfig = moduleConfigPacket.data || moduleConfigPacket;
+          console.log('[onModuleConfigPacket] Module config packet:', moduleConfig);
+          if (moduleConfig.payloadVariant) {
+            const section = moduleConfig.payloadVariant.case;
+            const value = moduleConfig.payloadVariant.value;
+            this._log(`Received module config: ${section}`, 'info');
+            console.log(`[onModuleConfigPacket] Section ${section}:`, value);
+            this.collectedConfig[section] = value;
+          }
+        });
+      }
+
       // Also try onLocalConfig if available
       if (this.device.events.onLocalConfig) {
         this.device.events.onLocalConfig.subscribe((localConfig) => {
@@ -628,9 +667,10 @@ class MeshtasticSerialService {
     if (shouldLog) this._log('Disconnecting...', 'info');
 
     // Save port reference before disconnecting transport
+    // (TransportWebSerial stores the serial port as .connection, not .port)
     let port = null;
-    if (this.transport?.port) {
-      port = this.transport.port;
+    if (this.transport?.connection) {
+      port = this.transport.connection;
       this.lastPort = port; // Keep reference for future cleanup attempts
     }
 
@@ -729,12 +769,10 @@ class MeshtasticSerialService {
       console.log('[readCurrentConfig] collectedChannels:', this.collectedChannels);
       console.log('[readCurrentConfig] collectedConfig:', this.collectedConfig);
 
-      // Build channels from collected data
+      // Build channels from collected data (skip DISABLED slots — they're empty defaults)
       if (this.collectedChannels.size > 0) {
         this._log(`Processing ${this.collectedChannels.size} channels...`, 'info');
         this.collectedChannels.forEach((channel, index) => {
-          console.log(`[readCurrentConfig] Processing channel ${index}:`, channel);
-
           let name = '';
           let role = index === 0 ? 'PRIMARY' : 'SECONDARY';
           let psk = '';
@@ -752,6 +790,9 @@ class MeshtasticSerialService {
             role = this._getChannelRoleName(channel.role);
           }
 
+          // Skip disabled channels — they're empty default slots, not real config
+          if (role === 'DISABLED') return;
+
           const channelInfo = {
             slot_number: index,
             name: name,
@@ -768,75 +809,66 @@ class MeshtasticSerialService {
       // Sort channels by slot number
       config.channels.sort((a, b) => a.slot_number - b.slot_number);
 
-      // Build device config from collected data
+      // Build device config from collected data — capture ALL fields for accurate comparison.
+      // Uses protobuf's toJson() which properly serializes all fields including enums as strings.
       if (Object.keys(this.collectedConfig).length > 0) {
         this._log('Processing collected device config...', 'info');
 
-        if (this.collectedConfig.device) {
-          const deviceSection = this.collectedConfig.device;
-          config.deviceConfig.device = {
-            role: this._getDeviceRoleName(deviceSection.role),
-            serialEnabled: deviceSection.serialEnabled,
-            debugLogEnabled: deviceSection.debugLogEnabled,
-          };
-          this._log(`Device role: ${config.deviceConfig.device.role}`, 'info');
-        }
+        const configSchemas = {
+          device: Protobuf.Config.Config_DeviceConfigSchema,
+          position: Protobuf.Config.Config_PositionConfigSchema,
+          power: Protobuf.Config.Config_PowerConfigSchema,
+          network: Protobuf.Config.Config_NetworkConfigSchema,
+          display: Protobuf.Config.Config_DisplayConfigSchema,
+          lora: Protobuf.Config.Config_LoRaConfigSchema,
+          bluetooth: Protobuf.Config.Config_BluetoothConfigSchema,
+          security: Protobuf.Config.Config_SecurityConfigSchema,
+        };
 
-        if (this.collectedConfig.lora) {
-          const loraSection = this.collectedConfig.lora;
-          config.deviceConfig.lora = {
-            region: this._getRegionName(loraSection.region),
-            modemPreset: this._getModemPresetName(loraSection.modemPreset),
-            txPower: loraSection.txPower,
-            hopLimit: loraSection.hopLimit,
-            txEnabled: loraSection.txEnabled,
-            overrideDutyCycle: loraSection.overrideDutyCycle,
-            configOkToMqtt: loraSection.configOkToMqtt,
-          };
-          this._log(`LoRa preset: ${config.deviceConfig.lora.modemPreset}, hopLimit: ${config.deviceConfig.lora.hopLimit}`, 'info');
-        }
+        const moduleConfigSchemas = {
+          mqtt: Protobuf.ModuleConfig.ModuleConfig_MQTTConfigSchema,
+          serial: Protobuf.ModuleConfig.ModuleConfig_SerialConfigSchema,
+          externalNotification: Protobuf.ModuleConfig.ModuleConfig_ExternalNotificationConfigSchema,
+          rangeTest: Protobuf.ModuleConfig.ModuleConfig_RangeTestConfigSchema,
+          telemetry: Protobuf.ModuleConfig.ModuleConfig_TelemetryConfigSchema,
+          cannedMessage: Protobuf.ModuleConfig.ModuleConfig_CannedMessageConfigSchema,
+          ambientLighting: Protobuf.ModuleConfig.ModuleConfig_AmbientLightingConfigSchema,
+          detectionSensor: Protobuf.ModuleConfig.ModuleConfig_DetectionSensorConfigSchema,
+          audio: Protobuf.ModuleConfig.ModuleConfig_AudioConfigSchema,
+          remoteHardware: Protobuf.ModuleConfig.ModuleConfig_RemoteHardwareConfigSchema,
+          neighborInfo: Protobuf.ModuleConfig.ModuleConfig_NeighborInfoConfigSchema,
+          storeForward: Protobuf.ModuleConfig.ModuleConfig_StoreForwardConfigSchema,
+          paxcounter: Protobuf.ModuleConfig.ModuleConfig_PaxcounterConfigSchema,
+        };
 
-        if (this.collectedConfig.position) {
-          const positionSection = this.collectedConfig.position;
-          config.deviceConfig.position = {
-            gpsEnabled: positionSection.gpsEnabled,
-            fixedPosition: positionSection.fixedPosition,
-            positionBroadcastSecs: positionSection.positionBroadcastSecs,
-          };
-        }
+        for (const [section, sectionData] of Object.entries(this.collectedConfig)) {
+          // Skip internal sections that aren't real device config
+          if (section === 'sessionkey' || section === 'deviceUi') continue;
+          if (!sectionData || typeof sectionData !== 'object') continue;
 
-        if (this.collectedConfig.bluetooth) {
-          const btSection = this.collectedConfig.bluetooth;
-          config.deviceConfig.bluetooth = {
-            enabled: btSection.enabled,
-            mode: btSection.mode,
-            fixedPin: btSection.fixedPin,
-          };
-          this._log(`Bluetooth enabled: ${config.deviceConfig.bluetooth.enabled}`, 'info');
-        }
+          let serialized = null;
+          const schema = configSchemas[section] || moduleConfigSchemas[section];
 
-        if (this.collectedConfig.network) {
-          const netSection = this.collectedConfig.network;
-          config.deviceConfig.network = {
-            wifiEnabled: netSection.wifiEnabled,
-            wifiSsid: netSection.wifiSsid,
-          };
-        }
+          // Try protobuf toJson first — reliably gets all fields with string enum names
+          if (schema) {
+            try {
+              serialized = toJson(schema, sectionData, { emitDefaultValues: true });
+              // Round float32 precision artifacts (e.g., 869.6500244140625 → 869.65)
+              serialized = this._roundFloats(serialized);
+            } catch (e) {
+              this._log(`toJson failed for ${section}: ${e.message}, using fallback`, 'warn');
+            }
+          }
 
-        if (this.collectedConfig.display) {
-          const displaySection = this.collectedConfig.display;
-          config.deviceConfig.display = {
-            screenOnSecs: displaySection.screenOnSecs,
-            gpsFormat: displaySection.gpsFormat,
-          };
-        }
+          // Fallback to manual serialization
+          if (!serialized) {
+            serialized = this._serializeProtobufSection(section, sectionData);
+          }
 
-        if (this.collectedConfig.power) {
-          const powerSection = this.collectedConfig.power;
-          config.deviceConfig.power = {
-            isPowerSaving: powerSection.isPowerSaving,
-            onBatteryShutdownAfterSecs: powerSection.onBatteryShutdownAfterSecs,
-          };
+          if (serialized && Object.keys(serialized).length > 0) {
+            config.deviceConfig[section] = serialized;
+            this._log(`${section}: ${Object.keys(serialized).join(', ')}`, 'info');
+          }
         }
       } else {
         this._log('No device config collected', 'warn');
@@ -1057,6 +1089,85 @@ class MeshtasticSerialService {
   }
 
   /**
+   * Round float32 precision artifacts in a serialized config object.
+   * Protobuf float32 turns 869.65 into 869.6500244140625 — round to 2 decimals.
+   */
+  _roundFloats(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'number' && !Number.isInteger(value)) {
+        result[key] = Math.round(value * 100) / 100;
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        result[key] = this._roundFloats(value);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Serialize a protobuf config section to a plain object for display/comparison.
+   * Captures ALL fields, converting known enums to string names.
+   */
+  _serializeProtobufSection(section, obj) {
+    if (!obj || typeof obj !== 'object') return {};
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip protobuf internal fields
+      if (key.startsWith('$') || key.startsWith('_')) continue;
+      if (value === null || value === undefined) continue;
+      // Skip empty byte arrays (e.g., empty keys)
+      if (value instanceof Uint8Array) {
+        if (value.length > 0) {
+          result[key] = 'base64:' + btoa(String.fromCharCode(...value));
+        }
+        continue;
+      }
+      // Convert known enum values to string names
+      const enumStr = this._enumToString(section, key, value);
+      if (enumStr !== null) {
+        result[key] = enumStr;
+      } else if (typeof value === 'object' && !Array.isArray(value)) {
+        // Nested sub-message (e.g., mqtt.mapReportSettings)
+        const nested = this._serializeProtobufSection(`${section}.${key}`, value);
+        if (Object.keys(nested).length > 0) result[key] = nested;
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Convert a known protobuf enum field value to its string name.
+   * Returns null if the field is not a known enum.
+   */
+  _enumToString(section, key, value) {
+    if (typeof value !== 'number') return null;
+    if (section === 'device' && key === 'role') return this._getDeviceRoleName(value);
+    if (section === 'lora' && key === 'region') return this._getRegionName(value);
+    if (section === 'lora' && key === 'modemPreset') return this._getModemPresetName(value);
+    if (section === 'device' && key === 'rebroadcastMode') {
+      return { 0: 'ALL', 1: 'ALL_SKIP_DECODING', 2: 'LOCAL_ONLY', 3: 'KNOWN_ONLY' }[value] || String(value);
+    }
+    if (section === 'bluetooth' && key === 'mode') {
+      return { 0: 'RANDOM_PIN', 1: 'FIXED_PIN', 2: 'NO_PIN' }[value] || String(value);
+    }
+    if (section === 'position' && key === 'gpsMode') {
+      return { 0: 'DISABLED', 1: 'ENABLED', 2: 'NOT_PRESENT' }[value] || String(value);
+    }
+    if (section === 'display' && key === 'gpsFormat') {
+      return { 0: 'DEC', 1: 'DMS', 2: 'UTM', 3: 'MGRS', 4: 'OLC', 5: 'OSGR' }[value] || String(value);
+    }
+    if (section === 'display' && key === 'units') {
+      return { 0: 'METRIC', 1: 'IMPERIAL' }[value] || String(value);
+    }
+    return null;
+  }
+
+  /**
    * Program the radio with channels and config
    * @param {Object} config - Programming configuration
    * @param {Object} config.radio - Radio info from backend
@@ -1179,85 +1290,120 @@ class MeshtasticSerialService {
   async _waitAndReconnect() {
     this._log('Waiting for device to reboot...', 'info');
 
-    // Save the port reference before cleanup
-    const port = this.transport?.connection || this.lastPort;
-
-    if (!port) {
-      this._log('No port reference available for reconnect', 'warn');
-      try { await this.disconnect(); } catch (e) { /* ignore */ }
-      return;
-    }
-
-    // Clean up old connection without releasing port
+    // Save USB identity so we can re-find the port after reboot
+    const oldPort = this.transport?.connection || this.lastPort;
+    let portInfo = null;
     try {
-      if (this.transport) {
-        this.transport.abortController?.abort();
-        if (this.transport.pipePromise) await this.transport.pipePromise.catch(() => {});
-      }
+      if (oldPort) portInfo = oldPort.getInfo();
     } catch (e) { /* ignore */ }
 
-    // Wait for the device to fully reboot
-    await this._delay(3000);
+    if (portInfo) {
+      this._log(`Device USB ID: vendor=0x${portInfo.usbVendorId?.toString(16)}, product=0x${portInfo.usbProductId?.toString(16)}`, 'info');
+    }
 
-    // Try to close and re-open the port
+    // Use the transport's own disconnect() to properly release all stream locks
+    try {
+      this._log('Closing transport and releasing serial port...', 'info');
+      if (this.transport) {
+        await this.transport.disconnect();
+        this._log('Transport disconnected cleanly', 'info');
+      }
+    } catch (e) {
+      this._log(`Transport disconnect warning: ${e.message}`, 'warn');
+      try { if (oldPort) await oldPort.close(); } catch (e2) { /* ignore */ }
+    }
+
+    this.device = null;
+    this.transport = null;
+    this.isConnected = false;
+
+    // Wait for the device to fully reboot and re-enumerate on USB
+    this._log('Waiting for device to finish rebooting...', 'info');
+    await this._delay(5000);
+
+    // Try to reconnect — the old port reference may be stale after USB
+    // re-enumeration, so we also try navigator.serial.getPorts() to find it.
     let reconnected = false;
-    for (let attempt = 1; attempt <= 5; attempt++) {
+    for (let attempt = 1; attempt <= 8; attempt++) {
       try {
-        this._log(`Reconnect attempt ${attempt}/5...`, 'info');
+        this._log(`Reconnect attempt ${attempt}/8...`, 'info');
 
-        // Close the port if it's still open
-        try {
-          if (port.readable || port.writable) {
-            await port.close();
+        // Find the port: try re-discovering via getPorts() first (handles stale refs),
+        // then fall back to the old port reference.
+        let port = null;
+        if (portInfo?.usbVendorId) {
+          const ports = await navigator.serial.getPorts();
+          port = ports.find(p => {
+            const info = p.getInfo();
+            return info.usbVendorId === portInfo.usbVendorId &&
+                   info.usbProductId === portInfo.usbProductId;
+          });
+          if (port && port !== oldPort) {
+            this._log('Found device via USB re-enumeration', 'info');
           }
-        } catch (e) {
-          // May already be closed
+        }
+        if (!port) port = oldPort;
+        if (!port) throw new Error('No serial port available');
+
+        // Always close and reopen to get fresh streams (same logic as connect())
+        if (port.readable || port.writable) {
+          try {
+            await port.close();
+            await this._delay(200);
+          } catch (e) {
+            this._log(`Port close warning: ${e.message}`, 'warn');
+          }
         }
 
-        await this._delay(1000);
-
-        // Re-open the port
-        await port.open({ baudRate: 115200 });
+        try {
+          await port.open({ baudRate: 115200 });
+        } catch (e) {
+          if (e.message?.includes('already open')) {
+            this._log('Port still open after close, reusing...', 'warn');
+          } else {
+            throw e;
+          }
+        }
         this._log('Serial port re-opened', 'success');
 
-        // Create new transport from the re-opened port
+        // Create fresh transport and device
         this.transport = new TransportWebSerial(port);
         this.lastPort = port;
-
-        // Create new MeshDevice with new transport
         this.device = new MeshDevice(this.transport);
 
-        // Re-subscribe to status events (minimal - just for tracking)
+        // Re-subscribe to status events (match connect() logic)
         this.device.events.onDeviceStatus.subscribe((status) => {
           let statusValue = status;
           if (typeof status === 'object' && status !== null) {
             statusValue = status.status !== undefined ? status.status : status;
           }
           const connectedValue = Types.DeviceStatusEnum?.DeviceConnected ?? 2;
+          const configuringValue = Types.DeviceStatusEnum?.DeviceConfiguring ?? 3;
+          const configuredValue = Types.DeviceStatusEnum?.DeviceConfigured ?? 4;
           const disconnectedValue = Types.DeviceStatusEnum?.DeviceDisconnected ?? 0;
-          if (statusValue === connectedValue) this.isConnected = true;
-          else if (statusValue === disconnectedValue) this.isConnected = false;
+          if (statusValue === connectedValue || statusValue === configuringValue || statusValue === configuredValue) {
+            this.isConnected = true;
+          } else if (statusValue === disconnectedValue) {
+            this.isConnected = false;
+          }
         });
-
-        // Configure the device (syncs state)
-        this._log('Re-syncing device state...', 'info');
-        await this.device.configure();
-        await this._delay(2000);
 
         this.isConnected = true;
         reconnected = true;
-        this._log('Device reconnected and synced successfully', 'success');
+        this._log('Device reconnected successfully', 'success');
         break;
       } catch (e) {
-        this._log(`Reconnect attempt ${attempt}/5 failed: ${e.message}`, 'warn');
-        await this._delay(2000);
+        this._log(`Reconnect attempt ${attempt}/8 failed: ${e.message}`, 'warn');
+        // Clean up partial state before retry
+        this.device = null;
+        this.transport = null;
+        await this._delay(3000);
       }
     }
 
     if (!reconnected) {
       this._log('Could not reconnect after reboot - settings were saved to flash', 'warn');
       this._log('The radio will use the new settings on next power-on', 'info');
-      // Clean up
       this.device = null;
       this.transport = null;
       this.isConnected = false;
