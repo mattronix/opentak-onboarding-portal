@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [permissions, setPermissions] = useState({ roles: [], modules: [], isAdmin: false });
   const [approverStatus, setApproverStatus] = useState({ isApprover: false, pendingCount: 0 });
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
+  const [needsPasswordSet, setNeedsPasswordSet] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -47,13 +48,18 @@ export const AuthProvider = ({ children }) => {
       ])
         .then(([userResponse, permissionsResponse, approverResponse]) => {
           clearTimeout(timeoutId);
-          setUser(userResponse.data);
-          localStorage.setItem('user', JSON.stringify(userResponse.data));
+          const userData = userResponse.data;
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
           setPermissions(permissionsResponse.data);
           setApproverStatus({
             isApprover: approverResponse.data.is_approver,
             pendingCount: approverResponse.data.pending_count
           });
+          // Check if OIDC user needs to set password
+          if (userData.has_password === false) {
+            setNeedsPasswordSet(true);
+          }
         })
         .catch(() => {
           clearTimeout(timeoutId);
@@ -80,6 +86,7 @@ export const AuthProvider = ({ children }) => {
 
       setUser(userData);
       setNeedsProfileCompletion(needs_profile_completion || false);
+      setNeedsPasswordSet(userData.has_password === false);
 
       // Fetch permissions and approver status from database after login
       try {
@@ -101,6 +108,45 @@ export const AuthProvider = ({ children }) => {
       return {
         success: false,
         error: error.response?.data?.error || 'Login failed'
+      };
+    }
+  };
+
+  /**
+   * Handle OIDC login — tokens are provided by the backend callback redirect.
+   * Stores tokens, fetches user info and permissions.
+   */
+  const oidcLogin = async (accessToken, refreshToken) => {
+    try {
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+
+      // Fetch user info using the new token
+      const [userResponse, permResponse, approverResponse] = await Promise.all([
+        authAPI.getCurrentUser(),
+        authAPI.getPermissions(),
+        approvalsAPI.checkApproverStatus().catch(() => ({ data: { is_approver: false, pending_count: 0 } }))
+      ]);
+
+      const userData = userResponse.data;
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setPermissions(permResponse.data);
+      setApproverStatus({
+        isApprover: approverResponse.data.is_approver,
+        pendingCount: approverResponse.data.pending_count
+      });
+      setNeedsProfileCompletion(!userData.email || !userData.callsign);
+      setNeedsPasswordSet(userData.has_password === false);
+
+      return { success: true };
+    } catch (error) {
+      // Clean up on failure
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to complete OIDC login'
       };
     }
   };
@@ -131,6 +177,7 @@ export const AuthProvider = ({ children }) => {
     setPermissions({ roles: [], modules: [], isAdmin: false });
     setApproverStatus({ isApprover: false, pendingCount: 0 });
     setNeedsProfileCompletion(false);
+    setNeedsPasswordSet(false);
   };
 
   const updateUser = async () => {
@@ -151,6 +198,10 @@ export const AuthProvider = ({ children }) => {
       // Check if profile is now complete
       if (userData.email && userData.callsign) {
         setNeedsProfileCompletion(false);
+      }
+      // Check if password is now set
+      if (userData.has_password !== false) {
+        setNeedsPasswordSet(false);
       }
     } catch (error) {
       console.error('Failed to update user:', error);
@@ -204,6 +255,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    oidcLogin,
     register,
     logout,
     updateUser,
@@ -215,6 +267,7 @@ export const AuthProvider = ({ children }) => {
     approverStatus,
     refreshApproverStatus,
     needsProfileCompletion,
+    needsPasswordSet,
   };
 
   return (

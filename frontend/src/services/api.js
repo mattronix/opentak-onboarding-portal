@@ -121,6 +121,9 @@ export const authAPI = {
 
   completeProfile: (data) =>
     api.post('/auth/complete-profile', data),
+
+  setPassword: (newPassword) =>
+    api.post('/auth/set-password', { newPassword }),
 };
 
 // Users API
@@ -498,6 +501,37 @@ export const apiKeysAPI = {
 
   getPermissions: () =>
     api.get('/admin/api-keys/permissions'),
+};
+
+// OIDC Provider API
+export const oidcAPI = {
+  // Public — for login page buttons
+  getProviders: () =>
+    api.get('/auth/oidc/providers'),
+
+  // Admin — CRUD for managing OIDC providers
+  admin: {
+    getAll: () =>
+      api.get('/admin/oidc/providers'),
+
+    create: (data) =>
+      api.post('/admin/oidc/providers', data),
+
+    update: (id, data) =>
+      api.put(`/admin/oidc/providers/${id}`, data),
+
+    delete: (id) =>
+      api.delete(`/admin/oidc/providers/${id}`),
+
+    uploadIcon: (id, file) => {
+      const formData = new FormData();
+      formData.append('icon', file);
+      return api.post(`/admin/oidc/providers/${id}/icon`, formData);
+    },
+
+    deleteIcon: (id) =>
+      api.delete(`/admin/oidc/providers/${id}/icon`),
+  }
 };
 
 export default api;

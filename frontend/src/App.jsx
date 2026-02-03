@@ -16,6 +16,7 @@ import RegistrationSuccess from './pages/RegistrationSuccess';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import CompleteProfile from './pages/CompleteProfile';
+import SetPassword from './pages/SetPassword';
 import Dashboard from './pages/Dashboard';
 import EditProfile from './pages/EditProfile';
 import ChangePassword from './pages/ChangePassword';
@@ -102,7 +103,7 @@ const LoadingScreen = () => (
 
 // Protected Route component
 const ProtectedRoute = ({ children, adminOnly = false, allowIncomplete = false }) => {
-  const { user, loading, isAdmin, needsProfileCompletion } = useAuth();
+  const { user, loading, isAdmin, needsProfileCompletion, needsPasswordSet } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
@@ -110,6 +111,11 @@ const ProtectedRoute = ({ children, adminOnly = false, allowIncomplete = false }
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to set password if needed (OIDC users without password)
+  if (needsPasswordSet && !allowIncomplete) {
+    return <Navigate to="/set-password" replace />;
   }
 
   // Redirect to complete profile if needed (unless on the complete-profile page itself)
@@ -178,6 +184,16 @@ function App() {
               }
             />
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Set password route - for OIDC users who need to set a password */}
+            <Route
+              path="/set-password"
+              element={
+                <ProtectedRoute allowIncomplete>
+                  <SetPassword />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Complete profile route - accessible only when logged in but profile incomplete */}
             <Route

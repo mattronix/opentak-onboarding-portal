@@ -85,6 +85,10 @@ def get_settings():
         'user_program_radio_enabled': get_bool_setting('user_program_radio_enabled', False),
         'user_validate_radio_enabled': get_bool_setting('user_validate_radio_enabled', False),
         'user_radio_enrollment_enabled': get_bool_setting('user_radio_enrollment_enabled', False),
+        # OIDC / SSO
+        'oidc_enabled': get_bool_setting('oidc_enabled', False),
+        'oidc_auto_create_user': get_bool_setting('oidc_auto_create_user', False),
+        'forgot_password_enabled': get_bool_setting('forgot_password_enabled', True),
     }
 
     return jsonify(settings), 200

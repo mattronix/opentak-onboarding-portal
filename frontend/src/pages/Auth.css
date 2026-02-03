@@ -265,3 +265,49 @@
     flex: 1;
   }
 }
+
+/* OIDC Login Buttons */
+.oidc-providers {
+  margin-top: 1rem;
+}
+
+.oidc-divider {
+  display: flex;
+  align-items: center;
+  margin: 0.75rem 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.oidc-divider::before,
+.oidc-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+}
+
+.oidc-divider span {
+  padding: 0 0.75rem;
+}
+
+.oidc-btn {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-align: center;
+}
+
+.oidc-btn:hover {
+  opacity: 0.9;
+}
+
+.oidc-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

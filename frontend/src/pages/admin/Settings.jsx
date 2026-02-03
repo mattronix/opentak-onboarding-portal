@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { settingsAPI } from '../../services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { settingsAPI, oidcAPI, rolesAPI } from '../../services/api';
 import './Admin.css';
+import '../../components/AdminTable.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -367,6 +369,383 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
   );
 }
 
+// OIDC Provider Form Modal
+function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: externalError }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    display_name: '',
+    button_color: '#4285F4',
+    discovery_url: '',
+    client_id: '',
+    client_secret: '',
+    role_claim: 'roles',
+    sync_roles: true,
+    enabled: true,
+    role_mappings: {},
+  });
+  const [iconFile, setIconFile] = useState(null);
+  const [iconPreview, setIconPreview] = useState(null);
+  const [removeIcon, setRemoveIcon] = useState(false);
+  const iconInputRef = useRef(null);
+
+  useEffect(() => {
+    if (provider) {
+      setFormData({
+        name: provider.name || '',
+        display_name: provider.display_name || '',
+        button_color: provider.button_color || '#4285F4',
+        discovery_url: provider.discovery_url || '',
+        client_id: provider.client_id || '',
+        client_secret: '',
+        role_claim: provider.role_claim || 'roles',
+        sync_roles: provider.sync_roles !== false,
+        enabled: provider.enabled !== false,
+        role_mappings: provider.role_mappings || {},
+      });
+      setIconFile(null);
+      setIconPreview(null);
+      setRemoveIcon(false);
+    }
+  }, [provider]);
+
+  // Compute the effective icon URL for preview
+  const effectiveIconUrl = removeIcon && !iconFile
+    ? null
+    : iconPreview || (provider?.icon_url ? `${API_BASE_URL}${provider.icon_url}` : null);
+
+  const handleIconFileSelect = (file) => {
+    if (!file) return;
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please use PNG, JPG, GIF, or SVG.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File too large. Maximum size is 2MB.');
+      return;
+    }
+    setIconFile(file);
+    setRemoveIcon(false);
+    const reader = new FileReader();
+    reader.onload = (e) => setIconPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveIconClick = () => {
+    setIconFile(null);
+    setIconPreview(null);
+    setRemoveIcon(true);
+    if (iconInputRef.current) iconInputRef.current.value = '';
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleAddMapping = () => {
+    setFormData(prev => ({
+      ...prev,
+      role_mappings: { ...prev.role_mappings, '': '' },
+    }));
+  };
+
+  const handleMappingKeyChange = (oldKey, newKey) => {
+    setFormData(prev => {
+      const mappings = { ...prev.role_mappings };
+      const value = mappings[oldKey];
+      delete mappings[oldKey];
+      mappings[newKey] = value;
+      return { ...prev, role_mappings: mappings };
+    });
+  };
+
+  const handleMappingValueChange = (key, value) => {
+    setFormData(prev => ({
+      ...prev,
+      role_mappings: { ...prev.role_mappings, [key]: value },
+    }));
+  };
+
+  const handleRemoveMapping = (key) => {
+    setFormData(prev => {
+      const mappings = { ...prev.role_mappings };
+      delete mappings[key];
+      return { ...prev, role_mappings: mappings };
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = { ...formData };
+    // Don't send empty client_secret on edit (means "keep existing")
+    if (provider && !data.client_secret) {
+      delete data.client_secret;
+    }
+    onSave(data, iconFile, removeIcon);
+  };
+
+  // Compute text color for button preview
+  const getContrastColor = (hex) => {
+    if (!hex || !hex.startsWith('#')) return '#ffffff';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal oidc-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{provider ? 'Edit OIDC Provider' : 'Add OIDC Provider'}</h2>
+          <button className="modal-close" onClick={onClose}>&times;</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {externalError && (
+              <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                {externalError}
+              </div>
+            )}
+            <div className="oidc-form-grid">
+              <div className="form-group">
+                <label>Internal Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="e.g. keycloak, azure-ad"
+                  required
+                />
+                <small>Unique identifier (no spaces)</small>
+              </div>
+
+              <div className="form-group">
+                <label>Display Name *</label>
+                <input
+                  type="text"
+                  name="display_name"
+                  value={formData.display_name}
+                  onChange={handleChange}
+                  placeholder="e.g. Sign in with Keycloak"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Discovery URL *</label>
+                <input
+                  type="url"
+                  name="discovery_url"
+                  value={formData.discovery_url}
+                  onChange={handleChange}
+                  placeholder="https://idp.example.com/.well-known/openid-configuration"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Client ID *</label>
+                <input
+                  type="text"
+                  name="client_id"
+                  value={formData.client_id}
+                  onChange={handleChange}
+                  placeholder="your-client-id"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Client Secret {provider ? '' : '*'}</label>
+                <input
+                  type="password"
+                  name="client_secret"
+                  value={formData.client_secret}
+                  onChange={handleChange}
+                  placeholder={provider ? 'Leave blank to keep existing' : 'your-client-secret'}
+                  required={!provider}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Role Claim Path</label>
+                <input
+                  type="text"
+                  name="role_claim"
+                  value={formData.role_claim}
+                  onChange={handleChange}
+                  placeholder="e.g. roles, realm_access.roles"
+                />
+                <small>Dot-path to roles in the ID token (e.g. realm_access.roles for Keycloak)</small>
+              </div>
+
+              <div className="form-group">
+                <label>Button Color</label>
+                <div className="oidc-color-row">
+                  <input
+                    type="color"
+                    name="button_color"
+                    value={toHexColor(formData.button_color)}
+                    onChange={handleChange}
+                    className="color-picker"
+                  />
+                  <input
+                    type="text"
+                    name="button_color"
+                    value={formData.button_color}
+                    onChange={handleChange}
+                    placeholder="#4285F4"
+                    className="color-text-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Button Icon</label>
+                {effectiveIconUrl && (
+                  <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src={effectiveIconUrl} alt="Icon preview" style={{ width: 32, height: 32, objectFit: 'contain', background: '#f0f0f0', borderRadius: 4, padding: 2 }} />
+                    <button type="button" className="btn-cancel-setting" onClick={handleRemoveIconClick} style={{ fontSize: '0.8rem' }}>
+                      Remove
+                    </button>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  ref={iconInputRef}
+                  accept=".png,.jpg,.jpeg,.gif,.svg"
+                  onChange={(e) => handleIconFileSelect(e.target.files[0])}
+                />
+                <small>Upload an icon image (PNG, JPG, GIF, SVG, max 2MB)</small>
+              </div>
+
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    name="enabled"
+                    checked={formData.enabled}
+                    onChange={handleChange}
+                  />
+                  Enabled
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    name="sync_roles"
+                    checked={formData.sync_roles}
+                    onChange={handleChange}
+                  />
+                  Sync Roles from OIDC
+                </label>
+                <small>When enabled, roles from the OIDC provider will be mapped to local roles using the mappings below</small>
+              </div>
+            </div>
+
+            {/* Button Preview */}
+            <div className="oidc-preview-section">
+              <label>Button Preview</label>
+              <button
+                type="button"
+                className="oidc-btn-preview"
+                style={{
+                  backgroundColor: formData.button_color,
+                  color: getContrastColor(toHexColor(formData.button_color)),
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                {effectiveIconUrl && (
+                  <img src={effectiveIconUrl} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                )}
+                {formData.display_name || 'Sign in with Provider'}
+              </button>
+            </div>
+
+            {/* Role Mappings - only show when sync_roles is enabled */}
+            {formData.sync_roles && (
+              <div className="oidc-role-mappings">
+                <div className="oidc-role-mappings-header">
+                  <label>Role Mappings</label>
+                  <button type="button" className="btn-save-setting" onClick={handleAddMapping}>
+                    + Add Mapping
+                  </button>
+                </div>
+                <small style={{ color: '#666', display: 'block', marginBottom: '0.75rem' }}>
+                  Map OIDC role names to local roles. Unmapped OIDC roles are ignored.
+                </small>
+                {Object.keys(formData.role_mappings).length === 0 ? (
+                  <p style={{ color: '#999', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                    No role mappings configured. All users will keep their default roles.
+                  </p>
+                ) : (
+                  <div className="oidc-mapping-list">
+                    {Object.entries(formData.role_mappings).map(([oidcRole, localRole], idx) => (
+                      <div key={idx} className="oidc-mapping-row">
+                        <input
+                          type="text"
+                          value={oidcRole}
+                          onChange={(e) => handleMappingKeyChange(oidcRole, e.target.value)}
+                          placeholder="OIDC role name"
+                          className="oidc-mapping-input"
+                        />
+                        <span className="oidc-mapping-arrow">&rarr;</span>
+                        <select
+                          value={localRole}
+                          onChange={(e) => handleMappingValueChange(oidcRole, e.target.value)}
+                          className="oidc-mapping-select"
+                        >
+                          <option value="">-- Select local role --</option>
+                          {roles.map(role => (
+                            <option key={role.id} value={role.name}>
+                              {role.displayName || role.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="oidc-mapping-remove"
+                          onClick={() => handleRemoveMapping(oidcRole)}
+                          title="Remove mapping"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : (provider ? 'Update Provider' : 'Add Provider')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function Settings() {
   const [settings, setSettings] = useState({});
   const [logoSettings, setLogoSettings] = useState(null);
@@ -375,12 +754,29 @@ function Settings() {
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // OIDC Provider state
+  const [oidcProviders, setOidcProviders] = useState([]);
+  const [showOidcModal, setShowOidcModal] = useState(false);
+  const [editingProvider, setEditingProvider] = useState(null);
+  const [oidcSaving, setOidcSaving] = useState(false);
+  const [oidcModalError, setOidcModalError] = useState('');
+
+  const { data: rolesData } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const response = await rolesAPI.getAll();
+      return response.data;
+    },
+  });
+  const roles = rolesData?.roles || [];
+
   // Paired settings - these have both _enabled and _value (or _url) variants
   const pairedSettingKeys = ['brand_name', 'atak_installer_qr', 'itak_installer_qr', 'meshtastic_installer_qr_android', 'meshtastic_installer_qr_iphone'];
 
   useEffect(() => {
     fetchSettings();
     fetchLogoSettings();
+    fetchOidcProviders();
   }, []);
 
   const fetchSettings = async () => {
@@ -403,6 +799,67 @@ function Settings() {
       setLogoSettings(response.data);
     } catch (err) {
       console.error('Error fetching logo settings:', err);
+    }
+  };
+
+  const fetchOidcProviders = async () => {
+    try {
+      const response = await oidcAPI.admin.getAll();
+      setOidcProviders(response.data.providers || []);
+    } catch (err) {
+      console.error('Error fetching OIDC providers:', err);
+    }
+  };
+
+  const handleOidcSave = async (data, iconFile, removeIcon) => {
+    try {
+      setOidcSaving(true);
+      setOidcModalError('');
+      let response;
+      if (editingProvider) {
+        response = await oidcAPI.admin.update(editingProvider.id, data);
+        setSuccess('OIDC provider updated');
+      } else {
+        response = await oidcAPI.admin.create(data);
+        setSuccess('OIDC provider created');
+      }
+
+      const providerId = response.data.id;
+
+      // Handle icon upload or deletion
+      if (iconFile) {
+        await oidcAPI.admin.uploadIcon(providerId, iconFile);
+      } else if (removeIcon) {
+        await oidcAPI.admin.deleteIcon(providerId);
+      }
+
+      setShowOidcModal(false);
+      setEditingProvider(null);
+      setOidcModalError('');
+      fetchOidcProviders();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error saving OIDC provider:', err);
+      setOidcModalError(err.response?.data?.error || 'Failed to save OIDC provider');
+    } finally {
+      setOidcSaving(false);
+    }
+  };
+
+  const handleOidcDelete = async (provider) => {
+    if (!confirm(`Delete OIDC provider "${provider.display_name}"? This cannot be undone.`)) return;
+    try {
+      setSaving(true);
+      setError('');
+      await oidcAPI.admin.delete(provider.id);
+      setSuccess('OIDC provider deleted');
+      fetchOidcProviders();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error deleting OIDC provider:', err);
+      setError(err.response?.data?.error || 'Failed to delete OIDC provider');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -675,6 +1132,84 @@ function Settings() {
           </div>
         )}
 
+        {/* OIDC Providers Section */}
+        <div className="settings-section">
+          <div className="oidc-section-header">
+            <h2>OIDC Providers</h2>
+            <button
+              className="btn btn-primary"
+              onClick={() => { setEditingProvider(null); setOidcModalError(''); setShowOidcModal(true); }}
+              style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+            >
+              + Add Provider
+            </button>
+          </div>
+
+          {oidcProviders.length === 0 ? (
+            <p style={{ color: '#666', fontStyle: 'italic' }}>
+              No OIDC providers configured. Add a provider to enable single sign-on.
+            </p>
+          ) : (
+            <div className="oidc-providers-list">
+              {oidcProviders.map(provider => (
+                <div key={provider.id} className="oidc-provider-card">
+                  <div className="oidc-provider-info">
+                    <div className="oidc-provider-top">
+                      <div>
+                        <h4>{provider.display_name}</h4>
+                        <span className="oidc-provider-name">{provider.name}</span>
+                      </div>
+                      <span className={`oidc-provider-status ${provider.enabled ? 'enabled' : 'disabled'}`}>
+                        {provider.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    <p className="oidc-provider-url">{provider.discovery_url}</p>
+                    <div className="oidc-provider-preview">
+                      <button
+                        type="button"
+                        className="oidc-btn-preview-small"
+                        style={{
+                          backgroundColor: provider.button_color || '#4285F4',
+                          color: getContrastColorUtil(toHexColor(provider.button_color || '#4285F4')),
+                          border: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                        }}
+                      >
+                        {provider.icon_url && (
+                          <img src={`${API_BASE_URL}${provider.icon_url}`} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                        )}
+                        {provider.display_name}
+                      </button>
+                    </div>
+                    {provider.role_mappings && Object.keys(provider.role_mappings).length > 0 && (
+                      <div className="oidc-provider-mappings">
+                        <small>Role mappings: {Object.entries(provider.role_mappings).map(([k, v]) => `${k} → ${v}`).join(', ')}</small>
+                      </div>
+                    )}
+                  </div>
+                  <div className="oidc-provider-actions">
+                    <button
+                      className="btn-save-setting"
+                      onClick={() => { setEditingProvider(provider); setOidcModalError(''); setShowOidcModal(true); }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn-cancel-setting"
+                      onClick={() => handleOidcDelete(provider)}
+                      style={{ color: '#c33' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* QR Code Enrollment Section */}
         {settings.qr_enrollment && settings.qr_enrollment.length > 0 && (
           <div className="settings-section">
@@ -730,8 +1265,30 @@ function Settings() {
           </div>
         )}
       </div>
+
+      {/* OIDC Provider Modal */}
+      {showOidcModal && (
+        <OIDCProviderModal
+          provider={editingProvider}
+          roles={roles}
+          onSave={handleOidcSave}
+          onClose={() => { setShowOidcModal(false); setEditingProvider(null); setOidcModalError(''); }}
+          saving={oidcSaving}
+          error={oidcModalError}
+        />
+      )}
     </div>
   );
+}
+
+// Utility for contrast color (used in settings list)
+function getContrastColorUtil(hex) {
+  if (!hex || !hex.startsWith('#')) return '#ffffff';
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000000' : '#ffffff';
 }
 
 export default Settings;

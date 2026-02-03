@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime, String, CheckConstraint, UniqueConstraint
+from sqlalchemy import Integer, Table, Column, ForeignKey, DateTime, String, Text, Boolean, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -189,8 +189,13 @@ class UserModel(db.Model):
     onboardedBy = Column(ForeignKey("users.id"))
     onboarContactFor = relationship("OnboardingCodeModel", backref="user")
     expiryDate = mapped_column(DateTime, nullable=True)
-    emailVerified: Mapped[bool] = mapped_column(default=False, nullable=True) 
-    
+    emailVerified: Mapped[bool] = mapped_column(default=False, nullable=True)
+
+    # OIDC fields
+    has_password = Column(Boolean, default=True, nullable=True)       # False for OIDC-created users who haven't set a password
+    oidc_sub = Column(String(500), nullable=True)                     # OIDC subject identifier
+    oidc_provider_id = Column(Integer, ForeignKey('oidc_providers.id'), nullable=True)
+
     # Define the many-to-many relationship with UserRoleModel
     roles = relationship(
         "UserRoleModel",
@@ -1057,6 +1062,75 @@ class OneTimeTokenModel(db.Model):
             return 0
 
 
+class OIDCProviderModel(db.Model):
+    """
+    Model for OIDC (OpenID Connect) authentication providers.
+    Each provider has its own branding, discovery URL, and role mappings.
+    """
+    __tablename__ = 'oidc_providers'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False)              # Internal key (e.g., "keycloak", "azure-ad")
+    display_name = Column(String(200), nullable=False)                   # Button text (e.g., "Login with Keycloak")
+    button_color = Column(String(20), default='#4285F4')                 # Button color hex
+    icon_url = Column(String(500), nullable=True)                        # Optional icon/logo URL for the login button
+    discovery_url = Column(String(500), nullable=False)                  # OIDC discovery endpoint (.well-known/openid-configuration)
+    client_id = Column(String(500), nullable=False)
+    client_secret = Column(String(500), nullable=False)
+    enabled = Column(Boolean, default=True)
+    role_claim = Column(String(100), default='roles')                    # JSON path in id_token for roles (e.g., "roles", "realm_access.roles")
+    sync_roles = Column(Boolean, default=True)                           # Whether to sync roles from OIDC claims
+    role_mappings = Column(Text, default='{}')                           # JSON: {"oidc_role": "local_role", ...}
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    def to_dict(self, include_secrets=False):
+        """Convert to dictionary for API responses"""
+        data = {
+            'id': self.id,
+            'name': self.name,
+            'display_name': self.display_name,
+            'button_color': self.button_color,
+            'icon_url': self.icon_url or '',
+            'discovery_url': self.discovery_url,
+            'client_id': self.client_id,
+            'enabled': self.enabled,
+            'role_claim': self.role_claim,
+            'sync_roles': self.sync_roles if self.sync_roles is not None else True,
+            'role_mappings': self.get_role_mappings(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+        if include_secrets:
+            data['client_secret'] = self.client_secret
+        else:
+            # Mask the secret
+            data['client_secret'] = '••••••••' if self.client_secret else ''
+        return data
+
+    def to_public_dict(self):
+        """Minimal info for the login page (no secrets, no config details)"""
+        return {
+            'id': self.id,
+            'display_name': self.display_name,
+            'button_color': self.button_color,
+            'icon_url': self.icon_url or '',
+        }
+
+    def get_role_mappings(self):
+        """Parse role_mappings JSON"""
+        import json
+        try:
+            return json.loads(self.role_mappings or '{}')
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    def set_role_mappings(self, mappings):
+        """Set role_mappings from dict"""
+        import json
+        self.role_mappings = json.dumps(mappings or {})
+
+
 class SystemSettingsModel(db.Model):
     """
     Model for system-wide settings
@@ -1231,6 +1305,19 @@ class SystemSettingsModel(db.Model):
                 'value': 'false',
                 'category': 'radios',
                 'description': 'Allow users to register their own radios via USB from the dashboard'
+            },
+            # OIDC / SSO
+            {
+                'key': 'oidc_enabled',
+                'value': 'false',
+                'category': 'security',
+                'description': 'Enable OIDC / Single Sign-On login (requires at least one OIDC provider to be configured)'
+            },
+            {
+                'key': 'oidc_auto_create_user',
+                'value': 'false',
+                'category': 'security',
+                'description': 'Automatically create a local account when a user logs in via OIDC for the first time'
             },
             # Installer QR Codes
             {

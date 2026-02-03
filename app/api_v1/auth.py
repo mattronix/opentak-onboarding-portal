@@ -13,7 +13,7 @@ from flask_jwt_extended import (
 )
 from datetime import timedelta, datetime
 from app.api_v1 import api_v1
-from app.models import UserModel, UserRoleModel, PendingRegistrationModel, OnboardingCodeModel, OneTimeTokenModel
+from app.models import db, UserModel, UserRoleModel, PendingRegistrationModel, OnboardingCodeModel, OneTimeTokenModel
 from app.ots import OTSClient
 from app.email import send_html_email
 import secrets
@@ -188,7 +188,8 @@ def login():
                 'lastName': user.lastName,
                 'callsign': user.callsign,
                 'roles': [{'name': role.name, 'displayName': role.display_name} for role in user.roles],
-                'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None
+                'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None,
+                'has_password': user.has_password if user.has_password is not None else True
             }
         }), 200
 
@@ -332,7 +333,8 @@ def get_current_user():
         'callsign': user.callsign,
         'roles': [{'name': role.name, 'displayName': role.display_name} for role in user.roles],
         'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None,
-        'onboardedBy': user.onboardedBy
+        'onboardedBy': user.onboardedBy,
+        'has_password': user.has_password if user.has_password is not None else True
     }), 200
 
 
@@ -1044,6 +1046,60 @@ def change_password():
     except Exception as e:
         current_app.logger.error(f"Change password error: {str(e)}")
         return jsonify({'error': f'Password change failed: {str(e)}'}), 400
+
+
+@api_v1.route('/auth/set-password', methods=['POST'])
+@jwt_required()
+def set_password():
+    """
+    Set initial password for OIDC users who don't have one yet.
+    Creates the user in OTS if needed, sets the password, and marks has_password=True.
+
+    Request body:
+    {
+        "newPassword": "string"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+
+        new_password = data.get('newPassword')
+        if not new_password:
+            return jsonify({'error': 'Password is required'}), 400
+
+        if len(new_password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+        current_user_id = get_jwt_identity()
+        user = UserModel.get_user_by_id(int(current_user_id))
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
+
+        # Try to create the user in OTS first (they may not exist there yet if created via OIDC)
+        try:
+            ots.create_user(user.username, new_password)
+            current_app.logger.info(f"Created OTS user {user.username} for OIDC password set")
+        except Exception:
+            # User may already exist in OTS — just reset the password
+            try:
+                ots.reset_user_password(user.username, new_password)
+                current_app.logger.info(f"Reset OTS password for {user.username}")
+            except Exception as e:
+                current_app.logger.error(f"Failed to set password in OTS: {e}")
+                return jsonify({'error': 'Failed to set password'}), 400
+
+        user.has_password = True
+        db.session.commit()
+
+        return jsonify({'message': 'Password set successfully'}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Set password error: {str(e)}")
+        return jsonify({'error': f'Failed to set password: {str(e)}'}), 400
 
 
 @api_v1.route('/auth/forgot-password', methods=['POST'])

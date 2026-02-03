@@ -1,17 +1,20 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { settingsAPI } from '../services/api';
+import { settingsAPI, oidcAPI } from '../services/api';
 import './Auth.css';
+
+const API_BASE_URL = window.location.origin;
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, oidcLogin } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -21,11 +24,61 @@ function Login() {
     },
   });
 
+  // Fetch OIDC providers for login buttons
+  const { data: oidcData } = useQuery({
+    queryKey: ['oidc-providers'],
+    queryFn: async () => {
+      const response = await oidcAPI.getProviders();
+      return response.data;
+    },
+  });
+
+  const oidcProviders = oidcData?.providers || [];
+
   const brandName = settings?.brand_name || 'OpenTAK Onboarding Portal';
   const logoEnabled = settings?.custom_logo_enabled === true || settings?.custom_logo_enabled === 'true';
   const logoPath = logoEnabled && settings?.custom_logo_path
     ? settings.custom_logo_path
     : settings?.default_logo_path;
+  const forgotPasswordEnabled = settings?.forgot_password_enabled !== false;
+
+  // Handle OIDC callback — tokens arrive as query params after redirect from backend
+  useEffect(() => {
+    const oidcToken = searchParams.get('oidc_token');
+    const oidcRefresh = searchParams.get('oidc_refresh');
+    const oidcError = searchParams.get('oidc_error');
+    const needsPassword = searchParams.get('needs_password') === 'true';
+    const needsProfile = searchParams.get('needs_profile') === 'true';
+
+    if (oidcError) {
+      setError(decodeURIComponent(oidcError.replace(/\+/g, ' ')));
+      // Clean up URL params
+      setSearchParams({});
+      return;
+    }
+
+    if (oidcToken && oidcRefresh) {
+      // Clean up URL params immediately
+      setSearchParams({});
+      setLoading(true);
+
+      // Process OIDC login
+      oidcLogin(oidcToken, oidcRefresh).then((result) => {
+        if (result.success) {
+          if (needsPassword) {
+            navigate('/set-password');
+          } else if (needsProfile) {
+            navigate('/complete-profile');
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          setError(result.error || 'OIDC login failed');
+        }
+        setLoading(false);
+      });
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,6 +98,11 @@ function Login() {
     }
 
     setLoading(false);
+  };
+
+  const handleOIDCLogin = (providerId) => {
+    // Full page navigation to the backend OIDC authorize endpoint
+    window.location.href = `${API_BASE_URL}/api/v1/auth/oidc/${providerId}/authorize`;
   };
 
   return (
@@ -98,12 +156,46 @@ function Login() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
 
-          <div className="auth-links">
-            <p>
-              <Link to="/forgot-password">forgot your password?</Link>
-            </p>
-          </div>
+          {forgotPasswordEnabled && (
+            <div className="auth-links">
+              <p>
+                <Link to="/forgot-password">forgot your password?</Link>
+              </p>
+            </div>
+          )}
         </form>
+
+        {/* OIDC Provider Buttons */}
+        {oidcProviders.length > 0 && (
+          <div className="oidc-providers">
+            <div className="oidc-divider">
+              <span>or</span>
+            </div>
+            {oidcProviders.map((provider) => (
+              <button
+                key={provider.id}
+                type="button"
+                className="btn btn-block oidc-btn"
+                style={{
+                  backgroundColor: provider.button_color || '#4285F4',
+                  color: '#fff',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                }}
+                onClick={() => handleOIDCLogin(provider.id)}
+                disabled={loading}
+              >
+                {provider.icon_url && (
+                  <img src={`${API_BASE_URL}${provider.icon_url}`} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                )}
+                {provider.display_name}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="auth-footer">
           <p>Need an account? Contact your administrator for an onboarding code.</p>
