@@ -38,6 +38,7 @@ function Kiosk() {
   const pollRef = useRef(null);
   const timerRef = useRef(null);
   const timeoutMinutesRef = useRef(10);
+  const expiryTimeRef = useRef(null);
 
   // Create an axios instance authenticated with the kiosk token
   const getKioskApi = useCallback(() => {
@@ -132,24 +133,34 @@ function Kiosk() {
       setRadios(list.filter(r => r.radioType === 'meshtastic' && r.assignedTo === kioskUser.id));
     }).catch(() => {});
 
-    // Start countdown timer
+    // Start countdown timer using absolute expiry time
+    // (setInterval is throttled in background tabs, so we must compare against real clock)
     const timeoutStr = settings?.kiosk_session_timeout_minutes || '10';
     const timeout = parseInt(timeoutStr) || 10;
     timeoutMinutesRef.current = timeout;
-    const totalSeconds = timeout * 60;
-    setTimeRemaining(totalSeconds);
+    expiryTimeRef.current = Date.now() + timeout * 60 * 1000;
 
-    timerRef.current = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          handleSignOut();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.floor((expiryTimeRef.current - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+      if (remaining <= 0) {
+        handleSignOut();
+      }
+    };
 
-    return () => clearInterval(timerRef.current);
+    updateTimer();
+    timerRef.current = setInterval(updateTimer, 1000);
+
+    // Also check immediately when tab regains focus
+    const handleVisibility = () => {
+      if (!document.hidden) updateTimer();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(timerRef.current);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [state, accessToken]);
 
   const handleSignOut = () => {
