@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { apiKeysAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './ApiKeysList.css';
 
 function ApiKeysList() {
   const { showSuccess, showError, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('api_key_admin') || hasRole('administrator');
   const [apiKeys, setApiKeys] = useState([]);
   const [availablePermissions, setAvailablePermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -194,9 +197,11 @@ function ApiKeysList() {
     <div className="admin-page">
       <div className="admin-header">
         <h1>API Keys</h1>
-        <button className="btn-primary" onClick={handleCreate}>
-          Create API Key
-        </button>
+        {canEdit && (
+          <button className="btn-primary" onClick={handleCreate}>
+            Create API Key
+          </button>
+        )}
       </div>
 
       <div className="api-keys-info">
@@ -208,9 +213,11 @@ function ApiKeysList() {
         {apiKeys.length === 0 ? (
           <div className="empty-state">
             <p>No API keys created yet.</p>
-            <button className="btn-primary" onClick={handleCreate}>
-              Create your first API key
-            </button>
+            {canEdit && (
+              <button className="btn-primary" onClick={handleCreate}>
+                Create your first API key
+              </button>
+            )}
           </div>
         ) : (
           <table className="api-keys-table">
@@ -251,22 +258,30 @@ function ApiKeysList() {
                   <td>{apiKey.expires_at ? formatDate(apiKey.expires_at) : 'Never'}</td>
                   <td>
                     <div className="action-buttons">
-                      <button className="btn-small btn-edit" onClick={() => handleEdit(apiKey)} title="Edit">
-                        Edit
-                      </button>
-                      <button className="btn-small btn-regenerate" onClick={() => handleRegenerate(apiKey)} title="Regenerate">
-                        Regenerate
-                      </button>
-                      <button
-                        className={`btn-small ${apiKey.is_active ? 'btn-deactivate' : 'btn-activate'}`}
-                        onClick={() => handleToggleActive(apiKey)}
-                        title={apiKey.is_active ? 'Deactivate' : 'Activate'}
-                      >
-                        {apiKey.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button className="btn-small btn-delete" onClick={() => handleDelete(apiKey)} title="Delete">
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button className="btn-small btn-edit" onClick={() => handleEdit(apiKey)} title="Edit">
+                          Edit
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button className="btn-small btn-regenerate" onClick={() => handleRegenerate(apiKey)} title="Regenerate">
+                          Regenerate
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button
+                          className={`btn-small ${apiKey.is_active ? 'btn-deactivate' : 'btn-activate'}`}
+                          onClick={() => handleToggleActive(apiKey)}
+                          title={apiKey.is_active ? 'Deactivate' : 'Activate'}
+                        >
+                          {apiKey.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button className="btn-small btn-delete" onClick={() => handleDelete(apiKey)} title="Delete">
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

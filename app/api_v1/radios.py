@@ -105,17 +105,18 @@ def check_radio_duplicates(data, exclude_id=None):
 @api_v1.route('/radios', methods=['GET'])
 @jwt_required()
 def get_radios():
-    """Get all radios (admin) or user's radios"""
+    """Get all radios (admin/readonly) or user's radios"""
     from app.rbac import has_any_role
     current_user_id = int(get_jwt_identity())  # Convert string to int
-    is_admin = has_any_role(['administrator', 'radio_admin'])
+    claims = get_jwt()
+    is_kiosk = claims.get('kiosk_session', False)
+    is_admin = has_any_role(['administrator', 'radio_admin', 'radio_readonly'])
 
-    if is_admin:
+    if is_admin and not is_kiosk:
         radios = RadioModel.get_all()
     else:
-        user = UserModel.get_user_by_id(current_user_id)
         radios = RadioModel.query.filter(
-            (RadioModel.assignedTo == user.id) | (RadioModel.owner == user.id)
+            RadioModel.assignedTo == current_user_id
         ).all()
 
     return jsonify({
@@ -151,7 +152,7 @@ def get_radio(radio_id):
     # Check access
     from app.rbac import has_any_role
     current_user_id = int(get_jwt_identity())  # Convert string to int
-    is_admin = has_any_role(['administrator', 'radio_admin'])
+    is_admin = has_any_role(['administrator', 'radio_admin', 'radio_readonly'])
 
     if not is_admin and radio.assignedTo != current_user_id and radio.owner != current_user_id:
         return jsonify({'error': 'Access denied'}), 403
@@ -358,7 +359,7 @@ def get_claim_code(radio_id):
     The claim code is the radio's MAC address.
     """
     from app.rbac import has_any_role
-    if not has_any_role(['administrator', 'radio_admin']):
+    if not has_any_role(['administrator', 'radio_admin', 'radio_readonly']):
         return jsonify({'error': 'Admin access required'}), 403
 
     radio = RadioModel.get_by_id(radio_id)
@@ -541,13 +542,13 @@ def get_program_config(radio_id):
     """
     from app.rbac import has_any_role
     current_user_id = int(get_jwt_identity())
-    is_admin = has_any_role(['administrator', 'radio_admin'])
+    is_admin = has_any_role(['administrator', 'radio_admin', 'radio_readonly'])
 
     radio = RadioModel.get_by_id(radio_id)
     if not radio:
         return jsonify({'error': 'Radio not found'}), 404
 
-    # Check access: admin OR (user_program_radio_enabled AND user is assigned)
+    # Check access: admin/readonly OR (user_program_radio_enabled AND user is assigned)
     if not is_admin:
         user_program_enabled = SystemSettingsModel.get_setting('user_program_radio_enabled', False)
         if user_program_enabled in [True, 'true', 'True']:
@@ -658,7 +659,7 @@ def compare_config(radio_id):
     """
     from app.rbac import has_any_role
     current_user_id = int(get_jwt_identity())
-    is_admin = has_any_role(['administrator', 'radio_admin'])
+    is_admin = has_any_role(['administrator', 'radio_admin', 'radio_readonly'])
 
     radio = RadioModel.get_by_id(radio_id)
     if not radio:

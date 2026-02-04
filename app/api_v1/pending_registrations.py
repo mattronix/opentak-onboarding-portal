@@ -14,10 +14,18 @@ import re
 
 
 def require_admin_role():
-    """Check for registration_admin or administrator role"""
+    """Check for registration_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'registration_admin']):
         return jsonify({'error': 'Registration admin access required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for registration_admin, registration_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'registration_admin', 'registration_readonly']):
+        return jsonify({'error': 'Registration admin or readonly access required'}), 403
     return None
 
 
@@ -25,7 +33,7 @@ def require_admin_role():
 @jwt_required()
 def get_pending_registrations():
     """Get all pending registrations (admin only)"""
-    error = require_admin_role()
+    error = require_view_role()
     if error:
         return error
 
@@ -76,7 +84,7 @@ def get_pending_registrations():
 @jwt_required()
 def get_pending_registration(pending_id):
     """Get specific pending registration (admin only)"""
-    error = require_admin_role()
+    error = require_view_role()
     if error:
         return error
 

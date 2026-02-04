@@ -37,6 +37,8 @@ import AnnouncementHistory from './pages/AnnouncementHistory';
 import Profile from './pages/Profile';
 import Approvals from './pages/Approvals';
 import ClaimRadio from './pages/ClaimRadio';
+import Kiosk from './pages/Kiosk';
+import KioskLogin from './pages/KioskLogin';
 
 // Layout
 import Layout from './components/Layout';
@@ -184,6 +186,10 @@ function App() {
               }
             />
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Kiosk routes - standalone, no auth wrappers */}
+            <Route path="/kiosk" element={<Kiosk />} />
+            <Route path="/kiosk-login/:sessionId" element={<KioskLogin />} />
 
             {/* Set password route - for OIDC users who need to set a password */}
             <Route

@@ -11,10 +11,18 @@ from datetime import datetime
 
 
 def require_admin_role():
-    """Check for onboarding_admin or administrator role"""
+    """Check for onboarding_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'onboarding_admin']):
         return jsonify({'error': 'Onboarding admin access required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for onboarding_admin, onboarding_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'onboarding_admin', 'onboarding_readonly']):
+        return jsonify({'error': 'Onboarding admin or readonly access required'}), 403
     return None
 
 
@@ -22,7 +30,7 @@ def require_admin_role():
 @jwt_required()
 def get_onboarding_codes():
     """Get all onboarding codes (admin only)"""
-    error = require_admin_role()
+    error = require_view_role()
     if error:
         return error
 
@@ -58,7 +66,7 @@ def get_onboarding_codes():
 @jwt_required()
 def get_onboarding_code(code_id):
     """Get onboarding code by ID"""
-    error = require_admin_role()
+    error = require_view_role()
     if error:
         return error
 

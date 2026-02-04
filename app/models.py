@@ -1062,6 +1062,63 @@ class OneTimeTokenModel(db.Model):
             return 0
 
 
+class KioskSessionModel(db.Model):
+    """
+    Model for kiosk enrollment sessions.
+    A kiosk session is created when the kiosk screen loads,
+    and authenticated when a user scans the QR code and logs in on their phone.
+    """
+    __tablename__ = "kiosk_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[str] = mapped_column(unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    status: Mapped[str] = mapped_column(nullable=False, default='pending')
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    authenticated_at = Column(DateTime, nullable=True)
+    access_token = Column(String, nullable=True)
+    refresh_token = Column(String, nullable=True)
+
+    user = relationship("UserModel", foreign_keys=[user_id])
+
+    @staticmethod
+    def create_session(session_id, expires_at):
+        try:
+            session = KioskSessionModel(
+                session_id=session_id,
+                status='pending',
+                expires_at=expires_at
+            )
+            db.session.add(session)
+            db.session.commit()
+            return session
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating kiosk session: {e}")
+            return None
+
+    @staticmethod
+    def get_by_session_id(session_id):
+        return KioskSessionModel.query.filter_by(session_id=session_id).first()
+
+    @staticmethod
+    def cleanup_expired():
+        """Delete expired kiosk sessions"""
+        try:
+            expired = KioskSessionModel.query.filter(
+                KioskSessionModel.expires_at < datetime.datetime.utcnow()
+            ).all()
+            for session in expired:
+                db.session.delete(session)
+            db.session.commit()
+            return len(expired)
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error cleaning up kiosk sessions: {e}")
+            return 0
+
+
 class OIDCProviderModel(db.Model):
     """
     Model for OIDC (OpenID Connect) authentication providers.
@@ -1434,7 +1491,33 @@ class SystemSettingsModel(db.Model):
                 'value': '#ff9800',
                 'category': 'branding',
                 'description': 'Accent color for buttons and highlights'
-            }
+            },
+            # Kiosk Enrollment
+            {
+                'key': 'kiosk_enrollment_enabled',
+                'value': 'false',
+                'category': 'kiosk',
+                'description': 'Enable the kiosk enrollment screen at /kiosk'
+            },
+            {
+                'key': 'kiosk_session_timeout_minutes',
+                'value': '10',
+                'category': 'kiosk',
+                'description': 'Auto-logout timeout in minutes after a user authenticates on the kiosk'
+            },
+            # Magic Link Login
+            {
+                'key': 'magic_link_login_enabled',
+                'value': 'false',
+                'category': 'security',
+                'description': 'Enable passwordless login via email magic link'
+            },
+            {
+                'key': 'magic_link_expiry_minutes',
+                'value': '15',
+                'category': 'security',
+                'description': 'Magic link expiry time in minutes'
+            },
         ]
 
         # Remove old/deprecated settings

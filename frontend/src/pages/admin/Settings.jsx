@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { settingsAPI, oidcAPI, rolesAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import './Admin.css';
 import '../../components/AdminTable.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 // Component for numeric settings (number input with save button)
-function NumericSettingItem({ setting, onSave, saving, formatSettingName }) {
+function NumericSettingItem({ setting, onSave, saving, formatSettingName, canEdit = true }) {
   const [localValue, setLocalValue] = useState(setting?.value || '');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -41,7 +42,7 @@ function NumericSettingItem({ setting, onSave, saving, formatSettingName }) {
             setLocalValue(e.target.value);
             setIsEditing(true);
           }}
-          disabled={saving}
+          disabled={saving || !canEdit}
         />
         {isEditing && (
           <div className="setting-text-actions">
@@ -67,7 +68,7 @@ function NumericSettingItem({ setting, onSave, saving, formatSettingName }) {
 }
 
 // Component for paired settings (toggle + text value)
-function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, saving, formatSettingName }) {
+function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, saving, formatSettingName, canEdit = true }) {
   const [localValue, setLocalValue] = useState(valueSetting?.value || '');
   const [isEditing, setIsEditing] = useState(false);
   const isEnabled = enabledSetting?.value === 'true';
@@ -103,7 +104,7 @@ function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, sav
             type="checkbox"
             checked={isEnabled}
             onChange={() => onToggle(enabledSetting.id, enabledSetting.value)}
-            disabled={saving}
+            disabled={saving || !canEdit}
           />
           <span className="toggle-slider"></span>
         </label>
@@ -120,7 +121,7 @@ function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, sav
                 setIsEditing(true);
               }}
               placeholder="Enter value..."
-              disabled={saving}
+              disabled={saving || !canEdit}
             />
             {isEditing && (
               <div className="setting-text-actions">
@@ -184,7 +185,7 @@ const toHexColor = (value) => {
 };
 
 // Component for color settings
-function ColorSettingItem({ setting, onSave, saving, formatSettingName }) {
+function ColorSettingItem({ setting, onSave, saving, formatSettingName, canEdit = true }) {
   const [localValue, setLocalValue] = useState(setting?.value || '#000000');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -220,7 +221,7 @@ function ColorSettingItem({ setting, onSave, saving, formatSettingName }) {
           type="color"
           value={toHexColor(localValue)}
           onChange={handleColorPickerChange}
-          disabled={saving}
+          disabled={saving || !canEdit}
           className="color-picker"
         />
         <input
@@ -231,7 +232,7 @@ function ColorSettingItem({ setting, onSave, saving, formatSettingName }) {
             setIsEditing(true);
           }}
           placeholder="#ff9800"
-          disabled={saving}
+          disabled={saving || !canEdit}
           className="color-text"
         />
         {isEditing && (
@@ -258,7 +259,7 @@ function ColorSettingItem({ setting, onSave, saving, formatSettingName }) {
 }
 
 // Component for logo upload
-function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChange, saving }) {
+function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChange, saving, canEdit = true }) {
   const [preview, setPreview] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -323,22 +324,24 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
         )}
 
         {/* Upload Zone */}
-        <div
-          className={`logo-dropzone ${dragOver ? 'drag-over' : ''}`}
-          onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".png,.jpg,.jpeg,.gif"
-            onChange={(e) => handleFileSelect(e.target.files[0])}
-            style={{ display: 'none' }}
-          />
-          <p>Drop image here or click to upload</p>
-        </div>
+        {canEdit && (
+          <div
+            className={`logo-dropzone ${dragOver ? 'drag-over' : ''}`}
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".png,.jpg,.jpeg,.gif"
+              onChange={(e) => handleFileSelect(e.target.files[0])}
+              style={{ display: 'none' }}
+            />
+            <p>Drop image here or click to upload</p>
+          </div>
+        )}
 
         {/* Display Mode */}
         <div className="logo-display-mode">
@@ -346,7 +349,7 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
           <select
             value={logoSettings?.logo_display_mode || 'logo_and_text'}
             onChange={(e) => onDisplayModeChange(e.target.value)}
-            disabled={saving}
+            disabled={saving || !canEdit}
           >
             <option value="logo_only">Logo Only</option>
             <option value="text_only">Text Only</option>
@@ -359,7 +362,7 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
           <button
             className="btn-cancel-setting"
             onClick={onDelete}
-            disabled={saving}
+            disabled={saving || !canEdit}
           >
             Reset to Default
           </button>
@@ -747,6 +750,9 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
 }
 
 function Settings() {
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('settings_admin') || hasRole('administrator');
+
   const [settings, setSettings] = useState({});
   const [logoSettings, setLogoSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -985,7 +991,7 @@ function Settings() {
             type="checkbox"
             checked={isEnabled}
             onChange={() => handleToggle(setting.id, setting.value)}
-            disabled={saving}
+            disabled={saving || !canEdit}
           />
           <span className="toggle-slider"></span>
         </label>
@@ -1001,6 +1007,7 @@ function Settings() {
         onSave={handleTextChange}
         saving={saving}
         formatSettingName={formatSettingName}
+        canEdit={canEdit}
       />
     );
   };
@@ -1061,6 +1068,7 @@ function Settings() {
             onSave={handleTextChange}
             saving={saving}
             formatSettingName={formatSettingName}
+            canEdit={canEdit}
           />
         ))}
         {/* Render numeric settings */}
@@ -1140,6 +1148,7 @@ function Settings() {
               className="btn btn-primary"
               onClick={() => { setEditingProvider(null); setOidcModalError(''); setShowOidcModal(true); }}
               style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+              disabled={!canEdit}
             >
               + Add Provider
             </button>
@@ -1193,6 +1202,7 @@ function Settings() {
                     <button
                       className="btn-save-setting"
                       onClick={() => { setEditingProvider(provider); setOidcModalError(''); setShowOidcModal(true); }}
+                      disabled={!canEdit}
                     >
                       Edit
                     </button>
@@ -1200,6 +1210,7 @@ function Settings() {
                       className="btn-cancel-setting"
                       onClick={() => handleOidcDelete(provider)}
                       style={{ color: '#c33' }}
+                      disabled={!canEdit}
                     >
                       Delete
                     </button>
@@ -1230,6 +1241,7 @@ function Settings() {
               onDelete={handleLogoDelete}
               onDisplayModeChange={handleDisplayModeChange}
               saving={saving}
+              canEdit={canEdit}
             />
             {/* Color Settings */}
             {settings.branding && getColorSettings(settings.branding).map(setting => (
@@ -1239,6 +1251,7 @@ function Settings() {
                 onSave={handleTextChange}
                 saving={saving}
                 formatSettingName={formatSettingName}
+                canEdit={canEdit}
               />
             ))}
             {settings.branding && renderCategorySettings(settings.branding)}
@@ -1251,6 +1264,19 @@ function Settings() {
             <h2>Radios</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.radios)}
+            </div>
+          </div>
+        )}
+
+        {/* Kiosk Enrollment Section */}
+        {settings.kiosk && settings.kiosk.length > 0 && (
+          <div className="settings-section">
+            <h2>Kiosk Enrollment</h2>
+            <p className="setting-description" style={{ marginBottom: '1rem' }}>
+              Once enabled, the kiosk screen is available at <a href="/kiosk" target="_blank" rel="noopener noreferrer"><code>/kiosk</code></a>
+            </p>
+            <div className="settings-list">
+              {renderCategorySettings(settings.kiosk)}
             </div>
           </div>
         )}

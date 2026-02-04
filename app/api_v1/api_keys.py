@@ -12,9 +12,16 @@ from datetime import datetime
 
 
 def require_api_key_admin():
-    """Check if user has api_key_admin or administrator role"""
+    """Check if user has api_key_admin or administrator role (write access)"""
     if not has_any_role(['administrator', 'api_key_admin']):
         return jsonify({'error': 'API Key admin access required'}), 403
+    return None
+
+
+def require_api_key_view():
+    """Check if user has api_key_admin, api_key_readonly, or administrator role (read access)"""
+    if not has_any_role(['administrator', 'api_key_admin', 'api_key_readonly']):
+        return jsonify({'error': 'API Key admin or readonly access required'}), 403
     return None
 
 
@@ -46,7 +53,7 @@ def get_api_keys():
     """
     Get all API keys
     """
-    auth_error = require_api_key_admin()
+    auth_error = require_api_key_view()
     if auth_error:
         return auth_error
 
@@ -86,7 +93,7 @@ def get_api_key(key_id):
     """
     Get a single API key by ID
     """
-    auth_error = require_api_key_admin()
+    auth_error = require_api_key_view()
     if auth_error:
         return auth_error
 
@@ -311,7 +318,7 @@ def get_available_permissions():
     """
     Get list of available permissions for API keys
     """
-    auth_error = require_api_key_admin()
+    auth_error = require_api_key_view()
     if auth_error:
         return auth_error
 

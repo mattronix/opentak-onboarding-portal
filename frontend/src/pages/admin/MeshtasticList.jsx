@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { meshtasticAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function MeshtasticList() {
   const queryClient = useQueryClient();
   const { showError, showSuccess, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('meshtastic_admin') || hasRole('administrator');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({ name: '', url: '', description: '' });
@@ -105,9 +108,11 @@ function MeshtasticList() {
             Individual channels synced from OTS. <a href="/admin/meshtastic/groups">Manage channel groups</a>
           </p>
         </div>
-        <button className="btn btn-primary" onClick={handleSyncFromOts} disabled={syncing}>
-          {syncing ? 'Syncing...' : 'Sync from OTS'}
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={handleSyncFromOts} disabled={syncing}>
+            {syncing ? 'Syncing...' : 'Sync from OTS'}
+          </button>
+        )}
       </div>
       <div className="admin-table-container">
         {configs.length === 0 ? (
@@ -140,23 +145,25 @@ function MeshtasticList() {
                   </td>
                   <td>
                     <div className="table-actions">
-                      <button className="btn btn-sm btn-secondary" onClick={async () => {
-                        // Fetch full config details
-                        try {
-                          const response = await meshtasticAPI.getById(config.id);
-                          const fullConfig = response.data;
-                          setEditing(fullConfig);
-                          setFormData({
-                            name: fullConfig.name,
-                            url: fullConfig.url || '',
-                            description: fullConfig.description || ''
-                          });
-                          setShowModal(true);
-                        } catch (err) {
-                          showError('Failed to load config details: ' + (err.response?.data?.error || err.message));
-                        }
-                      }}>Edit</button>
-                      {!config.synced_at && config.url && (
+                      {canEdit && (
+                        <button className="btn btn-sm btn-secondary" onClick={async () => {
+                          // Fetch full config details
+                          try {
+                            const response = await meshtasticAPI.getById(config.id);
+                            const fullConfig = response.data;
+                            setEditing(fullConfig);
+                            setFormData({
+                              name: fullConfig.name,
+                              url: fullConfig.url || '',
+                              description: fullConfig.description || ''
+                            });
+                            setShowModal(true);
+                          } catch (err) {
+                            showError('Failed to load config details: ' + (err.response?.data?.error || err.message));
+                          }
+                        }}>Edit</button>
+                      )}
+                      {canEdit && !config.synced_at && config.url && (
                         <button
                           className="btn btn-sm btn-info"
                           onClick={() => syncToOtsMutation.mutate(config.id)}
@@ -165,10 +172,12 @@ function MeshtasticList() {
                           Push to OTS
                         </button>
                       )}
-                      <button className="btn btn-sm btn-danger" onClick={async () => {
-                        const confirmed = await confirm(`Delete "${config.name}"?`, 'Delete Config');
-                        if (confirmed) deleteMutation.mutate(config.id);
-                      }}>Delete</button>
+                      {canEdit && (
+                        <button className="btn btn-sm btn-danger" onClick={async () => {
+                          const confirmed = await confirm(`Delete "${config.name}"?`, 'Delete Config');
+                          if (confirmed) deleteMutation.mutate(config.id);
+                        }}>Delete</button>
+                      )}
                     </div>
                   </td>
                 </tr>

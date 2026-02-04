@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersAPI, rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function UsersList() {
   const queryClient = useQueryClient();
-  const { showError, confirm } = useNotification();
+  const { showError, showSuccess, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('user_admin') || hasRole('administrator');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -59,6 +62,7 @@ function UsersList() {
       queryClient.invalidateQueries(['users']);
       setShowModal(false);
       resetForm();
+      showSuccess('User created successfully');
     },
     onError: (err) => {
       setError(err.response?.data?.error || 'Failed to create user');
@@ -68,10 +72,15 @@ function UsersList() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => usersAPI.update(id, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries(['users']);
       setShowModal(false);
       resetForm();
+      if (response.data?.passwordChanged) {
+        showSuccess('User updated and password reset successfully');
+      } else {
+        showSuccess('User updated successfully');
+      }
     },
     onError: (err) => {
       setError(err.response?.data?.error || 'Failed to update user');
@@ -233,9 +242,11 @@ function UsersList() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button className="btn btn-primary" onClick={handleCreate}>
-            + Add User
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={handleCreate}>
+              + Add User
+            </button>
+          )}
         </div>
       </div>
 
@@ -253,7 +264,7 @@ function UsersList() {
                   <th>Callsign</th>
                   <th>Roles</th>
                   <th>Expiry Date</th>
-                  <th>Actions</th>
+                  {canEdit && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -271,16 +282,18 @@ function UsersList() {
                       ))}
                     </td>
                     <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'Never'}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(user)}>
-                          Edit
-                        </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(user)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+                    {canEdit && (
+                      <td>
+                        <div className="table-actions">
+                          <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(user)}>
+                            Edit
+                          </button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(user)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

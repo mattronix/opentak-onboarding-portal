@@ -12,10 +12,18 @@ from datetime import datetime
 
 
 def require_admin_role():
-    """Check for announcement_admin or administrator role"""
+    """Check for announcement_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'announcement_admin']):
         return jsonify({'error': 'Announcement admin access required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for announcement_admin, announcement_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'announcement_admin', 'announcement_readonly']):
+        return jsonify({'error': 'Announcement admin or readonly access required'}), 403
     return None
 
 
@@ -88,8 +96,8 @@ def _send_announcement_emails(announcement):
 @api_v1.route('/admin/announcements', methods=['GET'])
 @jwt_required()
 def get_all_announcements():
-    """Get all announcements (admin only)"""
-    error = require_admin_role()
+    """Get all announcements (admin or readonly)"""
+    error = require_view_role()
     if error:
         return error
 
@@ -121,8 +129,8 @@ def get_all_announcements():
 @api_v1.route('/admin/announcements/<int:announcement_id>', methods=['GET'])
 @jwt_required()
 def get_announcement_admin(announcement_id):
-    """Get announcement details (admin only)"""
-    error = require_admin_role()
+    """Get announcement details (admin or readonly)"""
+    error = require_view_role()
     if error:
         return error
 

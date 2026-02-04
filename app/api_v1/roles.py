@@ -11,10 +11,18 @@ from app.rbac import ADMIN_ROLES
 
 
 def require_admin_role():
-    """Check for role_admin or administrator role"""
+    """Check for role_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'role_admin']):
         return jsonify({'error': 'Role admin access required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for role_admin, role_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'role_admin', 'role_readonly']):
+        return jsonify({'error': 'Role admin or readonly access required'}), 403
     return None
 
 

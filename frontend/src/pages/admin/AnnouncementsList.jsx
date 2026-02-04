@@ -4,6 +4,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { announcementsAPI, rolesAPI, usersAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 // Quill editor modules configuration
@@ -31,6 +32,8 @@ const quillFormats = [
 function AnnouncementsList() {
   const queryClient = useQueryClient();
   const { showSuccess, showError, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('announcement_admin') || hasRole('administrator');
   const [showModal, setShowModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -210,9 +213,11 @@ function AnnouncementsList() {
     <div className="admin-page">
       <div className="admin-header">
         <h1>Announcements</h1>
-        <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-          + Create Announcement
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+            + Create Announcement
+          </button>
+        )}
       </div>
 
       <div className="admin-table-container">
@@ -258,7 +263,7 @@ function AnnouncementsList() {
                       <button className="btn btn-sm btn-secondary" onClick={() => handleViewStats(a)}>
                         Stats
                       </button>
-                      {a.status !== 'sent' && (
+                      {canEdit && a.status !== 'sent' && (
                         <>
                           <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(a)}>
                             Edit
@@ -274,15 +279,17 @@ function AnnouncementsList() {
                           </button>
                         </>
                       )}
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={async () => {
-                          const confirmed = await confirm('Delete this announcement?', 'Delete Announcement');
-                          if (confirmed) deleteMutation.mutate(a.id);
-                        }}
-                      >
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={async () => {
+                            const confirmed = await confirm('Delete this announcement?', 'Delete Announcement');
+                            if (confirmed) deleteMutation.mutate(a.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -529,7 +536,7 @@ function AnnouncementsList() {
               />
             </div>
             <div className="modal-footer">
-              {selectedAnnouncement.status !== 'sent' && (
+              {canEdit && selectedAnnouncement.status !== 'sent' && (
                 <button
                   className="btn btn-secondary"
                   onClick={() => {

@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function RolesList() {
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('role_admin') || hasRole('administrator');
   const [showModal, setShowModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [formData, setFormData] = useState({
@@ -120,9 +123,11 @@ function RolesList() {
       <div className="admin-header">
         <h1>Roles Management</h1>
         <div className="admin-actions">
-          <button className="btn btn-primary" onClick={handleCreate}>
-            + Add Role
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={handleCreate}>
+              + Add Role
+            </button>
+          )}
         </div>
       </div>
 
@@ -152,12 +157,16 @@ function RolesList() {
                       <span className="badge badge-secondary">System Managed</span>
                     ) : (
                       <div className="table-actions">
-                        <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(role)}>
-                          Edit
-                        </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(role)}>
-                          Delete
-                        </button>
+                        {canEdit && (
+                          <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(role)}>
+                            Edit
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(role)}>
+                            Delete
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>

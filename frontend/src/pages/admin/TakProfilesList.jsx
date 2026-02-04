@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { takProfilesAPI, rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 import './TakProfilesList.css';
 
 function TakProfilesList() {
   const queryClient = useQueryClient();
   const { showError, showWarning, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('tak_profile_admin') || hasRole('administrator');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
@@ -253,9 +256,11 @@ function TakProfilesList() {
     <div className="admin-page">
       <div className="admin-header">
         <h1>TAK Profiles Management</h1>
-        <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-          + Add Profile
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+            + Add Profile
+          </button>
+        )}
       </div>
 
       <div className="admin-table-container">
@@ -286,15 +291,19 @@ function TakProfilesList() {
                       <button className="btn btn-sm btn-success" onClick={() => takProfilesAPI.download(profile.id)}>
                         Download
                       </button>
-                      <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profile)}>
-                        Edit
-                      </button>
-                      <button className="btn btn-sm btn-danger" onClick={async () => {
-                        const confirmed = await confirm(`Delete "${profile.name}"?`, 'Delete Profile');
-                        if (confirmed) deleteMutation.mutate(profile.id);
-                      }}>
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profile)}>
+                          Edit
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button className="btn btn-sm btn-danger" onClick={async () => {
+                          const confirmed = await confirm(`Delete "${profile.name}"?`, 'Delete Profile');
+                          if (confirmed) deleteMutation.mutate(profile.id);
+                        }}>
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

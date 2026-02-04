@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { settingsAPI, oidcAPI } from '../services/api';
+import { settingsAPI, oidcAPI, magicLinkAPI } from '../services/api';
 import './Auth.css';
 
 const API_BASE_URL = window.location.origin;
@@ -42,30 +42,39 @@ function Login() {
     : settings?.default_logo_path;
   const forgotPasswordEnabled = settings?.forgot_password_enabled !== false;
 
-  // Handle OIDC callback — tokens arrive as query params after redirect from backend
+  // Magic link state
+  const [showMagicLink, setShowMagicLink] = useState(false);
+  const [magicLinkEmail, setMagicLinkEmail] = useState('');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+
+  // Handle OIDC callback and magic link token
   useEffect(() => {
     const oidcToken = searchParams.get('oidc_token');
     const oidcRefresh = searchParams.get('oidc_refresh');
     const oidcError = searchParams.get('oidc_error');
     const needsPassword = searchParams.get('needs_password') === 'true';
     const needsProfile = searchParams.get('needs_profile') === 'true';
+    const magicToken = searchParams.get('magic_token');
 
     if (oidcError) {
       setError(decodeURIComponent(oidcError.replace(/\+/g, ' ')));
-      // Clean up URL params
       setSearchParams({});
       return;
     }
 
     if (oidcToken && oidcRefresh) {
-      // Clean up URL params immediately
       setSearchParams({});
       setLoading(true);
 
-      // Process OIDC login
       oidcLogin(oidcToken, oidcRefresh).then((result) => {
         if (result.success) {
-          if (needsPassword) {
+          // Check for pending kiosk session
+          const kioskSession = localStorage.getItem('kiosk_session_pending');
+          if (kioskSession) {
+            localStorage.removeItem('kiosk_session_pending');
+            navigate(`/kiosk-login/${kioskSession}`);
+          } else if (needsPassword) {
             navigate('/set-password');
           } else if (needsProfile) {
             navigate('/complete-profile');
@@ -77,6 +86,31 @@ function Login() {
         }
         setLoading(false);
       });
+      return;
+    }
+
+    // Handle magic link token
+    if (magicToken) {
+      setSearchParams({});
+      setLoading(true);
+
+      magicLinkAPI.verifyToken(magicToken)
+        .then(async (response) => {
+          const { access_token, refresh_token, needs_password, needs_profile } = response.data;
+          const result = await oidcLogin(access_token, refresh_token);
+          if (result.success) {
+            if (needs_password) navigate('/set-password');
+            else if (needs_profile) navigate('/complete-profile');
+            else navigate('/dashboard');
+          } else {
+            setError(result.error || 'Magic link login failed');
+          }
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err.response?.data?.error || 'Invalid or expired magic link');
+          setLoading(false);
+        });
     }
   }, []);
 
@@ -194,6 +228,85 @@ function Login() {
                 {provider.display_name}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Magic Link Login */}
+        {settings?.magic_link_login_enabled && (
+          <div className="oidc-providers">
+            {oidcProviders.length === 0 && (
+              <div className="oidc-divider">
+                <span>or</span>
+              </div>
+            )}
+            {!showMagicLink ? (
+              <button
+                type="button"
+                className="btn btn-block btn-secondary"
+                onClick={() => setShowMagicLink(true)}
+                disabled={loading}
+              >
+                Email me a login link
+              </button>
+            ) : !magicLinkSent ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setMagicLinkLoading(true);
+                  setError('');
+                  try {
+                    await magicLinkAPI.requestLink(magicLinkEmail);
+                    setMagicLinkSent(true);
+                  } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to send login link');
+                  } finally {
+                    setMagicLinkLoading(false);
+                  }
+                }}
+              >
+                <div className="form-group">
+                  <label htmlFor="magicEmail">Email Address</label>
+                  <input
+                    id="magicEmail"
+                    type="email"
+                    value={magicLinkEmail}
+                    onChange={(e) => setMagicLinkEmail(e.target.value)}
+                    required
+                    placeholder="Enter your email"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-block"
+                  disabled={magicLinkLoading}
+                >
+                  {magicLinkLoading ? 'Sending...' : 'Send Login Link'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-block"
+                  style={{ marginTop: '0.5rem', background: 'transparent', color: '#666' }}
+                  onClick={() => setShowMagicLink(false)}
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <div className="alert" style={{ background: '#d4edda', color: '#155724', padding: '0.75rem', borderRadius: '8px' }}>
+                  Check your email for a login link
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-block"
+                  style={{ marginTop: '0.75rem', background: 'transparent', color: '#666' }}
+                  onClick={() => { setShowMagicLink(false); setMagicLinkSent(false); setMagicLinkEmail(''); }}
+                >
+                  Back to login
+                </button>
+              </div>
+            )}
           </div>
         )}
 

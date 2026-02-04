@@ -89,6 +89,10 @@ def get_settings():
         'oidc_enabled': get_bool_setting('oidc_enabled', False),
         'oidc_auto_create_user': get_bool_setting('oidc_auto_create_user', False),
         'forgot_password_enabled': get_bool_setting('forgot_password_enabled', True),
+        # Kiosk
+        'kiosk_enrollment_enabled': get_bool_setting('kiosk_enrollment_enabled', False),
+        # Magic Link
+        'magic_link_login_enabled': get_bool_setting('magic_link_login_enabled', False),
     }
 
     return jsonify(settings), 200
@@ -141,17 +145,17 @@ def get_admin_settings():
         description: Failed to retrieve settings
     """
     try:
-        # Check if user has settings_admin or administrator role
+        # Check if user has settings access (admin, settings_admin, or settings_readonly)
         from app.rbac import has_any_role
-        if not has_any_role(['administrator', 'settings_admin']):
-            return jsonify({'error': 'Settings admin access required'}), 403
+        if not has_any_role(['administrator', 'settings_admin', 'settings_readonly']):
+            return jsonify({'error': 'Settings admin or readonly access required'}), 403
 
         # Initialize defaults if needed
         SystemSettingsModel.initialize_defaults()
 
         # Get settings by category
         settings_by_category = {}
-        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'radios', 'general']
+        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'radios', 'kiosk', 'general']
 
         for category in categories:
             settings = SystemSettingsModel.get_category_settings(category)

@@ -71,10 +71,18 @@ def jwt_required_with_query():
 
 
 def require_admin_role():
-    """Check for tak_profile_admin or administrator role"""
+    """Check for tak_profile_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'tak_profile_admin']):
         return jsonify({'error': 'TAK profile admin access required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for tak_profile_admin, tak_profile_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'tak_profile_admin', 'tak_profile_readonly']):
+        return jsonify({'error': 'TAK profile admin or readonly access required'}), 403
     return None
 
 
@@ -385,8 +393,8 @@ def update_tak_profile(profile_id):
 @api_v1.route('/tak-profiles/<int:profile_id>/files', methods=['GET'])
 @jwt_required()
 def get_tak_profile_files(profile_id):
-    """Get file tree structure for TAK profile (admin only)"""
-    error = require_admin_role()
+    """Get file tree structure for TAK profile (admin or readonly)"""
+    error = require_view_role()
     if error:
         return error
 

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { radiosAPI, usersAPI, settingsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { meshtasticSerial } from '../../services/meshtasticSerial';
 import { getModelOptions } from '../../constants/hardwareModels';
 import ProgramRadioModal from '../../components/ProgramRadioModal';
@@ -15,6 +16,8 @@ function RadiosList() {
   const { radioId } = useParams();
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('radio_admin') || hasRole('administrator');
   const [showModal, setShowModal] = useState(false);
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [programmingRadio, setProgrammingRadio] = useState(null);
@@ -413,7 +416,7 @@ function RadiosList() {
       <div className="admin-header">
         <h1>Radios Management</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
-          {browserSupport.isSupported && (
+          {canEdit && browserSupport.isSupported && (
             <button
               className="btn btn-secondary"
               onClick={handleFindViaUSB}
@@ -422,9 +425,11 @@ function RadiosList() {
               {findingRadio ? 'Scanning...' : 'Find via USB'}
             </button>
           )}
-          <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-            + Add Radio
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+              + Add Radio
+            </button>
+          )}
         </div>
       </div>
 
@@ -486,7 +491,7 @@ function RadiosList() {
                           </button>
                         </>
                       )}
-                      {claimRadioEnabled && !radio.assignedTo && radio.meshtasticId && (
+                      {canEdit && claimRadioEnabled && !radio.assignedTo && radio.meshtasticId && (
                         <button
                           className="btn btn-sm btn-info"
                           onClick={() => copyClaimUrl(radio)}
@@ -495,15 +500,19 @@ function RadiosList() {
                           Copy Claim URL
                         </button>
                       )}
-                      <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(radio)}>
-                        Edit
-                      </button>
-                      <button className="btn btn-sm btn-danger" onClick={async () => {
-                        const confirmed = await confirm(`Delete "${radio.name}"?`, 'Delete Radio');
-                        if (confirmed) deleteMutation.mutate(radio.id);
-                      }}>
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(radio)}>
+                          Edit
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button className="btn btn-sm btn-danger" onClick={async () => {
+                          const confirmed = await confirm(`Delete "${radio.name}"?`, 'Delete Radio');
+                          if (confirmed) deleteMutation.mutate(radio.id);
+                        }}>
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

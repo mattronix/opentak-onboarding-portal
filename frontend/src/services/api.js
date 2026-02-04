@@ -534,4 +534,25 @@ export const oidcAPI = {
   }
 };
 
+// Kiosk API (session management uses raw axios - no auth needed for create/poll)
+export const kioskAPI = {
+  createSession: () =>
+    axios.post(`${API_BASE_URL}/api/v1/kiosk/session`),
+
+  getSessionStatus: (sessionId) =>
+    axios.get(`${API_BASE_URL}/api/v1/kiosk/session/${sessionId}/status`),
+
+  authenticateSession: (sessionId) =>
+    api.post(`/kiosk/session/${sessionId}/authenticate`),
+};
+
+// Magic Link API (public endpoints, no auth needed)
+export const magicLinkAPI = {
+  requestLink: (email) =>
+    axios.post(`${API_BASE_URL}/api/v1/auth/magic-link`, { email }),
+
+  verifyToken: (token) =>
+    axios.post(`${API_BASE_URL}/api/v1/auth/magic-link/verify`, { token }),
+};
+
 export default api;

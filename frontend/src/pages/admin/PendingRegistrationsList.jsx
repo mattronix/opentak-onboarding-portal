@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './PendingRegistrationsList.css';
 
 function PendingRegistrationsList() {
@@ -26,6 +27,8 @@ function PendingRegistrationsList() {
   const [formLoading, setFormLoading] = useState(false);
   const navigate = useNavigate();
   const { showSuccess, showError, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('registration_admin') || hasRole('administrator');
 
   const API_URL = window.location.origin;
 
@@ -311,12 +314,16 @@ function PendingRegistrationsList() {
       <div className="pending-registrations-header">
         <h1>Pending Registrations</h1>
         <div className="header-actions">
-          <button onClick={openCreateModal} className="btn-primary">
-            Create New
-          </button>
-          <button onClick={handleCleanupExpired} className="btn-warning">
-            Clean Up Expired
-          </button>
+          {canEdit && (
+            <button onClick={openCreateModal} className="btn-primary">
+              Create New
+            </button>
+          )}
+          {canEdit && (
+            <button onClick={handleCleanupExpired} className="btn-warning">
+              Clean Up Expired
+            </button>
+          )}
           <button onClick={fetchPendingRegistrations} className="btn-secondary">
             Refresh
           </button>
@@ -392,7 +399,7 @@ function PendingRegistrationsList() {
                     )}
                   </td>
                   <td className="actions">
-                    {allowManualApproval && pending.approval_status !== 'pending_approval' && (
+                    {canEdit && allowManualApproval && pending.approval_status !== 'pending_approval' && (
                       <button
                         onClick={() => handleApprove(pending.id, pending.username)}
                         className="btn-small btn-success"
@@ -401,14 +408,16 @@ function PendingRegistrationsList() {
                         Approve
                       </button>
                     )}
-                    <button
-                      onClick={() => openEditModal(pending)}
-                      className="btn-small btn-secondary"
-                      title="Edit pending registration"
-                    >
-                      Edit
-                    </button>
-                    {pending.approval_status !== 'pending_approval' && (
+                    {canEdit && (
+                      <button
+                        onClick={() => openEditModal(pending)}
+                        className="btn-small btn-secondary"
+                        title="Edit pending registration"
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {canEdit && pending.approval_status !== 'pending_approval' && (
                       <button
                         onClick={() => handleResendEmail(pending.id, pending.email)}
                         className="btn-small btn-info"
@@ -417,13 +426,15 @@ function PendingRegistrationsList() {
                         {pending.is_expired ? 'Restart' : 'Resend'}
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDelete(pending.id, pending.username)}
-                      className="btn-small btn-danger"
-                      title="Delete pending registration"
-                    >
-                      Delete
-                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => handleDelete(pending.id, pending.username)}
+                        className="btn-small btn-danger"
+                        title="Delete pending registration"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

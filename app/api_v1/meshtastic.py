@@ -15,10 +15,18 @@ import yaml
 
 
 def require_admin_role():
-    """Check for meshtastic_admin or administrator role"""
+    """Check for meshtastic_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'meshtastic_admin']):
         return jsonify({'error': 'Meshtastic admin access required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for meshtastic_admin, meshtastic_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'meshtastic_admin', 'meshtastic_readonly']):
+        return jsonify({'error': 'Meshtastic admin or readonly access required'}), 403
     return None
 
 
@@ -77,8 +85,8 @@ def get_meshtastic_configs():
 @api_v1.route('/meshtastic/admin', methods=['GET'])
 @jwt_required()
 def get_all_meshtastic_configs_admin():
-    """Get ALL Meshtastic configs (admin only, no filtering)"""
-    error = require_admin_role()
+    """Get ALL Meshtastic configs (admin or readonly, no filtering)"""
+    error = require_view_role()
     if error:
         return error
 
@@ -112,8 +120,8 @@ def get_meshtastic_config(config_id):
     if not config:
         return jsonify({'error': 'Meshtastic config not found'}), 404
 
-    # Admins can access any config
-    is_admin = has_any_role(['administrator', 'meshtastic_admin'])
+    # Admins and readonly can access any config
+    is_admin = has_any_role(['administrator', 'meshtastic_admin', 'meshtastic_readonly'])
 
     if not is_admin and not config.isPublic:
         current_user_id = int(get_jwt_identity())

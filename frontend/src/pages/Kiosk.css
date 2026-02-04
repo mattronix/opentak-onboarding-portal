@@ -1,0 +1,320 @@
+.kiosk-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 2rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+}
+
+/* QR Screen */
+.kiosk-qr-screen {
+  text-align: center;
+  max-width: 500px;
+}
+
+.kiosk-logo {
+  max-width: 120px;
+  max-height: 120px;
+  margin-bottom: 1.5rem;
+}
+
+.kiosk-qr-screen h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.kiosk-qr-screen .kiosk-subtitle {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.kiosk-qr-code {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+
+.kiosk-qr-instruction {
+  font-size: 1.1rem;
+  color: #888;
+}
+
+.kiosk-polling-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #4caf50;
+  border-radius: 50%;
+  margin-left: 8px;
+  animation: kiosk-pulse 1.5s infinite;
+}
+
+@keyframes kiosk-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Authenticated Screen */
+.kiosk-dashboard {
+  width: 100%;
+  max-width: 1000px;
+}
+
+.kiosk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.kiosk-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.kiosk-header-logo {
+  max-width: 48px;
+  max-height: 48px;
+}
+
+.kiosk-header h1 {
+  font-size: 1.8rem;
+  color: #333;
+  margin: 0;
+}
+
+.kiosk-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.kiosk-timer {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.kiosk-timer.warning {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.kiosk-signout-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.kiosk-signout-btn:hover {
+  background: #c82333;
+}
+
+.kiosk-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.kiosk-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.kiosk-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #333;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 0.5rem;
+}
+
+.kiosk-qr-pair {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.kiosk-qr-item {
+  text-align: center;
+}
+
+.kiosk-qr-item p {
+  margin-top: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+/* Password Change Form (inline) */
+.kiosk-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.kiosk-password-form input {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.kiosk-password-form .kiosk-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.kiosk-password-form button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.kiosk-password-form .btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.kiosk-password-form .btn-primary:hover {
+  background: #0069d9;
+}
+
+.kiosk-password-form .btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.kiosk-alert {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.kiosk-alert-error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.kiosk-alert-success {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* Radio Section */
+.kiosk-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.kiosk-radio-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.kiosk-radio-name {
+  font-weight: 500;
+}
+
+.kiosk-radio-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.kiosk-radio-actions button {
+  padding: 0.3rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.kiosk-btn-program {
+  background: #007bff;
+  color: white;
+}
+
+.kiosk-btn-validate {
+  background: #6c757d;
+  color: white;
+}
+
+/* Disabled/Error states */
+.kiosk-message {
+  text-align: center;
+  max-width: 400px;
+}
+
+.kiosk-message h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.kiosk-message p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.kiosk-retry-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* Loading */
+.kiosk-loading {
+  text-align: center;
+}
+
+.kiosk-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: kiosk-spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes kiosk-spin {
+  to { transform: rotate(360deg); }
+}

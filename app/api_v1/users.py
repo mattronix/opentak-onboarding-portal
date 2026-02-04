@@ -11,10 +11,18 @@ from app.ots import OTSClient
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, OTS_VERIFY_SSL
 from datetime import datetime
 def require_admin_role():
-    """Check for user_admin or administrator role"""
+    """Check for user_admin or administrator role (write access)"""
     from app.rbac import has_any_role
     if not has_any_role(['administrator', 'user_admin']):
         return jsonify({'error': 'User admin role required'}), 403
+    return None
+
+
+def require_view_role():
+    """Check for user_admin, user_readonly, or administrator role (read access)"""
+    from app.rbac import has_any_role
+    if not has_any_role(['administrator', 'user_admin', 'user_readonly']):
+        return jsonify({'error': 'User admin or readonly role required'}), 403
     return None
 
 
@@ -45,7 +53,7 @@ def get_users():
         "per_page": "int"
     }
     """
-    error = require_admin_role()
+    error = require_view_role()
     if error:
         return error
 
@@ -92,12 +100,14 @@ def get_user(user_id):
 
     Response includes full user details with relationships
     """
+    from app.rbac import has_any_role
     claims = get_jwt()
     roles = claims.get('roles', [])
     current_user_id = claims.get('sub')
 
-    # Users can view their own profile, admins can view any
-    if 'administrator' not in roles and current_user_id != user_id:
+    # Users can view their own profile, admins and user readonly can view any
+    is_user_viewer = has_any_role(['administrator', 'user_admin', 'user_readonly'])
+    if not is_user_viewer and current_user_id != user_id:
         return jsonify({'error': 'Permission denied'}), 403
 
     user = UserModel.get_user_by_id(user_id)
@@ -282,6 +292,18 @@ def update_user(user_id):
             else:
                 user.expiryDate = None
 
+    # Handle password reset (admin only)
+    password_changed = False
+    if is_admin and data.get('password'):
+        try:
+            ots = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
+            ots.reset_user_password(user.username, data['password'])
+            password_changed = True
+            current_app.logger.info(f"Password reset for user '{user.username}' by admin")
+        except Exception as e:
+            current_app.logger.error(f"Failed to reset password for user '{user.username}': {str(e)}")
+            return jsonify({'error': f'Failed to reset password: {str(e)}'}), 400
+
     try:
         # Commit directly to ensure relationship changes are saved
         db.session.commit()
@@ -291,8 +313,13 @@ def update_user(user_id):
             ots = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
             # OTS sync would go here if supported
 
+        message = 'User updated successfully'
+        if password_changed:
+            message = 'User updated and password reset successfully'
+
         return jsonify({
-            'message': 'User updated successfully',
+            'message': message,
+            'passwordChanged': password_changed,
             'user': {
                 'id': user.id,
                 'username': user.username,

@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { onboardingCodesAPI, rolesAPI, usersAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function OnboardingCodesList() {
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole('onboarding_admin') || hasRole('administrator');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
@@ -187,9 +190,11 @@ function OnboardingCodesList() {
     <div className="admin-page">
       <div className="admin-header">
         <h1>Onboarding Codes Management</h1>
-        <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-          + Add Code
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+            + Add Code
+          </button>
+        )}
       </div>
 
       <div className="admin-table-container">
@@ -234,15 +239,19 @@ function OnboardingCodesList() {
                       >
                         {copiedCodeId === code.id ? '✓ Copied!' : '📋 Copy URL'}
                       </button>
-                      <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(code)}>
-                        Edit
-                      </button>
-                      <button className="btn btn-sm btn-danger" onClick={async () => {
-                        const confirmed = await confirm(`Delete code "${code.name}"?`, 'Delete Code');
-                        if (confirmed) deleteMutation.mutate(code.id);
-                      }}>
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(code)}>
+                          Edit
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button className="btn btn-sm btn-danger" onClick={async () => {
+                          const confirmed = await confirm(`Delete code "${code.name}"?`, 'Delete Code');
+                          if (confirmed) deleteMutation.mutate(code.id);
+                        }}>
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
