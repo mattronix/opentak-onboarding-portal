@@ -2,12 +2,41 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { kioskAPI, settingsAPI } from '../services/api';
-import { meshtasticSerial } from '../services/meshtasticSerial';
 import ProgramRadioModal from '../components/ProgramRadioModal';
 import ConfigValidatorModal from '../components/ConfigValidatorModal';
 import './Kiosk.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+
+const KIOSK_SESSION_KEY = 'kiosk_session';
+
+function saveKioskSession(data) {
+  sessionStorage.setItem(KIOSK_SESSION_KEY, JSON.stringify(data));
+  // Also write to localStorage so ProgramRadioModal/ConfigValidatorModal API calls work
+  localStorage.setItem('access_token', data.accessToken);
+}
+
+function clearKioskSession() {
+  sessionStorage.removeItem(KIOSK_SESSION_KEY);
+  localStorage.removeItem('access_token');
+}
+
+function loadKioskSession() {
+  try {
+    const raw = sessionStorage.getItem(KIOSK_SESSION_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // Check if session has expired
+    if (data.expiryTime && Date.now() >= data.expiryTime) {
+      clearKioskSession();
+      return null;
+    }
+    return data;
+  } catch {
+    clearKioskSession();
+    return null;
+  }
+}
 
 function Kiosk() {
   const [state, setState] = useState('loading'); // loading, qr, authenticated, disabled, error
@@ -52,12 +81,23 @@ function Kiosk() {
     });
   }, [accessToken]);
 
-  // Load settings on mount
+  // Load settings on mount and restore session if saved
   useEffect(() => {
     settingsAPI.get().then((res) => {
       setSettings(res.data);
       if (!res.data?.kiosk_enrollment_enabled) {
         setState('disabled');
+        return;
+      }
+
+      // Check for saved session (survives page refresh)
+      const saved = loadKioskSession();
+      if (saved) {
+        setAccessToken(saved.accessToken);
+        setRefreshToken(saved.refreshToken);
+        setKioskUser(saved.user);
+        expiryTimeRef.current = saved.expiryTime;
+        setState('authenticated');
       } else {
         createNewSession();
       }
@@ -93,9 +133,27 @@ function Kiosk() {
       try {
         const res = await kioskAPI.getSessionStatus(sessionId);
         if (res.data.status === 'authenticated') {
-          setAccessToken(res.data.access_token);
-          setRefreshToken(res.data.refresh_token);
-          setKioskUser(res.data.user);
+          const token = res.data.access_token;
+          const refresh = res.data.refresh_token;
+          const user = res.data.user;
+
+          // Calculate expiry time for session persistence
+          const timeoutStr = settings?.kiosk_session_timeout_minutes || '10';
+          const timeout = parseInt(timeoutStr) || 10;
+          const expiry = Date.now() + timeout * 60 * 1000;
+
+          // Save session to survive page refresh
+          saveKioskSession({
+            accessToken: token,
+            refreshToken: refresh,
+            user,
+            expiryTime: expiry,
+          });
+
+          setAccessToken(token);
+          setRefreshToken(refresh);
+          setKioskUser(user);
+          expiryTimeRef.current = expiry;
           setState('authenticated');
         } else if (res.data.status === 'expired') {
           // Session expired, create a new one
@@ -135,10 +193,13 @@ function Kiosk() {
 
     // Start countdown timer using absolute expiry time
     // (setInterval is throttled in background tabs, so we must compare against real clock)
-    const timeoutStr = settings?.kiosk_session_timeout_minutes || '10';
-    const timeout = parseInt(timeoutStr) || 10;
-    timeoutMinutesRef.current = timeout;
-    expiryTimeRef.current = Date.now() + timeout * 60 * 1000;
+    // Use existing expiryTimeRef if already set (from session restore), otherwise calculate new
+    if (!expiryTimeRef.current) {
+      const timeoutStr = settings?.kiosk_session_timeout_minutes || '10';
+      const timeout = parseInt(timeoutStr) || 10;
+      timeoutMinutesRef.current = timeout;
+      expiryTimeRef.current = Date.now() + timeout * 60 * 1000;
+    }
 
     const updateTimer = () => {
       const remaining = Math.max(0, Math.floor((expiryTimeRef.current - Date.now()) / 1000));
@@ -166,6 +227,7 @@ function Kiosk() {
   const handleSignOut = () => {
     clearInterval(timerRef.current);
     clearInterval(pollRef.current);
+    clearKioskSession();
     setAccessToken(null);
     setRefreshToken(null);
     setKioskUser(null);
