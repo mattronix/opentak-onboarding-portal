@@ -124,6 +124,9 @@ export const authAPI = {
 
   setPassword: (newPassword) =>
     api.post('/auth/set-password', { newPassword }),
+
+  impersonate: (userId) =>
+    api.post(`/auth/impersonate/${userId}`),
 };
 
 // Users API

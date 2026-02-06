@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { usersAPI, rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,8 +8,9 @@ import '../../components/AdminTable.css';
 
 function UsersList() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { showError, showSuccess, confirm } = useNotification();
-  const { hasRole } = useAuth();
+  const { hasRole, isAdmin, startImpersonation, user: currentUser } = useAuth();
   const canEdit = hasRole('user_admin') || hasRole('administrator');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -141,6 +143,20 @@ function UsersList() {
     );
     if (confirmed) {
       deleteMutation.mutate(user.id);
+    }
+  };
+
+  const handleImpersonate = async (user) => {
+    const confirmed = await confirm(
+      `Impersonate user "${user.username}"? You will see the portal as this user.`,
+      'Impersonate User'
+    );
+    if (!confirmed) return;
+    const result = await startImpersonation(user.id);
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      showError(result.error || 'Failed to impersonate user');
     }
   };
 
@@ -288,6 +304,11 @@ function UsersList() {
                           <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(user)}>
                             Edit
                           </button>
+                          {isAdmin() && user.id !== currentUser?.id && (
+                            <button className="btn btn-sm btn-warning" onClick={() => handleImpersonate(user)}>
+                              Impersonate
+                            </button>
+                          )}
                           <button className="btn btn-sm btn-danger" onClick={() => handleDelete(user)}>
                             Delete
                           </button>

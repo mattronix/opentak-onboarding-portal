@@ -23,11 +23,11 @@ function ProgramRadioModal({ radio, onClose }) {
   // Check browser support
   const browserSupport = meshtasticSerial.getBrowserSupport();
 
-  // Fetch channel groups
+  // Fetch channel groups accessible to the current user
   const { data: groupsData, isLoading: loadingGroups } = useQuery({
-    queryKey: ['meshtasticGroupsAdmin'],
+    queryKey: ['meshtasticGroups'],
     queryFn: async () => {
-      const response = await meshtasticGroupsAPI.getAllAdmin();
+      const response = await meshtasticGroupsAPI.getAll();
       return response.data;
     },
   });

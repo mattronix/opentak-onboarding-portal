@@ -7,7 +7,7 @@ import AnnouncementsBadge from './AnnouncementsBadge';
 import './Layout.css';
 
 function Layout() {
-  const { user, logout, hasAnyAdminRole, hasModuleAccess, approverStatus } = useAuth();
+  const { user, logout, hasAnyAdminRole, hasModuleAccess, approverStatus, impersonating, stopImpersonation } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [version, setVersion] = useState(null);
@@ -155,7 +155,19 @@ function Layout() {
         </div>
       </nav>
 
-      <main className="main-content">
+      {impersonating && (
+        <div className="impersonation-banner">
+          <span>
+            Viewing as <strong>{user?.callsign || user?.username}</strong>
+            {' '}&mdash; logged in as {impersonating.username}
+          </span>
+          <button className="impersonation-stop-btn" onClick={stopImpersonation}>
+            Stop Impersonating
+          </button>
+        </div>
+      )}
+
+      <main className={`main-content ${impersonating ? 'main-content-impersonating' : ''}`}>
         <Outlet />
       </main>
 

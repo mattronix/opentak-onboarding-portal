@@ -87,6 +87,15 @@
   background-color: #c82333;
 }
 
+.btn-warning {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: #e0a800;
+}
+
 .btn-info {
   background-color: #17a2b8;
   color: white;

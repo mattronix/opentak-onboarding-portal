@@ -217,16 +217,86 @@ def refresh():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
+    claims = {
+        'username': user.username,
+        'roles': [role.name for role in user.roles]
+    }
+
+    # Propagate impersonation claims through token refresh
+    jwt_data = get_jwt()
+    if jwt_data.get('impersonated_by'):
+        claims['impersonated_by'] = jwt_data['impersonated_by']
+        claims['impersonated_by_username'] = jwt_data.get('impersonated_by_username', '')
+
     access_token = create_access_token(
         identity=str(user.id),
-        additional_claims={
-            'username': user.username,
-            'roles': [role.name for role in user.roles]
-        },
+        additional_claims=claims,
         expires_delta=timedelta(hours=12)
     )
 
     return jsonify({'access_token': access_token}), 200
+
+
+@api_v1.route('/auth/impersonate/<int:user_id>', methods=['POST'])
+@jwt_required()
+def impersonate_user(user_id):
+    """
+    Impersonate another user (administrator only).
+    Creates JWT tokens for the target user with impersonation claims.
+    """
+    from app.rbac import has_role
+
+    if not has_role('administrator'):
+        return jsonify({'error': 'Only administrators can impersonate users'}), 403
+
+    admin_user_id = int(get_jwt_identity())
+    if admin_user_id == user_id:
+        return jsonify({'error': 'Cannot impersonate yourself'}), 400
+
+    admin_user = UserModel.get_user_by_id(admin_user_id)
+    target_user = UserModel.get_user_by_id(user_id)
+    if not target_user:
+        return jsonify({'error': 'User not found'}), 404
+
+    current_app.logger.info(f"Admin {admin_user.username} (id={admin_user_id}) impersonating user {target_user.username} (id={user_id})")
+
+    claims = {
+        'username': target_user.username,
+        'roles': [role.name for role in target_user.roles],
+        'impersonated_by': admin_user_id,
+        'impersonated_by_username': admin_user.username,
+    }
+
+    access_token = create_access_token(
+        identity=str(target_user.id),
+        additional_claims=claims,
+        expires_delta=timedelta(hours=12)
+    )
+
+    refresh_token = create_refresh_token(
+        identity=str(target_user.id),
+        additional_claims={
+            'impersonated_by': admin_user_id,
+            'impersonated_by_username': admin_user.username,
+        },
+        expires_delta=timedelta(days=30)
+    )
+
+    return jsonify({
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'user': {
+            'id': target_user.id,
+            'username': target_user.username,
+            'email': target_user.email,
+            'firstName': target_user.firstName,
+            'lastName': target_user.lastName,
+            'callsign': target_user.callsign,
+            'roles': [{'name': role.name, 'displayName': role.display_name} for role in target_user.roles],
+            'expiryDate': target_user.expiryDate.isoformat() if target_user.expiryDate else None,
+            'has_password': target_user.has_password if target_user.has_password is not None else True
+        }
+    }), 200
 
 
 @api_v1.route('/auth/complete-profile', methods=['POST'])
@@ -324,7 +394,7 @@ def get_current_user():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    return jsonify({
+    response = {
         'id': user.id,
         'username': user.username,
         'email': user.email,
@@ -335,7 +405,15 @@ def get_current_user():
         'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None,
         'onboardedBy': user.onboardedBy,
         'has_password': user.has_password if user.has_password is not None else True
-    }), 200
+    }
+
+    # Include impersonation info if present in JWT
+    jwt_data = get_jwt()
+    if jwt_data.get('impersonated_by'):
+        response['impersonatedBy'] = jwt_data['impersonated_by']
+        response['impersonatedByUsername'] = jwt_data.get('impersonated_by_username', '')
+
+    return jsonify(response), 200
 
 
 @api_v1.route('/auth/register', methods=['POST'])

@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [approverStatus, setApproverStatus] = useState({ isApprover: false, pendingCount: 0 });
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
   const [needsPasswordSet, setNeedsPasswordSet] = useState(false);
+  const [impersonating, setImpersonating] = useState(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -59,6 +60,13 @@ export const AuthProvider = ({ children }) => {
           // Check if OIDC user needs to set password
           if (userData.has_password === false) {
             setNeedsPasswordSet(true);
+          }
+          // Detect impersonation from server response
+          if (userData.impersonatedBy) {
+            setImpersonating({
+              userId: userData.impersonatedBy,
+              username: userData.impersonatedByUsername || '',
+            });
           }
         })
         .catch(() => {
@@ -139,6 +147,16 @@ export const AuthProvider = ({ children }) => {
       setNeedsProfileCompletion(!userData.email || !userData.callsign);
       setNeedsPasswordSet(userData.has_password === false);
 
+      // Detect impersonation from server response
+      if (userData.impersonatedBy) {
+        setImpersonating({
+          userId: userData.impersonatedBy,
+          username: userData.impersonatedByUsername || '',
+        });
+      } else {
+        setImpersonating(null);
+      }
+
       return { success: true };
     } catch (error) {
       // Clean up on failure
@@ -173,11 +191,77 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('admin_session');
     setUser(null);
     setPermissions({ roles: [], modules: [], isAdmin: false });
     setApproverStatus({ isApprover: false, pendingCount: 0 });
     setNeedsProfileCompletion(false);
     setNeedsPasswordSet(false);
+    setImpersonating(null);
+  };
+
+  const startImpersonation = async (userId) => {
+    if (impersonating) {
+      return { success: false, error: 'Already impersonating a user' };
+    }
+    try {
+      // Save current admin session
+      sessionStorage.setItem('admin_session', JSON.stringify({
+        access_token: localStorage.getItem('access_token'),
+        refresh_token: localStorage.getItem('refresh_token'),
+      }));
+
+      const response = await authAPI.impersonate(userId);
+      const { access_token, refresh_token } = response.data;
+      const result = await oidcLogin(access_token, refresh_token);
+
+      if (!result.success) {
+        // Restore admin session on failure
+        const saved = JSON.parse(sessionStorage.getItem('admin_session'));
+        if (saved) {
+          localStorage.setItem('access_token', saved.access_token);
+          localStorage.setItem('refresh_token', saved.refresh_token);
+        }
+        sessionStorage.removeItem('admin_session');
+        return result;
+      }
+
+      return { success: true };
+    } catch (error) {
+      // Restore admin session on failure
+      const saved = sessionStorage.getItem('admin_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        localStorage.setItem('access_token', parsed.access_token);
+        localStorage.setItem('refresh_token', parsed.refresh_token);
+      }
+      sessionStorage.removeItem('admin_session');
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to impersonate user'
+      };
+    }
+  };
+
+  const stopImpersonation = async () => {
+    const saved = sessionStorage.getItem('admin_session');
+    if (!saved) {
+      // No saved admin session (e.g. tab was closed), just log out
+      logout();
+      return;
+    }
+
+    try {
+      const { access_token, refresh_token } = JSON.parse(saved);
+      sessionStorage.removeItem('admin_session');
+      const result = await oidcLogin(access_token, refresh_token);
+      if (!result.success) {
+        logout();
+      }
+    } catch {
+      sessionStorage.removeItem('admin_session');
+      logout();
+    }
   };
 
   const updateUser = async () => {
@@ -268,6 +352,9 @@ export const AuthProvider = ({ children }) => {
     refreshApproverStatus,
     needsProfileCompletion,
     needsPasswordSet,
+    impersonating,
+    startImpersonation,
+    stopImpersonation,
   };
 
   return (
