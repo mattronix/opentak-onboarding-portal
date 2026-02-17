@@ -1,0 +1,122 @@
+/* Light theme (default) */
+:root,
+[data-theme="light"] {
+  --bg-page: #f5f5f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8f9fa;
+  --bg-input: #ffffff;
+  --bg-table-header: #f8f9fa;
+  --bg-modal-overlay: rgba(0, 0, 0, 0.5);
+
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #888888;
+  --text-on-card: #333333;
+
+  --border-color: #dee2e6;
+  --border-input: #dddddd;
+  --border-light: #f0f0f0;
+
+  --shadow-sm: rgba(0, 0, 0, 0.08);
+  --shadow-md: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.2);
+
+  /* Dropdown */
+  --bg-dropdown: #ffffff;
+  --text-dropdown: #333333;
+  --bg-dropdown-hover: #f1f1f1;
+
+  /* Badges */
+  --badge-primary-bg: #e3f2fd;
+  --badge-primary-text: #1976d2;
+  --badge-success-bg: #e8f5e9;
+  --badge-success-text: #388e3c;
+  --badge-warning-bg: #fff3e0;
+  --badge-warning-text: #f57c00;
+  --badge-danger-bg: #ffebee;
+  --badge-danger-text: #d32f2f;
+  --badge-secondary-bg: #f5f5f5;
+  --badge-secondary-text: #666666;
+
+  /* Alerts */
+  --alert-error-bg: #fee;
+  --alert-error-border: #fcc;
+  --alert-error-text: #c33;
+  --alert-success-bg: #efe;
+  --alert-success-border: #cfc;
+  --alert-success-text: #3c3;
+  --alert-info-bg: #eef;
+  --alert-info-border: #ccf;
+  --alert-info-text: #33c;
+
+  /* Kiosk-specific */
+  --kiosk-timer-bg: #fff3cd;
+  --kiosk-timer-text: #856404;
+  --kiosk-timer-warn-bg: #f8d7da;
+  --kiosk-timer-warn-text: #721c24;
+  --kiosk-radio-bg: #f8f9fa;
+
+  /* Quill editor */
+  --bg-toolbar: #f8f9fa;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-page: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-card-hover: #1e2d4d;
+  --bg-input: #1e2d4d;
+  --bg-table-header: #1e2d4d;
+  --bg-modal-overlay: rgba(0, 0, 0, 0.7);
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #808080;
+  --text-on-card: #e0e0e0;
+
+  --border-color: #2a3a5c;
+  --border-input: #2a3a5c;
+  --border-light: #1e2d4d;
+
+  --shadow-sm: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.4);
+  --shadow-lg: rgba(0, 0, 0, 0.5);
+
+  /* Dropdown */
+  --bg-dropdown: #16213e;
+  --text-dropdown: #e0e0e0;
+  --bg-dropdown-hover: #1e2d4d;
+
+  /* Badges */
+  --badge-primary-bg: #1a3a5c;
+  --badge-primary-text: #64b5f6;
+  --badge-success-bg: #1a3a2a;
+  --badge-success-text: #66bb6a;
+  --badge-warning-bg: #3a2a1a;
+  --badge-warning-text: #ffb74d;
+  --badge-danger-bg: #3a1a1a;
+  --badge-danger-text: #ef5350;
+  --badge-secondary-bg: #1e2d4d;
+  --badge-secondary-text: #a0a0a0;
+
+  /* Alerts */
+  --alert-error-bg: #3a1a1a;
+  --alert-error-border: #5a2a2a;
+  --alert-error-text: #ef9a9a;
+  --alert-success-bg: #1a3a2a;
+  --alert-success-border: #2a5a3a;
+  --alert-success-text: #81c784;
+  --alert-info-bg: #1a2a3a;
+  --alert-info-border: #2a3a5a;
+  --alert-info-text: #90caf9;
+
+  /* Kiosk-specific */
+  --kiosk-timer-bg: #3a2a1a;
+  --kiosk-timer-text: #ffb74d;
+  --kiosk-timer-warn-bg: #3a1a1a;
+  --kiosk-timer-warn-text: #ef9a9a;
+  --kiosk-radio-bg: #1e2d4d;
+
+  /* Quill editor */
+  --bg-toolbar: #1e2d4d;
+}

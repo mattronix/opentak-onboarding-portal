@@ -11,27 +11,27 @@
 .page-header h1 {
   font-size: 2rem;
   font-weight: 300;
-  color: #333;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
 }
 
 .page-header p {
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .loading {
   text-align: center;
   padding: 3rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: #f8f9fa;
+  background: var(--bg-table-header);
   border-radius: 8px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .announcements-list {
@@ -41,8 +41,8 @@
 }
 
 .announcement-card {
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.25rem;
   cursor: pointer;
@@ -50,8 +50,8 @@
 }
 
 .announcement-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-color: #ccc;
+  box-shadow: 0 2px 8px var(--shadow-md);
+  border-color: var(--border-input);
 }
 
 .announcement-card.unread {
@@ -75,7 +75,7 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .announcement-badges {
@@ -92,13 +92,13 @@
 }
 
 .badge-unread {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: var(--badge-primary-bg);
+  color: var(--badge-primary-text);
 }
 
 .badge-dismissed {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--badge-secondary-bg);
+  color: var(--badge-secondary-text);
 }
 
 .announcement-meta {
@@ -107,11 +107,11 @@
 
 .announcement-meta .date {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .announcement-preview {
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.5;
   word-wrap: break-word;
@@ -134,7 +134,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: var(--bg-card);
   border-radius: 8px;
   max-width: 700px;
   width: 100%;
@@ -149,15 +149,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #eee;
-  background: #f8f9fa;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-table-header);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -165,20 +165,20 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   padding: 0;
   line-height: 1;
 }
 
 .close-btn:hover {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .modal-body {
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -192,13 +192,13 @@
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #eee;
-  background: #f8f9fa;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-table-header);
 }
 
 .modal-footer .date {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {

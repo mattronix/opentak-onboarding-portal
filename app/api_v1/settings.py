@@ -91,8 +91,12 @@ def get_settings():
         'forgot_password_enabled': get_bool_setting('forgot_password_enabled', True),
         # Kiosk
         'kiosk_enrollment_enabled': get_bool_setting('kiosk_enrollment_enabled', False),
+        'kiosk_session_timeout_minutes': get_str_setting('kiosk_session_timeout_minutes', '10'),
         # Magic Link
         'magic_link_login_enabled': get_bool_setting('magic_link_login_enabled', False),
+        # Theme
+        'default_theme': get_str_setting('default_theme', 'light'),
+        'kiosk_default_theme': get_str_setting('kiosk_default_theme', 'dark'),
     }
 
     return jsonify(settings), 200
@@ -155,7 +159,7 @@ def get_admin_settings():
 
         # Get settings by category
         settings_by_category = {}
-        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'radios', 'kiosk', 'general']
+        categories = ['notifications', 'registration', 'email', 'security', 'qr_enrollment', 'branding', 'radios', 'kiosk', 'appearance', 'general']
 
         for category in categories:
             settings = SystemSettingsModel.get_category_settings(category)

@@ -135,9 +135,9 @@
 .dropdown-content {
   display: none;
   position: absolute;
-  background-color: white;
+  background-color: var(--bg-dropdown);
   min-width: 200px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 16px var(--shadow-lg);
   z-index: 1001;
   border-radius: 4px;
   overflow: hidden;
@@ -166,12 +166,12 @@
 
 .dropdown-content a,
 .dropdown-content button {
-  color: #333;
+  color: var(--text-dropdown);
   padding: 12px 16px;
   text-decoration: none;
   display: block;
   border: none;
-  background: white;
+  background: var(--bg-dropdown);
   width: 100%;
   text-align: left;
   cursor: pointer;
@@ -190,7 +190,7 @@
 
 .dropdown-content a:hover,
 .dropdown-content button:hover {
-  background-color: #f1f1f1;
+  background-color: var(--bg-dropdown-hover);
   text-decoration: none;
 }
 
@@ -204,7 +204,7 @@
 .main-content {
   flex: 1;
   width: 100%;
-  background-color: #f5f5f5;
+  background-color: var(--bg-page);
   margin-top: 70px; /* Height of navbar */
   margin-bottom: 60px; /* Height of footer */
 }
@@ -264,7 +264,8 @@
   color: #ccc;
 }
 
-.logout-btn {
+.logout-btn,
+.theme-toggle-btn {
   font-family: inherit;
   font-size: inherit;
 }

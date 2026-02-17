@@ -4,6 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { kioskAPI, settingsAPI } from '../services/api';
 import ProgramRadioModal from '../components/ProgramRadioModal';
 import ConfigValidatorModal from '../components/ConfigValidatorModal';
+import EnrollRadioModal from '../components/EnrollRadioModal';
+import { meshtasticSerial } from '../services/meshtasticSerial';
 import './Kiosk.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
@@ -56,6 +58,9 @@ function Kiosk() {
   const [programmingRadio, setProgrammingRadio] = useState(null);
   const [validatingRadio, setValidatingRadio] = useState(null);
 
+  // Radio enrollment state
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+
   // Password change state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -85,6 +90,11 @@ function Kiosk() {
   useEffect(() => {
     settingsAPI.get().then((res) => {
       setSettings(res.data);
+
+      // Apply kiosk theme
+      const kioskTheme = res.data?.kiosk_default_theme || 'dark';
+      document.documentElement.setAttribute('data-theme', kioskTheme);
+
       if (!res.data?.kiosk_enrollment_enabled) {
         setState('disabled');
         return;
@@ -228,6 +238,7 @@ function Kiosk() {
     clearInterval(timerRef.current);
     clearInterval(pollRef.current);
     clearKioskSession();
+    expiryTimeRef.current = null;
     setAccessToken(null);
     setRefreshToken(null);
     setKioskUser(null);
@@ -236,6 +247,7 @@ function Kiosk() {
     setRadios([]);
     setProgrammingRadio(null);
     setValidatingRadio(null);
+    setShowEnrollModal(false);
     setShowPasswordForm(false);
     setNewPassword('');
     setConfirmPassword('');
@@ -413,31 +425,50 @@ function Kiosk() {
               </div>
             )}
 
-            {/* Radio Programming Section */}
-            {radios.length > 0 && (
+            {/* Radio Section */}
+            {(radios.length > 0 || settings?.user_radio_enrollment_enabled) && (
               <div className="kiosk-section">
-                <h2>Radio Programming</h2>
-                <div className="kiosk-radio-list">
-                  {radios.map(radio => (
-                    <div key={radio.id} className="kiosk-radio-item">
-                      <span className="kiosk-radio-name">{radio.name}</span>
-                      <div className="kiosk-radio-actions">
-                        <button
-                          className="kiosk-btn-validate"
-                          onClick={() => setValidatingRadio(radio)}
-                        >
-                          Validate
-                        </button>
-                        <button
-                          className="kiosk-btn-program"
-                          onClick={() => setProgrammingRadio(radio)}
-                        >
-                          Program
-                        </button>
+                <h2>Your Radios</h2>
+                {radios.length > 0 ? (
+                  <div className="kiosk-radio-list">
+                    {radios.map(radio => (
+                      <div key={radio.id} className="kiosk-radio-item">
+                        <span className="kiosk-radio-name">{radio.name}</span>
+                        {radio.platform === 'meshtastic' && meshtasticSerial.getBrowserSupport().isSupported && (settings?.user_program_radio_enabled || settings?.user_validate_radio_enabled) && (
+                          <div className="kiosk-radio-actions">
+                            {settings?.user_validate_radio_enabled && (
+                              <button
+                                className="kiosk-btn-validate"
+                                onClick={() => setValidatingRadio(radio)}
+                              >
+                                Validate
+                              </button>
+                            )}
+                            {settings?.user_program_radio_enabled && (
+                              <button
+                                className="kiosk-btn-program"
+                                onClick={() => setProgrammingRadio(radio)}
+                              >
+                                Program
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>No radios assigned to you yet.</p>
+                )}
+                {settings?.user_radio_enrollment_enabled && (
+                  <button
+                    className="kiosk-btn-program"
+                    style={{ marginTop: '1rem' }}
+                    onClick={() => setShowEnrollModal(true)}
+                  >
+                    + Register Radio
+                  </button>
+                )}
               </div>
             )}
 
@@ -514,6 +545,23 @@ function Kiosk() {
           <ConfigValidatorModal
             radio={validatingRadio}
             onClose={() => setValidatingRadio(null)}
+          />
+        )}
+
+        {/* Enroll Radio Modal */}
+        {showEnrollModal && (
+          <EnrollRadioModal
+            onClose={() => setShowEnrollModal(false)}
+            onSuccess={() => {
+              // Re-fetch radios after enrollment
+              const kioskApi = getKioskApi();
+              if (kioskApi) {
+                kioskApi.get('/radios').then(res => {
+                  const list = res.data?.radios || [];
+                  setRadios(list.filter(r => r.radioType === 'meshtastic' && r.assignedTo === kioskUser.id));
+                }).catch(() => {});
+              }
+            }}
           />
         )}
       </div>

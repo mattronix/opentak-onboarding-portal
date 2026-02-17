@@ -11,12 +11,12 @@
 .admin-dashboard-header h1 {
   font-size: 2rem;
   font-weight: 300;
-  color: #333;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
 }
 
 .admin-dashboard-header p {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
@@ -28,10 +28,10 @@
 }
 
 .admin-card {
-  background: white;
+  background: var(--bg-card);
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-md);
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
@@ -54,7 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .admin-card-icon svg {
@@ -66,11 +66,11 @@
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .admin-card p {
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.5;

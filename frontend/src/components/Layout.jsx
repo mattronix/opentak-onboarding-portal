@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { settingsAPI } from '../services/api';
 import { useState, useEffect } from 'react';
 import AnnouncementsBadge from './AnnouncementsBadge';
@@ -8,6 +9,7 @@ import './Layout.css';
 
 function Layout() {
   const { user, logout, hasAnyAdminRole, hasModuleAccess, approverStatus, impersonating, stopImpersonation } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [version, setVersion] = useState(null);
@@ -147,6 +149,9 @@ function Layout() {
             </span>
             <div className="dropdown-content">
               <Link to="/profile">Profile</Link>
+              <button onClick={toggleTheme} className="theme-toggle-btn">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </button>
               <button onClick={handleLogout} className="logout-btn">
                 Logout
               </button>

@@ -1518,6 +1518,19 @@ class SystemSettingsModel(db.Model):
                 'category': 'security',
                 'description': 'Magic link expiry time in minutes'
             },
+            # Appearance / Theme
+            {
+                'key': 'default_theme',
+                'value': 'light',
+                'category': 'appearance',
+                'description': 'Default theme for the portal (light or dark)'
+            },
+            {
+                'key': 'kiosk_default_theme',
+                'value': 'dark',
+                'category': 'appearance',
+                'description': 'Default theme for the kiosk screen (light or dark)'
+            },
         ]
 
         # Remove old/deprecated settings

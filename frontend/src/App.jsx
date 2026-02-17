@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { settingsAPI } from './services/api';
 import Notifications from './components/Notifications';
 
@@ -74,6 +75,19 @@ const DocumentTitle = () => {
   return null;
 };
 
+// Reads the default theme from server settings
+const useDefaultTheme = () => {
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await settingsAPI.get();
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  return settings?.default_theme || 'light';
+};
+
 // Loading spinner component
 const LoadingScreen = () => (
   <div style={{
@@ -82,18 +96,18 @@ const LoadingScreen = () => (
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'var(--bg-page)',
     gap: '1rem'
   }}>
     <div style={{
       width: '40px',
       height: '40px',
-      border: '4px solid #eee',
-      borderTop: '4px solid #333',
+      border: '4px solid var(--border-color)',
+      borderTop: '4px solid var(--text-primary)',
       borderRadius: '50%',
       animation: 'spin 1s linear infinite'
     }} />
-    <div style={{ color: '#666', fontSize: '0.95rem' }}>Loading...</div>
+    <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Loading...</div>
     <style>{`
       @keyframes spin {
         0% { transform: rotate(0deg); }
@@ -147,9 +161,11 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-function App() {
+function AppContent() {
+  const defaultTheme = useDefaultTheme();
+
   return (
-    <QueryClientProvider client={queryClient}>
+    <ThemeProvider defaultTheme={defaultTheme}>
       <NotificationProvider>
         <DocumentTitle />
         <Notifications />
@@ -350,6 +366,14 @@ function App() {
         </Router>
       </AuthProvider>
       </NotificationProvider>
+    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
     </QueryClientProvider>
   );
 }

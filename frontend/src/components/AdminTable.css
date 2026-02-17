@@ -15,7 +15,7 @@
 .admin-header h1 {
   font-size: 2rem;
   font-weight: 300;
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1;
 }
@@ -28,15 +28,17 @@
 
 .search-box {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-input);
   border-radius: 4px;
   font-size: 1rem;
   min-width: 300px;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .search-box:focus {
   outline: none;
-  border-color: #333;
+  border-color: var(--text-primary);
 }
 
 .btn {
@@ -116,9 +118,9 @@
 }
 
 .admin-table-container {
-  background: white;
+  background: var(--bg-card);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-md);
   overflow: hidden;
 }
 
@@ -128,15 +130,15 @@
 }
 
 .admin-table thead {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
+  background-color: var(--bg-table-header);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .admin-table th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #495057;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -144,13 +146,13 @@
 
 .admin-table td {
   padding: 1rem;
-  border-bottom: 1px solid #dee2e6;
-  color: #333;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
   text-align: left;
 }
 
 .admin-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-card-hover);
 }
 
 .admin-table tbody tr:last-child td {
@@ -175,12 +177,12 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: white;
-  border-top: 1px solid #dee2e6;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
 }
 
 .pagination-info {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -189,7 +191,7 @@
 .empty-state {
   padding: 3rem;
   text-align: center;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .error-state {
@@ -207,28 +209,28 @@
 }
 
 .badge-primary {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: var(--badge-primary-bg);
+  color: var(--badge-primary-text);
 }
 
 .badge-success {
-  background-color: #e8f5e9;
-  color: #388e3c;
+  background-color: var(--badge-success-bg);
+  color: var(--badge-success-text);
 }
 
 .badge-warning {
-  background-color: #fff3e0;
-  color: #f57c00;
+  background-color: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
 }
 
 .badge-danger {
-  background-color: #ffebee;
-  color: #d32f2f;
+  background-color: var(--badge-danger-bg);
+  color: var(--badge-danger-text);
 }
 
 .badge-secondary {
-  background-color: #f5f5f5;
-  color: #666;
+  background-color: var(--badge-secondary-bg);
+  color: var(--badge-secondary-text);
 }
 
 /* Modal Styles */
@@ -238,7 +240,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--bg-modal-overlay);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -246,9 +248,9 @@
 }
 
 .modal {
-  background: white;
+  background: var(--bg-card);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px var(--shadow-lg);
   max-width: 600px;
   width: 90%;
   max-height: 90vh;
@@ -257,7 +259,7 @@
 
 .modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -267,7 +269,7 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .modal-close {
@@ -275,7 +277,7 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   padding: 0;
   width: 2rem;
   height: 2rem;
@@ -286,8 +288,8 @@
 }
 
 .modal-close:hover {
-  background-color: #f8f9fa;
-  color: #333;
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -296,7 +298,7 @@
 
 .modal-footer {
   padding: 1.5rem;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
@@ -310,7 +312,7 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -319,11 +321,12 @@
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-input);
   border-radius: 4px;
   font-size: 1rem;
   transition: border-color 0.2s ease;
-  background: white;
+  background: var(--bg-input);
+  color: var(--text-primary);
   box-sizing: border-box;
 }
 
@@ -331,7 +334,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #333;
+  border-color: var(--text-primary);
 }
 
 .form-group textarea {
@@ -342,7 +345,7 @@
 
 .form-group .help-text {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
 }
 
@@ -392,26 +395,26 @@
 }
 
 .alert-error {
-  background-color: #fee;
-  border: 1px solid #fcc;
-  color: #c33;
+  background-color: var(--alert-error-bg);
+  border: 1px solid var(--alert-error-border);
+  color: var(--alert-error-text);
 }
 
 .alert-success {
-  background-color: #efe;
-  border: 1px solid #cfc;
-  color: #3c3;
+  background-color: var(--alert-success-bg);
+  border: 1px solid var(--alert-success-border);
+  color: var(--alert-success-text);
 }
 
 .alert-info {
-  background-color: #eef;
-  border: 1px solid #ccf;
-  color: #33c;
+  background-color: var(--alert-info-bg);
+  border: 1px solid var(--alert-info-border);
+  color: var(--alert-info-text);
 }
 
 /* Quill Editor Styles */
 .form-group .quill {
-  background: white;
+  background: var(--bg-input);
 }
 
 .form-group .ql-container {
@@ -427,7 +430,7 @@
 .form-group .ql-toolbar {
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
-  background: #f8f9fa;
+  background: var(--bg-toolbar);
 }
 
 .form-group .ql-container {

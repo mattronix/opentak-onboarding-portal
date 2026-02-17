@@ -258,6 +258,71 @@ function ColorSettingItem({ setting, onSave, saving, formatSettingName, canEdit 
   );
 }
 
+// Component for dropdown settings (e.g. theme selection)
+function DropdownSettingItem({ setting, options, onSave, saving, formatSettingName, canEdit = true }) {
+  const [localValue, setLocalValue] = useState(setting?.value || '');
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    setLocalValue(setting?.value || '');
+    setIsEditing(false);
+  }, [setting?.value]);
+
+  const handleChange = (e) => {
+    setLocalValue(e.target.value);
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    onSave(setting.id, localValue);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setLocalValue(setting?.value || '');
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="setting-item setting-item-color">
+      <div className="setting-info">
+        <h4>{formatSettingName(setting.key)}</h4>
+        <p className="setting-description">{setting.description}</p>
+      </div>
+      <div className="setting-color-input">
+        <select
+          value={localValue}
+          onChange={handleChange}
+          disabled={saving || !canEdit}
+          style={{ padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.95rem' }}
+        >
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {isEditing && (
+          <div className="setting-text-actions">
+            <button
+              className="btn-save-setting"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              Save
+            </button>
+            <button
+              className="btn-cancel-setting"
+              onClick={handleCancel}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Component for logo upload
 function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChange, saving, canEdit = true }) {
   const [preview, setPreview] = useState(null);
@@ -1036,16 +1101,34 @@ function Settings() {
   // Color setting keys
   const colorSettingKeys = ['primary_color', 'accent_color'];
 
+  // Dropdown setting keys (rendered with <select>)
+  const dropdownSettingKeys = ['default_theme', 'kiosk_default_theme'];
+  const dropdownOptions = {
+    default_theme: [
+      { value: 'light', label: 'Light' },
+      { value: 'dark', label: 'Dark' },
+    ],
+    kiosk_default_theme: [
+      { value: 'light', label: 'Light' },
+      { value: 'dark', label: 'Dark' },
+    ],
+  };
+
   // Get regular (non-paired) settings from a category
   const getRegularSettings = (categorySettings, processedKeys) => {
     // Settings managed by dedicated components (not shown as toggles)
-    const managedSettings = ['custom_logo_path', 'logo_display_mode', ...colorSettingKeys];
+    const managedSettings = ['custom_logo_path', 'logo_display_mode', ...colorSettingKeys, ...dropdownSettingKeys];
     return categorySettings?.filter(s => !processedKeys.has(s.key) && !managedSettings.includes(s.key)) || [];
   };
 
   // Get color settings from a category
   const getColorSettings = (categorySettings) => {
     return categorySettings?.filter(s => colorSettingKeys.includes(s.key)) || [];
+  };
+
+  // Get dropdown settings from a category
+  const getDropdownSettings = (categorySettings) => {
+    return categorySettings?.filter(s => dropdownSettingKeys.includes(s.key)) || [];
   };
 
   const renderCategorySettings = (categorySettings) => {
@@ -1277,6 +1360,27 @@ function Settings() {
             </p>
             <div className="settings-list">
               {renderCategorySettings(settings.kiosk)}
+            </div>
+          </div>
+        )}
+
+        {/* Appearance Section */}
+        {settings.appearance && settings.appearance.length > 0 && (
+          <div className="settings-section">
+            <h2>Appearance</h2>
+            <div className="settings-list">
+              {getDropdownSettings(settings.appearance).map(setting => (
+                <DropdownSettingItem
+                  key={setting.id}
+                  setting={setting}
+                  options={dropdownOptions[setting.key] || []}
+                  onSave={handleTextChange}
+                  saving={saving}
+                  formatSettingName={formatSettingName}
+                  canEdit={canEdit}
+                />
+              ))}
+              {renderCategorySettings(settings.appearance)}
             </div>
           </div>
         )}
