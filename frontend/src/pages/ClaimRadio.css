@@ -22,7 +22,7 @@
   color: #333;
 }
 
-.radio-info {
+.claim-radio-container .radio-info {
   background: #f8f9fa;
   border-radius: 8px;
   padding: 1.5rem;
@@ -30,7 +30,7 @@
   text-align: center;
 }
 
-.radio-info h2 {
+.claim-radio-container .radio-info h2 {
   margin: 0 0 0.75rem;
   color: #333;
 }

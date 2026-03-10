@@ -390,6 +390,53 @@ function RadiosList() {
     return String(macBytes);
   };
 
+  // CSV Export
+  const exportRadiosCSV = () => {
+    const csvRadios = radiosData?.radios || [];
+    const csvUsers = usersData?.users || [];
+    if (csvRadios.length === 0) return;
+
+    const headers = [
+      'ID', 'Name', 'Platform', 'Type', 'Model', 'Vendor', 'Short Name', 'Long Name',
+      'MAC', 'Node ID', 'Firmware', 'Description', 'Assigned To', 'Assigned To Username',
+      'Owner', 'Owner Username', 'Claim URL', 'Created At', 'Updated At'
+    ];
+
+    const escapeCSV = (val) => {
+      if (val == null) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = csvRadios.map(radio => {
+      const assignedUser = csvUsers.find(u => u.id === radio.assignedTo);
+      const ownerUser = csvUsers.find(u => u.id === radio.owner);
+      const claimUrl = radio.meshtasticId && !radio.assignedTo
+        ? `${FRONTEND_URL}/claim-radio/${encodeURIComponent(radio.meshtasticId)}`
+        : '';
+
+      return [
+        radio.id, radio.name, radio.platform, radio.radioType, radio.model,
+        radio.vendor, radio.shortName, radio.longName, radio.mac, radio.meshtasticId,
+        radio.softwareVersion, radio.description,
+        radio.assignedTo, assignedUser?.username, radio.owner, ownerUser?.username,
+        claimUrl, radio.createdAt, radio.updatedAt
+      ].map(escapeCSV).join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `radios-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Auto-highlight and scroll to a radio when navigating to /admin/radios/:radioId
   // Must be above the early return so hooks run in the same order every render.
   const radios = radiosData?.radios || [];
@@ -416,6 +463,13 @@ function RadiosList() {
       <div className="admin-header">
         <h1>Radios Management</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={exportRadiosCSV}
+            disabled={!radios.length}
+          >
+            Export CSV
+          </button>
           {canEdit && browserSupport.isSupported && (
             <button
               className="btn btn-secondary"
@@ -456,7 +510,7 @@ function RadiosList() {
                   key={radio.id}
                   id={`radio-row-${radio.id}`}
                   style={highlightedRadioId === radio.id ? {
-                    background: '#fff3cd',
+                    background: 'var(--badge-warning-bg)',
                     transition: 'background 0.3s ease'
                   } : {}}
                 >
