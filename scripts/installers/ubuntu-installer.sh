@@ -54,7 +54,14 @@ fi
 
 git pull
 docker compose build
+
+mkdir -p instance
+sudo chown -R 1000:1000 instance/
+
 docker compose up -d
 docker compose exec web flask db upgrade
+
+docker compose down 
+docker compose up -d
 
 echo "Please navigate to /opt/opentak-onboarding-portal and edit the .env file. After making the necessary changes, run the installer again."
