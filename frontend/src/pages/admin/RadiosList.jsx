@@ -43,6 +43,7 @@ function RadiosList() {
   const [scanLog, setScanLog] = useState([]);
   const [findingRadio, setFindingRadio] = useState(false);
   const [highlightedRadioId, setHighlightedRadioId] = useState(null);
+  const [resettingRadio, setResettingRadio] = useState(null);
 
   // Check if Web Serial is supported
   const browserSupport = meshtasticSerial.getBrowserSupport();
@@ -131,6 +132,30 @@ function RadiosList() {
     setError('');
     setScanStatus('');
     setScanLog([]);
+  };
+
+  const handleFactoryReset = async (radio) => {
+    const confirmed = await confirm(
+      `This will erase ALL settings on "${radio.name}" and restore factory defaults.\n\nThe device will reboot. Are you sure?`,
+      'Factory Reset Radio'
+    );
+    if (!confirmed) return;
+
+    setResettingRadio(radio.id);
+    try {
+      // Full connect (not detectOnly) so the device completes its config
+      // handshake — required before admin commands like factory reset.
+      await meshtasticSerial.connect(
+        () => {}, null, null,
+        () => {}
+      );
+      await meshtasticSerial.factoryReset();
+      await meshtasticSerial.disconnect();
+    } catch (err) {
+      showError(`Factory reset failed: ${err.message}`);
+    } finally {
+      setResettingRadio(null);
+    }
   };
 
   const handleEdit = async (radio) => {
@@ -543,6 +568,15 @@ function RadiosList() {
                           >
                             Program
                           </button>
+                          {canEdit && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleFactoryReset(radio)}
+                              disabled={resettingRadio === radio.id}
+                            >
+                              {resettingRadio === radio.id ? 'Resetting...' : 'Factory Reset'}
+                            </button>
+                          )}
                         </>
                       )}
                       {canEdit && claimRadioEnabled && !radio.assignedTo && radio.meshtasticId && (

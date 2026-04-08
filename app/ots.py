@@ -48,13 +48,13 @@ class OTSClient:
                     return {"response": parsed_body, "status_code": response.status_code }
                 except ValueError as e:
                     print(f"Error Parsing Response: {e}")
-                    return None
+                    raise ConnectionError(f"Invalid response from OTS server: {e}")
             else:
                 return response
             
         except requests.exceptions.RequestException as e:
             print(f"Connection Error: {e}")
-            return None
+            raise ConnectionError(f"Could not connect to OTS server: {e}")
 
     def request_handler(self, method, endpoint, body=None, params={}, response_type="json"):
 

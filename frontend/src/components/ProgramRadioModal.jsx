@@ -93,13 +93,14 @@ function ProgramRadioModal({ radio, onClose }) {
 
     try {
       // connect() handles disconnecting any existing connection internally
-      const info = await meshtasticSerial.connect(handleStatusChange, handleProgress, null, handleLog);
+      const info = await meshtasticSerial.connect(handleStatusChange, handleProgress, null, handleLog, { detectOnly: true });
       setDeviceInfo(info);
       setStep(3);
       // Auto-start programming after connection
       await startProgramming();
     } catch (err) {
-      setError(err.message);
+      const msg = err?.message || (typeof err === 'string' ? err : 'Connection failed');
+      setError(msg);
     }
   };
 
@@ -123,7 +124,8 @@ function ProgramRadioModal({ radio, onClose }) {
       setSuccess(true);
       setStep(4);
     } catch (err) {
-      setError(err.message);
+      const msg = err?.message || (typeof err === 'string' ? err : 'An unknown error occurred during programming');
+      setError(msg);
       setStep(4);
     } finally {
       setIsProgramming(false);

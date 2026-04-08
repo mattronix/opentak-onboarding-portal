@@ -193,6 +193,9 @@ def login():
             }
         }), 200
 
+    except ConnectionError as e:
+        current_app.logger.error(f"Login error: OTS server unreachable: {str(e)}")
+        return jsonify({'error': 'Cannot connect to TAK server. Please try again later.'}), 503
     except Exception as e:
         current_app.logger.error(f"Login error: {str(e)}")
         # Return user-friendly error message

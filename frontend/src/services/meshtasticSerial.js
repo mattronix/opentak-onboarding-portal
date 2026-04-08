@@ -83,8 +83,11 @@ class MeshtasticSerialService {
    * @param {Function} onProgress - Callback for progress updates
    * @param {Function} onDeviceInfoReceived - Callback when device info is received (instant update)
    * @param {Function} onLog - Callback for terminal log messages
+   * @param {Object} options - Connection options
+   * @param {boolean} options.detectOnly - If true, skip config/channel collection (lighter detection)
    */
-  async connect(onStatusChange, onProgress, onDeviceInfoReceived, onLog) {
+  async connect(onStatusChange, onProgress, onDeviceInfoReceived, onLog, options = {}) {
+    const { detectOnly = false } = options;
     if (!this.isSupported()) {
       throw new Error('Web Serial API is not supported in this browser');
     }
@@ -194,8 +197,11 @@ class MeshtasticSerialService {
           ...this.deviceInfo,
           nodeNum: nodeInfo.myNodeNum,
         };
-        // Request device metadata to get firmware version
-        if (this.device.getMetadata) {
+        // Request device metadata to get firmware version.
+        // Skip in detect-only mode — getMetadata sends an admin packet that
+        // needs a round-trip. If the caller disconnects quickly (e.g. enrollment),
+        // the in-flight packet causes AbortError floods.
+        if (!detectOnly && this.device.getMetadata) {
           this._log('Requesting device metadata...', 'info');
           this.device.getMetadata(nodeInfo.myNodeNum).catch(err => {
             this._log(`Metadata request error (non-fatal): ${err.message}`, 'warn');
@@ -251,24 +257,21 @@ class MeshtasticSerialService {
           // Mark that we've received user info (prevents other nodes overwriting)
           if (!this.hasReceivedUserInfo) {
             this.hasReceivedUserInfo = true;
-            // Wait briefly for firmware version from metadata request before calling callback
             if (this.onDeviceInfoReceived) {
               const cb = this.onDeviceInfoReceived;
-              if (this.deviceInfo?.firmwareVersion) {
+              if (detectOnly || this.deviceInfo?.firmwareVersion) {
+                // In detect-only mode, fire immediately — no getMetadata in flight
                 cb(this.deviceInfo);
               } else {
                 // Give metadata response up to 1.5s to arrive
-                const waitForFw = () => {
-                  let waited = 0;
-                  const interval = setInterval(() => {
-                    waited += 100;
-                    if (this.deviceInfo?.firmwareVersion || waited >= 1500) {
-                      clearInterval(interval);
-                      cb(this.deviceInfo);
-                    }
-                  }, 100);
-                };
-                waitForFw();
+                let waited = 0;
+                const interval = setInterval(() => {
+                  waited += 100;
+                  if (this.deviceInfo?.firmwareVersion || waited >= 1500) {
+                    clearInterval(interval);
+                    cb(this.deviceInfo);
+                  }
+                }, 100);
               }
             }
           }
@@ -285,7 +288,6 @@ class MeshtasticSerialService {
           const nodeNum = nodeInfoPacket.num || nodeInfoPacket.data?.num;
 
           // Accept first packet OR packets from our known node
-          const isFirstPacket = !this.hasReceivedUserInfo;
           const isOurNode = this.deviceInfo?.nodeNum && nodeNum === this.deviceInfo?.nodeNum;
 
           // Try to get user from various paths
@@ -317,10 +319,9 @@ class MeshtasticSerialService {
             // Mark that we've received user info
             if (!this.hasReceivedUserInfo) {
               this.hasReceivedUserInfo = true;
-              // Wait briefly for firmware version from metadata request before calling callback
               if (this.onDeviceInfoReceived) {
                 const cb = this.onDeviceInfoReceived;
-                if (this.deviceInfo?.firmwareVersion) {
+                if (detectOnly || this.deviceInfo?.firmwareVersion) {
                   cb(this.deviceInfo);
                 } else {
                   let waited = 0;
@@ -340,119 +341,131 @@ class MeshtasticSerialService {
         });
       }
 
-      // Subscribe to ALL incoming packets to see the structure
-      if (this.device.events.onFromRadio) {
-        this.device.events.onFromRadio.subscribe((packet) => {
-          // Log packet types that might contain user info
-          if (packet.payloadVariant?.case === 'nodeInfo' || packet.nodeInfo) {
-            const nodeInfo = packet.payloadVariant?.value || packet.nodeInfo;
-            const nodeNum = nodeInfo?.num;
+      // In full mode, subscribe to raw packets and config complete for additional
+      // identity extraction and config readiness tracking.
+      // In detect-only mode, onUserPacket and onNodeInfoPacket are sufficient.
+      if (!detectOnly) {
+        // Subscribe to ALL incoming packets to see the structure
+        if (this.device.events.onFromRadio) {
+          this.device.events.onFromRadio.subscribe((packet) => {
+            // Log packet types that might contain user info
+            if (packet.payloadVariant?.case === 'nodeInfo' || packet.nodeInfo) {
+              const nodeInfo = packet.payloadVariant?.value || packet.nodeInfo;
+              const nodeNum = nodeInfo?.num;
 
-            // Only use info from our own node - must know our nodeNum first
-            const isOurNode = this.deviceInfo?.nodeNum && nodeNum === this.deviceInfo?.nodeNum;
+              // Only use info from our own node - must know our nodeNum first
+              const isOurNode = this.deviceInfo?.nodeNum && nodeNum === this.deviceInfo?.nodeNum;
 
-            if (nodeInfo?.user && isOurNode) {
-              // Only use actual macaddr field from device
-              const macFromDevice = this._formatMacFromBytes(nodeInfo.user.macaddr) || this._formatMacFromBytes(nodeInfo.user.macAddr);
-              const hwModelRaw = nodeInfo.user.hwModel || this.deviceInfo?.hwModel;
+              if (nodeInfo?.user && isOurNode) {
+                // Only use actual macaddr field from device
+                const macFromDevice = this._formatMacFromBytes(nodeInfo.user.macaddr) || this._formatMacFromBytes(nodeInfo.user.macAddr);
+                const hwModelRaw = nodeInfo.user.hwModel || this.deviceInfo?.hwModel;
 
-              this._log(`FromRadio nodeInfo (our node ${nodeNum}): shortName="${nodeInfo.user.shortName}", longName="${nodeInfo.user.longName}"`, 'info');
-              this.deviceInfo = {
-                ...this.deviceInfo,
-                shortName: nodeInfo.user.shortName || this.deviceInfo?.shortName,
-                longName: nodeInfo.user.longName || this.deviceInfo?.longName,
-                macAddr: macFromDevice || this.deviceInfo?.macAddr,
-                hwModel: hwModelRaw,
-                model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
-              };
+                this._log(`FromRadio nodeInfo (our node ${nodeNum}): shortName="${nodeInfo.user.shortName}", longName="${nodeInfo.user.longName}"`, 'info');
+                this.deviceInfo = {
+                  ...this.deviceInfo,
+                  shortName: nodeInfo.user.shortName || this.deviceInfo?.shortName,
+                  longName: nodeInfo.user.longName || this.deviceInfo?.longName,
+                  macAddr: macFromDevice || this.deviceInfo?.macAddr,
+                  hwModel: hwModelRaw,
+                  model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
+                };
+              }
             }
-          }
-        });
-      }
+          });
+        }
 
-      // Listen for config complete to get final device state
-      if (this.device.events.onConfigComplete) {
-        this.device.events.onConfigComplete.subscribe(() => {
-          this._log('Config complete, checking final device state...', 'info');
-          this.configComplete = true;
-          // Try to get info from device nodes if available (only our own node)
-          if (this.device.nodes && this.deviceInfo?.nodeNum) {
-            const myNode = this.device.nodes.get(this.deviceInfo.nodeNum);
-            if (myNode?.user) {
-              // Only use actual macaddr field from device
-              const macFromDevice = this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr);
-              const hwModelRaw = myNode.user.hwModel || this.deviceInfo?.hwModel;
+        // Listen for config complete to get final device state
+        if (this.device.events.onConfigComplete) {
+          this.device.events.onConfigComplete.subscribe(() => {
+            this._log('Config complete, checking final device state...', 'info');
+            this.configComplete = true;
+            // Try to get info from device nodes if available (only our own node)
+            if (this.device.nodes && this.deviceInfo?.nodeNum) {
+              const myNode = this.device.nodes.get(this.deviceInfo.nodeNum);
+              if (myNode?.user) {
+                // Only use actual macaddr field from device
+                const macFromDevice = this._formatMacFromBytes(myNode.user.macaddr) || this._formatMacFromBytes(myNode.user.macAddr);
+                const hwModelRaw = myNode.user.hwModel || this.deviceInfo?.hwModel;
 
-              this._log(`Config complete - our node: shortName="${myNode.user.shortName}", longName="${myNode.user.longName}", mac="${macFromDevice}", model="${this._getHardwareModelName(hwModelRaw)}"`, 'success');
-              this.deviceInfo = {
-                ...this.deviceInfo,
-                shortName: myNode.user.shortName || this.deviceInfo?.shortName,
-                longName: myNode.user.longName || this.deviceInfo?.longName,
-                macAddr: macFromDevice || this.deviceInfo?.macAddr,
-                hwModel: hwModelRaw,
-                model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
-              };
+                this._log(`Config complete - our node: shortName="${myNode.user.shortName}", longName="${myNode.user.longName}", mac="${macFromDevice}", model="${this._getHardwareModelName(hwModelRaw)}"`, 'success');
+                this.deviceInfo = {
+                  ...this.deviceInfo,
+                  shortName: myNode.user.shortName || this.deviceInfo?.shortName,
+                  longName: myNode.user.longName || this.deviceInfo?.longName,
+                  macAddr: macFromDevice || this.deviceInfo?.macAddr,
+                  hwModel: hwModelRaw,
+                  model: this._getHardwareModelName(hwModelRaw) || this.deviceInfo?.model,
+                };
+              }
             }
-          }
-        });
+          });
+        }
       }
 
-      // Subscribe to channel events to collect channel data
-      if (this.device.events.onChannelPacket) {
-        this.device.events.onChannelPacket.subscribe((channelPacket) => {
-          const channel = channelPacket.data || channelPacket;
-          const index = channel.index ?? channelPacket.index;
-          this._log(`Received channel ${index}: "${channel.settings?.name || channel.name || '(unnamed)'}"`, 'info');
-          console.log(`[onChannelPacket] Channel ${index}:`, channel);
-          this.collectedChannels.set(index, channel);
-        });
-      }
+      // Only subscribe to config/channel/module events when we need full config
+      // (e.g. for config validation). For detect-only mode (enrollment, programming),
+      // skip these to reduce memory pressure on the device.
+      if (!detectOnly) {
+        // Subscribe to channel events to collect channel data
+        if (this.device.events.onChannelPacket) {
+          this.device.events.onChannelPacket.subscribe((channelPacket) => {
+            const channel = channelPacket.data || channelPacket;
+            const index = channel.index ?? channelPacket.index;
+            this._log(`Received channel ${index}: "${channel.settings?.name || channel.name || '(unnamed)'}"`, 'info');
+            console.log(`[onChannelPacket] Channel ${index}:`, channel);
+            this.collectedChannels.set(index, channel);
+          });
+        }
 
-      // Subscribe to config events to collect device config
-      if (this.device.events.onConfigPacket) {
-        this.device.events.onConfigPacket.subscribe((configPacket) => {
-          const config = configPacket.data || configPacket;
-          console.log('[onConfigPacket] Config packet:', config);
-          // Config comes in sections via payloadVariant
-          if (config.payloadVariant) {
-            const section = config.payloadVariant.case;
-            const value = config.payloadVariant.value;
-            this._log(`Received config: ${section}`, 'info');
-            console.log(`[onConfigPacket] Section ${section}:`, value);
-            this.collectedConfig[section] = value;
-          }
-        });
-      }
+        // Subscribe to config events to collect device config
+        if (this.device.events.onConfigPacket) {
+          this.device.events.onConfigPacket.subscribe((configPacket) => {
+            const config = configPacket.data || configPacket;
+            console.log('[onConfigPacket] Config packet:', config);
+            // Config comes in sections via payloadVariant
+            if (config.payloadVariant) {
+              const section = config.payloadVariant.case;
+              const value = config.payloadVariant.value;
+              this._log(`Received config: ${section}`, 'info');
+              console.log(`[onConfigPacket] Section ${section}:`, value);
+              this.collectedConfig[section] = value;
+            }
+          });
+        }
 
-      // Subscribe to module config events to collect module-level settings
-      // (mqtt, serial, telemetry, ambientLighting, detectionSensor, etc.)
-      if (this.device.events.onModuleConfigPacket) {
-        this.device.events.onModuleConfigPacket.subscribe((moduleConfigPacket) => {
-          const moduleConfig = moduleConfigPacket.data || moduleConfigPacket;
-          console.log('[onModuleConfigPacket] Module config packet:', moduleConfig);
-          if (moduleConfig.payloadVariant) {
-            const section = moduleConfig.payloadVariant.case;
-            const value = moduleConfig.payloadVariant.value;
-            this._log(`Received module config: ${section}`, 'info');
-            console.log(`[onModuleConfigPacket] Section ${section}:`, value);
-            this.collectedConfig[section] = value;
-          }
-        });
-      }
+        // Subscribe to module config events to collect module-level settings
+        // (mqtt, serial, telemetry, ambientLighting, detectionSensor, etc.)
+        if (this.device.events.onModuleConfigPacket) {
+          this.device.events.onModuleConfigPacket.subscribe((moduleConfigPacket) => {
+            const moduleConfig = moduleConfigPacket.data || moduleConfigPacket;
+            console.log('[onModuleConfigPacket] Module config packet:', moduleConfig);
+            if (moduleConfig.payloadVariant) {
+              const section = moduleConfig.payloadVariant.case;
+              const value = moduleConfig.payloadVariant.value;
+              this._log(`Received module config: ${section}`, 'info');
+              console.log(`[onModuleConfigPacket] Section ${section}:`, value);
+              this.collectedConfig[section] = value;
+            }
+          });
+        }
 
-      // Also try onLocalConfig if available
-      if (this.device.events.onLocalConfig) {
-        this.device.events.onLocalConfig.subscribe((localConfig) => {
-          console.log('[onLocalConfig] Local config:', localConfig);
-          // Merge into collectedConfig
-          if (localConfig.device) this.collectedConfig.device = localConfig.device;
-          if (localConfig.lora) this.collectedConfig.lora = localConfig.lora;
-          if (localConfig.bluetooth) this.collectedConfig.bluetooth = localConfig.bluetooth;
-          if (localConfig.position) this.collectedConfig.position = localConfig.position;
-          if (localConfig.power) this.collectedConfig.power = localConfig.power;
-          if (localConfig.network) this.collectedConfig.network = localConfig.network;
-          if (localConfig.display) this.collectedConfig.display = localConfig.display;
-        });
+        // Also try onLocalConfig if available
+        if (this.device.events.onLocalConfig) {
+          this.device.events.onLocalConfig.subscribe((localConfig) => {
+            console.log('[onLocalConfig] Local config:', localConfig);
+            // Merge into collectedConfig
+            if (localConfig.device) this.collectedConfig.device = localConfig.device;
+            if (localConfig.lora) this.collectedConfig.lora = localConfig.lora;
+            if (localConfig.bluetooth) this.collectedConfig.bluetooth = localConfig.bluetooth;
+            if (localConfig.position) this.collectedConfig.position = localConfig.position;
+            if (localConfig.power) this.collectedConfig.power = localConfig.power;
+            if (localConfig.network) this.collectedConfig.network = localConfig.network;
+            if (localConfig.display) this.collectedConfig.display = localConfig.display;
+          });
+        }
+      } else {
+        this._log('Detect-only mode: skipping config/channel collection', 'info');
       }
 
       // Start processing
@@ -659,53 +672,37 @@ class MeshtasticSerialService {
     const shouldLog = !!this.onLog;
     if (shouldLog) this._log('Disconnecting...', 'info');
 
-    // Save port reference before disconnecting transport
+    // Save port reference before clearing transport
     // (TransportWebSerial stores the serial port as .connection, not .port)
     let port = null;
     if (this.transport?.connection) {
       port = this.transport.connection;
     }
 
-    // Break the transport's internal read loop by erroring fromDeviceController.
-    // TransportWebSerial holds a ReadableStream whose controller feeds data to
-    // MeshDevice. MeshDevice locks that stream with a reader, so calling
-    // _fromDevice.cancel() from the outside fails. Erroring the controller
-    // breaks the reader from the inside, unlocking the stream.
-    if (this.transport?.fromDeviceController) {
-      try {
-        this.transport.fromDeviceController.error(new Error('Disconnecting'));
-      } catch (e) { /* already errored/closed */ }
+    // Mark transport as closing so it suppresses error-status events
+    // from the read loop when streams break.
+    if (this.transport) {
+      this.transport.closingByUser = true;
     }
 
-    // Abort the write pipe (toDevice → serial port) via the transport's
-    // AbortController. This releases the writable side of the serial port.
+    // Abort the write pipe via the transport's AbortController.
     if (this.transport?.abortController) {
       try {
         this.transport.abortController.abort();
       } catch (e) { /* already aborted */ }
     }
 
-    // Give the browser a moment to process the stream teardown
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Now that streams are unlocked, transport.disconnect() can close the port
-    if (this.transport) {
+    // Wait for the write pipe promise to settle so the writable side is released.
+    if (this.transport?.pipePromise) {
       try {
-        await this.transport.disconnect();
-      } catch (e) {
-        // Locked stream errors are common and can be ignored
-        if (!e.message?.includes('locked') && !e.message?.includes('stream')) {
-          console.error('Error disconnecting transport:', e);
-        }
-      }
+        await this.transport.pipePromise;
+      } catch (e) { /* ignore */ }
     }
 
-    // Use forget() to fully release the USB serial device at the OS level.
-    // port.close() alone does NOT reset the Meshtastic device's USB serial
-    // state, causing the next connection to get stale/dead streams.
-    // forget() forces a full USB-level disconnect so the device sees a fresh
-    // connection next time. It revokes browser permission, but requestPort()
-    // always shows the picker anyway so there's no UX difference.
+    // Use forget() to forcibly release the USB serial device at the OS level.
+    // This breaks all stream locks and revokes the browser permission in one
+    // step. Trying to cancel locked streams or close the port manually races
+    // with MeshDevice's internal pipe and causes uncaught rejections.
     if (port) {
       try {
         await port.forget();
@@ -714,7 +711,7 @@ class MeshtasticSerialService {
       }
     }
 
-    // Clear all references
+    // Clear all references — let GC collect the transport and device
     this.lastPort = null;
     this.device = null;
     this.transport = null;
@@ -727,7 +724,7 @@ class MeshtasticSerialService {
     this.configComplete = false;
 
     // Brief delay to ensure OS releases the port
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     if (shouldLog) {
       this._log('Disconnected', 'success');
@@ -1182,6 +1179,52 @@ class MeshtasticSerialService {
   }
 
   /**
+   * Factory reset the radio, restoring all settings to defaults.
+   * The device will reboot after the reset.
+   */
+  async factoryReset() {
+    if (!this.isConnected || !this.device) {
+      throw new Error('Not connected to radio');
+    }
+
+    // The device must finish its config handshake before it will accept
+    // admin commands. Wait for MeshDevice.isConfigured (set when the
+    // firmware sends configCompleteId).
+    this._log('Waiting for device to finish configuration...', 'info');
+    this._updateProgress(1, 3, 'Waiting for device to be ready...');
+    let waited = 0;
+    const maxWait = 20000;
+    while (!this.device.isConfigured && waited < maxWait) {
+      await this._delay(500);
+      waited += 500;
+    }
+    if (!this.device.isConfigured) {
+      this._log('Device did not finish configuring in time, attempting reset anyway...', 'warn');
+    } else {
+      this._log('Device configured, sending factory reset...', 'info');
+    }
+
+    this._updateProgress(2, 3, 'Sending factory reset...');
+    this._log('Sending factory reset command...', 'info');
+
+    try {
+      await this.device.factoryResetDevice();
+    } catch (e) {
+      // Device disconnects immediately on reset — expected
+      this._log(`Factory reset sent (device rebooting): ${e.message || 'OK'}`, 'info');
+    }
+
+    // Give the device a moment to process the command before we disconnect
+    await this._delay(2000);
+
+    this._updateProgress(3, 3, 'Factory reset complete — device is rebooting');
+    this._log('Factory reset complete. Device will reboot with default settings.', 'success');
+    this._updateStatus('success', 'Factory reset complete');
+
+    return { success: true };
+  }
+
+  /**
    * Program the radio with channels and config
    * @param {Object} config - Programming configuration
    * @param {Object} config.radio - Radio info from backend
@@ -1198,10 +1241,34 @@ class MeshtasticSerialService {
     let currentStep = 0;
 
     try {
-      // Step 1: Open edit transaction BEFORE any changes.
+      // Wait for device to reach DeviceConfigured state before programming.
+      // In detectOnly mode, connect() returns before configure() finishes, so
+      // the device may still be in DeviceConnected/DeviceConfiguring state.
+      // beginEditSettings() requires the device to be fully configured.
+      this._updateProgress(++currentStep, totalSteps, 'Waiting for device to be ready...');
+      this._log('Waiting for device to finish configuration...', 'info');
+      const maxWaitMs = 15000;
+      const pollMs = 250;
+      let waited = 0;
+      while (waited < maxWaitMs) {
+        // Check if device.isConfigured or status has reached DeviceConfigured
+        if (this.device.isConfigured || this.device.deviceStatus === 4 ||
+            this.device.deviceStatus === 'DeviceConfigured') {
+          break;
+        }
+        await this._delay(pollMs);
+        waited += pollMs;
+      }
+      if (waited >= maxWaitMs) {
+        this._log('Device did not reach configured state in time, attempting anyway...', 'warn');
+      } else {
+        this._log(`Device ready after ${waited}ms`, 'success');
+      }
+
+      // Step: Open edit transaction BEFORE any changes.
       // This tells the firmware to defer all saves/reboots until commitEditSettings().
       // Without this, setChannel or setConfig may trigger an immediate reboot.
-      this._updateProgress(++currentStep, totalSteps, 'Opening settings transaction...');
+      this._updateProgress(currentStep, totalSteps, 'Opening settings transaction...');
       this._log('Opening edit transaction (deferring reboots until commit)...', 'info');
       await this.device.beginEditSettings();
       await this._delay(1000); // Give firmware time to enter edit mode
@@ -1246,8 +1313,11 @@ class MeshtasticSerialService {
 
       return { success: true };
     } catch (error) {
-      this._updateStatus('error', `Programming failed: ${error.message}`);
-      throw error;
+      const msg = error?.message || (typeof error === 'string' ? error : String(error));
+      this._log(`Programming error: ${msg}`, 'error');
+      this._updateStatus('error', `Programming failed: ${msg}`);
+      if (error instanceof Error) throw error;
+      throw new Error(msg);
     }
   }
 

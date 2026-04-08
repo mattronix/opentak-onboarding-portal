@@ -113,7 +113,8 @@ function EnrollRadioModal({ onClose, onSuccess }) {
         },
         null, // onProgress
         handleInstantUpdate,
-        handleLog
+        handleLog,
+        { detectOnly: true }
       );
 
       // If we reach here without data, wait a bit for packets
