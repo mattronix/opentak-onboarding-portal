@@ -1242,18 +1242,17 @@ class MeshtasticSerialService {
 
     try {
       // Wait for device to reach DeviceConfigured state before programming.
-      // In detectOnly mode, connect() returns before configure() finishes, so
-      // the device may still be in DeviceConnected/DeviceConfiguring state.
-      // beginEditSettings() requires the device to be fully configured.
+      // connect() fires configure() in the background and returns as soon as
+      // device info is available, so the device may still be completing its
+      // config dump. beginEditSettings() requires the full handshake to finish.
       this._updateProgress(++currentStep, totalSteps, 'Waiting for device to be ready...');
       this._log('Waiting for device to finish configuration...', 'info');
-      const maxWaitMs = 15000;
+      const maxWaitMs = 30000;
       const pollMs = 250;
       let waited = 0;
       while (waited < maxWaitMs) {
-        // Check if device.isConfigured or status has reached DeviceConfigured
-        if (this.device.isConfigured || this.device.deviceStatus === 4 ||
-            this.device.deviceStatus === 'DeviceConfigured') {
+        // configComplete is set by the onConfigComplete event handler
+        if (this.configComplete) {
           break;
         }
         await this._delay(pollMs);
@@ -1313,10 +1312,20 @@ class MeshtasticSerialService {
 
       return { success: true };
     } catch (error) {
-      const msg = error?.message || (typeof error === 'string' ? error : String(error));
+      // The Meshtastic SDK may throw plain objects (e.g. packet timeout) instead
+      // of Error instances, so we need to extract a useful message.
+      let msg;
+      if (error instanceof Error) {
+        msg = error.message;
+      } else if (typeof error === 'string') {
+        msg = error;
+      } else if (error && typeof error === 'object') {
+        msg = error.message || error.reason || error.error || JSON.stringify(error);
+      } else {
+        msg = String(error);
+      }
       this._log(`Programming error: ${msg}`, 'error');
       this._updateStatus('error', `Programming failed: ${msg}`);
-      if (error instanceof Error) throw error;
       throw new Error(msg);
     }
   }

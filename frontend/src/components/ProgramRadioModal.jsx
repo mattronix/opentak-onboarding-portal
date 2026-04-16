@@ -92,8 +92,10 @@ function ProgramRadioModal({ radio, onClose }) {
     setConnectionStatus('connecting');
 
     try {
-      // connect() handles disconnecting any existing connection internally
-      const info = await meshtasticSerial.connect(handleStatusChange, handleProgress, null, handleLog, { detectOnly: true });
+      // connect() handles disconnecting any existing connection internally.
+      // Programming requires a full connection (not detectOnly) so the device
+      // reaches DeviceConfigured state before we call beginEditSettings().
+      const info = await meshtasticSerial.connect(handleStatusChange, handleProgress, null, handleLog, { detectOnly: false });
       setDeviceInfo(info);
       setStep(3);
       // Auto-start programming after connection
