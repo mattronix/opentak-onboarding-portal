@@ -1381,126 +1381,32 @@ class MeshtasticSerialService {
    * and create a fresh transport + device.
    */
   async _waitAndReconnect() {
-    this._log('Waiting for device to reboot...', 'info');
+    this._log('Device is rebooting to apply settings...', 'info');
 
-    // Save USB identity so we can re-find the port after reboot
-    const oldPort = this.transport?.connection || this.lastPort;
-    let portInfo = null;
+    // Clean up the current connection — the device is rebooting so the
+    // USB port / streams will be gone. No need to reconnect; the settings
+    // have already been committed to flash.
     try {
-      if (oldPort) portInfo = oldPort.getInfo();
-    } catch (e) { /* ignore */ }
-
-    if (portInfo) {
-      this._log(`Device USB ID: vendor=0x${portInfo.usbVendorId?.toString(16)}, product=0x${portInfo.usbProductId?.toString(16)}`, 'info');
-    }
-
-    // Use the transport's own disconnect() to properly release all stream locks
-    try {
-      this._log('Closing transport and releasing serial port...', 'info');
       if (this.transport) {
         await this.transport.disconnect();
-        this._log('Transport disconnected cleanly', 'info');
       }
     } catch (e) {
-      this._log(`Transport disconnect warning: ${e.message}`, 'warn');
-      try { if (oldPort) await oldPort.close(); } catch (e2) { /* ignore */ }
+      // Expected — device is already gone after reboot
+    }
+
+    // Also try closing the raw port to release the OS handle
+    try {
+      const port = this.transport?.connection || this.lastPort;
+      if (port) await port.close();
+    } catch (e) {
+      // Expected — port may already be closed / device lost
     }
 
     this.device = null;
     this.transport = null;
     this.isConnected = false;
 
-    // Wait for the device to fully reboot and re-enumerate on USB
-    this._log('Waiting for device to finish rebooting...', 'info');
-    await this._delay(5000);
-
-    // Try to reconnect — the old port reference may be stale after USB
-    // re-enumeration, so we also try navigator.serial.getPorts() to find it.
-    let reconnected = false;
-    for (let attempt = 1; attempt <= 8; attempt++) {
-      try {
-        this._log(`Reconnect attempt ${attempt}/8...`, 'info');
-
-        // Find the port: try re-discovering via getPorts() first (handles stale refs),
-        // then fall back to the old port reference.
-        let port = null;
-        if (portInfo?.usbVendorId) {
-          const ports = await navigator.serial.getPorts();
-          port = ports.find(p => {
-            const info = p.getInfo();
-            return info.usbVendorId === portInfo.usbVendorId &&
-                   info.usbProductId === portInfo.usbProductId;
-          });
-          if (port && port !== oldPort) {
-            this._log('Found device via USB re-enumeration', 'info');
-          }
-        }
-        if (!port) port = oldPort;
-        if (!port) throw new Error('No serial port available');
-
-        // Always close and reopen to get fresh streams (same logic as connect())
-        if (port.readable || port.writable) {
-          try {
-            await port.close();
-            await this._delay(200);
-          } catch (e) {
-            this._log(`Port close warning: ${e.message}`, 'warn');
-          }
-        }
-
-        try {
-          await port.open({ baudRate: 115200 });
-        } catch (e) {
-          if (e.message?.includes('already open')) {
-            this._log('Port still open after close, reusing...', 'warn');
-          } else {
-            throw e;
-          }
-        }
-        this._log('Serial port re-opened', 'success');
-
-        // Create fresh transport and device
-        this.transport = new TransportWebSerial(port);
-        this.lastPort = port;
-        this.device = new MeshDevice(this.transport);
-
-        // Re-subscribe to status events (match connect() logic)
-        this.device.events.onDeviceStatus.subscribe((status) => {
-          let statusValue = status;
-          if (typeof status === 'object' && status !== null) {
-            statusValue = status.status !== undefined ? status.status : status;
-          }
-          const connectedValue = Types.DeviceStatusEnum?.DeviceConnected ?? 2;
-          const configuringValue = Types.DeviceStatusEnum?.DeviceConfiguring ?? 3;
-          const configuredValue = Types.DeviceStatusEnum?.DeviceConfigured ?? 4;
-          const disconnectedValue = Types.DeviceStatusEnum?.DeviceDisconnected ?? 0;
-          if (statusValue === connectedValue || statusValue === configuringValue || statusValue === configuredValue) {
-            this.isConnected = true;
-          } else if (statusValue === disconnectedValue) {
-            this.isConnected = false;
-          }
-        });
-
-        this.isConnected = true;
-        reconnected = true;
-        this._log('Device reconnected successfully', 'success');
-        break;
-      } catch (e) {
-        this._log(`Reconnect attempt ${attempt}/8 failed: ${e.message}`, 'warn');
-        // Clean up partial state before retry
-        this.device = null;
-        this.transport = null;
-        await this._delay(3000);
-      }
-    }
-
-    if (!reconnected) {
-      this._log('Could not reconnect after reboot - settings were saved to flash', 'warn');
-      this._log('The radio will use the new settings on next power-on', 'info');
-      this.device = null;
-      this.transport = null;
-      this.isConnected = false;
-    }
+    this._log('Settings saved to flash — device will use new config on next boot', 'success');
   }
 
   /**
