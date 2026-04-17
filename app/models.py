@@ -82,6 +82,27 @@ user_meshtastic_group_association = Table(
 
 # ChannelGroupMembership is defined below as a proper model class for the association object pattern
 
+# Association model for OTS Groups <-> Onboarding Codes (with direction)
+class GroupOnboardingCodeAssociation(db.Model):
+    __tablename__ = 'group_onboardingcode_association'
+
+    group_id: Mapped[int] = mapped_column(Integer, ForeignKey('ots_groups.id'), primary_key=True)
+    onboardingcode_id: Mapped[int] = mapped_column(Integer, ForeignKey('onboardingcodes.id'), primary_key=True)
+    direction: Mapped[str] = mapped_column(String(4), default='BOTH', nullable=False, server_default='BOTH')
+
+    group = relationship("OTSGroupModel", backref=db.backref("onboarding_code_associations", cascade="all, delete-orphan"))
+    onboarding_code = relationship("OnboardingCodeModel", backref=db.backref("group_associations", cascade="all, delete-orphan"))
+
+class GroupUserAssociation(db.Model):
+    __tablename__ = 'group_user_association'
+
+    group_id: Mapped[int] = mapped_column(Integer, ForeignKey('ots_groups.id'), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), primary_key=True)
+    direction: Mapped[str] = mapped_column(String(4), default='BOTH', nullable=False, server_default='BOTH')
+
+    group = relationship("OTSGroupModel", backref=db.backref("user_associations", cascade="all, delete-orphan"))
+    user = relationship("UserModel", backref=db.backref("group_associations", cascade="all, delete-orphan"))
+
 # Association tables for announcements
 announcement_role_association = Table(
     'announcement_role_association',
@@ -220,6 +241,10 @@ class UserModel(db.Model):
         secondary=user_meshtastic_association,
         back_populates="users"
     )
+
+    @property
+    def ots_groups(self):
+        return [assoc.group for assoc in self.group_associations]
 
     @staticmethod
     def create_user(username, email=None, firstname=None, lastname=None, callsign=None, roles=[], takprofiles=[], onboardedby=None, expirydate=None):
@@ -436,6 +461,10 @@ class OnboardingCodeModel(db.Model):
         back_populates="onboarding_codes"
     )
 
+    @property
+    def groups(self):
+        return [assoc.group for assoc in self.group_associations]
+
     @staticmethod
     def create_onboarding_code(onboardingcode, name=None, description=None, users=[], roles=[], onboardcontact=None, maxuses=None, userexpirydate=None, expirydate=None, autoapprove=False, requireapproval=False, approverroleid=None):
         try:
@@ -495,6 +524,65 @@ class OnboardingCodeModel(db.Model):
             return {"message": "Onboarding code deleted successfully"}
         else:
             return {"error": "onboarding_code.not.exist"}
+
+
+class OTSGroupModel(db.Model):
+    __tablename__ = "ots_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True, nullable=False)
+    display_name: Mapped[str] = mapped_column(nullable=True)
+    description: Mapped[str] = mapped_column(nullable=True)
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    synced_at: Mapped[datetime.datetime] = mapped_column(nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow, nullable=True)
+
+    @property
+    def onboarding_codes(self):
+        return [assoc.onboarding_code for assoc in self.onboarding_code_associations]
+    @property
+    def users(self):
+        return [assoc.user for assoc in self.user_associations]
+
+    @staticmethod
+    def create_group(name, display_name=None, description=None, active=True):
+        try:
+            group = OTSGroupModel(
+                name=name,
+                display_name=display_name or name.replace('_', ' ').title(),
+                description=description,
+                active=active
+            )
+            db.session.add(group)
+            db.session.commit()
+            return group
+        except IntegrityError:
+            db.session.rollback()
+            return {"error": "group.exists"}
+        except Exception as e:
+            db.session.rollback()
+            return {"error": str(e)}
+
+    @staticmethod
+    def get_by_id(group_id):
+        return OTSGroupModel.query.get(group_id)
+
+    @staticmethod
+    def get_by_name(name):
+        return OTSGroupModel.query.filter_by(name=name).first()
+
+    @staticmethod
+    def get_all():
+        return OTSGroupModel.query.all()
+
+    @staticmethod
+    def delete_by_id(group_id):
+        group = OTSGroupModel.get_by_id(group_id)
+        if group:
+            db.session.delete(group)
+            db.session.commit()
+            return {"message": "Group deleted successfully"}
+        return {"error": "group.not.found"}
 
 
 class MeshtasticModel(db.Model):

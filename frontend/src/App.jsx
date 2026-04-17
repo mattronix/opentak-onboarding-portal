@@ -33,6 +33,7 @@ import RadiosList from './pages/admin/RadiosList';
 import Settings from './pages/admin/Settings';
 import AnnouncementsList from './pages/admin/AnnouncementsList';
 import ApiKeysList from './pages/admin/ApiKeysList';
+import GroupsList from './pages/admin/GroupsList';
 import ApiDocs from './pages/admin/ApiDocs';
 import AnnouncementHistory from './pages/AnnouncementHistory';
 import Profile from './pages/Profile';
@@ -267,6 +268,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute adminOnly>
                     <RolesList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/groups"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <GroupsList />
                   </ProtectedRoute>
                 }
               />

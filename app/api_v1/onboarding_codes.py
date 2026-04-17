@@ -6,7 +6,7 @@ CRUD operations for onboarding code management
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 from app.api_v1 import api_v1
-from app.models import OnboardingCodeModel, UserModel, UserRoleModel, db
+from app.models import OnboardingCodeModel, UserModel, UserRoleModel, OTSGroupModel, GroupOnboardingCodeAssociation, db
 from datetime import datetime
 
 
@@ -57,7 +57,8 @@ def get_onboarding_codes():
             } if code.onboardContact else None,
             'expiryDate': code.expiryDate.isoformat() if code.expiryDate else None,
             'userExpiryDate': code.userExpiryDate.isoformat() if code.userExpiryDate else None,
-            'roles': [{'id': r.id, 'name': r.name, 'displayName': r.display_name} for r in code.roles]
+            'roles': [{'id': r.id, 'name': r.name, 'displayName': r.display_name} for r in code.roles],
+            'groups': [{'id': a.group.id, 'name': a.group.name, 'displayName': a.group.display_name, 'direction': a.direction} for a in code.group_associations]
         } for code in codes]
     }), 200
 
@@ -95,6 +96,7 @@ def get_onboarding_code(code_id):
         'expiryDate': code.expiryDate.isoformat() if code.expiryDate else None,
         'userExpiryDate': code.userExpiryDate.isoformat() if code.userExpiryDate else None,
         'roles': [{'id': r.id, 'name': r.name, 'displayName': r.display_name} for r in code.roles],
+        'groups': [{'id': a.group.id, 'name': a.group.name, 'displayName': a.group.display_name, 'direction': a.direction} for a in code.group_associations],
         'users': [{'id': u.id, 'username': u.username} for u in code.users]
     }), 200
 
@@ -174,7 +176,30 @@ def create_onboarding_code():
                 role = UserRoleModel.get_by_id(role_id)
                 if role:
                     code.roles.append(role)
-            db.session.commit()
+
+        # Add groups with direction
+        if data.get('groups'):
+            for g in data['groups']:
+                group = OTSGroupModel.get_by_id(g['id'])
+                if group:
+                    assoc = GroupOnboardingCodeAssociation(
+                        group_id=group.id,
+                        onboardingcode_id=code.id,
+                        direction=g.get('direction', 'BOTH')
+                    )
+                    db.session.add(assoc)
+        elif data.get('groupIds'):
+            for group_id in data['groupIds']:
+                group = OTSGroupModel.get_by_id(group_id)
+                if group:
+                    assoc = GroupOnboardingCodeAssociation(
+                        group_id=group.id,
+                        onboardingcode_id=code.id,
+                        direction='BOTH'
+                    )
+                    db.session.add(assoc)
+
+        db.session.commit()
 
         return jsonify({
             'message': 'Onboarding code created successfully',
@@ -241,6 +266,30 @@ def update_onboarding_code(code_id):
                 role = UserRoleModel.get_by_id(role_id)
                 if role:
                     code.roles.append(role)
+
+        # Update groups with direction
+        if 'groups' in data:
+            GroupOnboardingCodeAssociation.query.filter_by(onboardingcode_id=code.id).delete()
+            for g in data['groups']:
+                group = OTSGroupModel.get_by_id(g['id'])
+                if group:
+                    assoc = GroupOnboardingCodeAssociation(
+                        group_id=group.id,
+                        onboardingcode_id=code.id,
+                        direction=g.get('direction', 'BOTH')
+                    )
+                    db.session.add(assoc)
+        elif 'groupIds' in data:
+            GroupOnboardingCodeAssociation.query.filter_by(onboardingcode_id=code.id).delete()
+            for group_id in data['groupIds']:
+                group = OTSGroupModel.get_by_id(group_id)
+                if group:
+                    assoc = GroupOnboardingCodeAssociation(
+                        group_id=group.id,
+                        onboardingcode_id=code.id,
+                        direction='BOTH'
+                    )
+                    db.session.add(assoc)
 
         # Commit directly to ensure relationship changes are saved
         db.session.commit()

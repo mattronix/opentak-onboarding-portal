@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { usersAPI, rolesAPI } from '../../services/api';
+import { usersAPI, rolesAPI, groupsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
@@ -25,7 +25,8 @@ function UsersList() {
     callsign: '',
     password: '',
     expiryDate: '',
-    roles: []
+    roles: [],
+    groups: []
   });
   const [error, setError] = useState('');
 
@@ -57,11 +58,22 @@ function UsersList() {
     },
   });
 
+  // Fetch groups for the form
+  const { data: groupsData } = useQuery({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const response = await groupsAPI.getAll();
+      return response.data;
+    },
+  });
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data) => usersAPI.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['users']);
+      queryClient.invalidateQueries(['groups']);
+      queryClient.invalidateQueries(['group-members']);
       setShowModal(false);
       resetForm();
       showSuccess('User created successfully');
@@ -76,6 +88,8 @@ function UsersList() {
     mutationFn: ({ id, data }) => usersAPI.update(id, data),
     onSuccess: (response) => {
       queryClient.invalidateQueries(['users']);
+      queryClient.invalidateQueries(['groups']);
+      queryClient.invalidateQueries(['group-members']);
       setShowModal(false);
       resetForm();
       if (response.data?.passwordChanged) {
@@ -109,7 +123,8 @@ function UsersList() {
       callsign: '',
       password: '',
       expiryDate: '',
-      roles: []
+      roles: [],
+      groups: []
     });
     setEditingUser(null);
     setError('');
@@ -130,7 +145,8 @@ function UsersList() {
       callsign: user.callsign || '',
       password: '',
       expiryDate: user.expiryDate ? user.expiryDate.split('T')[0] : '',
-      roles: user.roles?.map(r => r.name) || []
+      roles: user.roles?.map(r => r.name) || [],
+      groups: user.groups?.map(g => ({ id: g.id, direction: g.direction || 'BOTH' })) || []
     });
     setError('');
     setShowModal(true);
@@ -209,7 +225,8 @@ function UsersList() {
       callsign: formData.callsign,
       password: formData.password,
       expiryDate: formData.expiryDate || null,
-      roleIds: roleIds
+      roleIds: roleIds,
+      groups: formData.groups
     };
 
     // Remove password if empty on update
@@ -449,6 +466,54 @@ function UsersList() {
                       </label>
                     ))}
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label>OTS Groups</label>
+                  {groupsData?.groups?.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {groupsData.groups.filter(g => g.active).map(group => {
+                        const groupEntry = formData.groups.find(fg => fg.id === group.id);
+                        const isSelected = !!groupEntry;
+                        return (
+                          <div key={group.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => setFormData(prev => ({
+                                ...prev,
+                                groups: isSelected
+                                  ? prev.groups.filter(fg => fg.id !== group.id)
+                                  : [...prev.groups, { id: group.id, direction: 'BOTH' }]
+                              }))}
+                            />
+                            <span style={{ minWidth: '120px' }}>{group.displayName || group.name}</span>
+                            {isSelected && (
+                              <select
+                                value={groupEntry.direction}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  groups: prev.groups.map(fg =>
+                                    fg.id === group.id ? { ...fg, direction: e.target.value } : fg
+                                  )
+                                }))}
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-input)', borderRadius: '4px' }}
+                              >
+                                <option value="BOTH">Both (IN + OUT)</option>
+                                <option value="IN">IN only</option>
+                                <option value="OUT">OUT only</option>
+                              </select>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                      No groups available. Sync groups from OTS in the Groups admin page.
+                    </div>
+                  )}
+                  <span className="help-text">OTS groups this user belongs to (synced to OTS on save)</span>
                 </div>
               </div>
 

@@ -22,6 +22,8 @@ class OTSClient:
     _points = _apibase + "/point"
     _reset = _user + "/password/reset"
     _atak_qr_string = _apibase + "/atak_qr_string"
+    _groups = _apibase + "/groups"
+    _groups_members = _groups + "/members"
     _meshtastic = _apibase + "/meshtastic"
 
 
@@ -41,8 +43,10 @@ class OTSClient:
             url = self.base_url + endpoint
             self.headers["Referer"] = self.base_url+self._data_packages
             response = self.session.request(method, url, json=body, headers=self.headers, params=params, verify=OTS_VERIFY_SSL, timeout=30)
-            if response_type == "json":    
+            if response_type == "json":
 
+                if not response.text.strip():
+                    return {"response": {}, "status_code": response.status_code }
                 try:
                     parsed_body = response.json()
                     return {"response": parsed_body, "status_code": response.status_code }
@@ -238,6 +242,54 @@ class OTSClient:
         body = {'username': username}
         return self.request_handler(method="POST", endpoint=self._user_deactivate, body=body)
 
+
+    def get_groups(self, page=None, page_size=None, name=None, active=None):
+        """Get all groups from OTS"""
+        params = {}
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        if name is not None:
+            params["name"] = name
+        if active is not None:
+            params["active"] = active
+        return self.request_handler(method="GET", endpoint=self._groups, params=params)
+
+    def create_group(self, name, description=None):
+        """Create a new group in OTS"""
+        body = {'name': name}
+        if description:
+            body['description'] = description
+        return self.request_handler(method="POST", endpoint=self._groups, body=body)
+
+    def delete_group(self, group_name):
+        """Delete a group from OTS"""
+        params = {'group_name': group_name}
+        return self.request_handler(method="DELETE", endpoint=self._groups, params=params)
+
+    def get_group_members(self, group_name):
+        """Get members of a specific OTS group"""
+        params = {'name': group_name}
+        return self.request_handler(method="GET", endpoint=self._groups_members, params=params)
+
+    def add_user_to_group(self, username, group_name, direction='IN'):
+        """Add a user to an OTS group with a specific direction (IN or OUT)"""
+        body = {
+            'users': [username],
+            'group_name': group_name,
+            'direction': direction
+        }
+        return self.request_handler(method="PUT", endpoint=self._groups, body=body)
+
+    def remove_user_from_group(self, username, group_name, direction='IN'):
+        """Remove a user from an OTS group"""
+        params = {
+            'username': username,
+            'group_name': group_name,
+            'direction': direction
+        }
+        return self.request_handler(method="DELETE", endpoint=self._groups_members, params=params)
 
     def get_atak_qr_string(self, username=None):
         params = {}

@@ -291,6 +291,36 @@ export const meshtasticGroupsAPI = {
     api.post('/meshtastic/groups/regenerate-all-urls'),
 };
 
+// OTS Groups API
+export const groupsAPI = {
+  getAll: () =>
+    api.get('/groups'),
+
+  getById: (id) =>
+    api.get(`/groups/${id}`),
+
+  create: (data) =>
+    api.post('/groups', data),
+
+  update: (id, data) =>
+    api.put(`/groups/${id}`, data),
+
+  delete: (id) =>
+    api.delete(`/groups/${id}`),
+
+  syncFromOts: () =>
+    api.post('/groups/sync'),
+
+  getMembers: (id) =>
+    api.get(`/groups/${id}/members`),
+
+  addMember: (groupId, data) =>
+    api.post(`/groups/${groupId}/members`, data),
+
+  removeMember: (groupId, username, direction) =>
+    api.delete(`/groups/${groupId}/members/${username}`, { params: { direction } }),
+};
+
 // Radios API
 export const radiosAPI = {
   getAll: () =>

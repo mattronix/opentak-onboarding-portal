@@ -124,8 +124,9 @@ function Layout() {
                 <Link to="/admin">Admin Overview</Link>
                 {hasModuleAccess('users') && <Link to="/admin/users">Users</Link>}
                 {hasModuleAccess('roles') && <Link to="/admin/roles">Roles</Link>}
+                {hasModuleAccess('groups') && <Link to="/admin/groups">OTS Groups</Link>}
                 {hasModuleAccess('onboarding_codes') && <Link to="/admin/onboarding-codes">Onboarding Codes</Link>}
-                {hasModuleAccess('pending_registrations') && <Link to="/admin/pending-registrations">Registrations</Link>}
+                {hasModuleAccess('pending_registrations') && <Link to="/admin/pending-registrations">Pending Registrations</Link>}
                 {hasModuleAccess('tak_profiles') && <Link to="/admin/tak-profiles">TAK Profiles</Link>}
                 {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic">Meshtastic Channels</Link>}
                 {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic/groups">Meshtastic Channel Groups</Link>}

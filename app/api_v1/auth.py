@@ -19,6 +19,53 @@ from app.email import send_html_email
 import secrets
 
 
+def assign_ots_groups(username, onboarding_code, user=None):
+    """
+    Assign OTS groups from onboarding code to user.
+    Uses direction from the group-onboarding code association (IN, OUT, or BOTH).
+    """
+    from app.ots import otsClient
+    from app.models import GroupUserAssociation, GroupOnboardingCodeAssociation
+
+    current_app.logger.info(f"assign_ots_groups called: username={username}, code={onboarding_code.name} (id={onboarding_code.id}), user={'id=' + str(user.id) if user else 'None'}")
+
+    assocs = GroupOnboardingCodeAssociation.query.filter_by(onboardingcode_id=onboarding_code.id).all()
+    current_app.logger.info(f"assign_ots_groups: found {len(assocs)} group associations for code {onboarding_code.id}")
+
+    if not assocs:
+        current_app.logger.warning(f"assign_ots_groups: no group associations found for onboarding code '{onboarding_code.name}' (id={onboarding_code.id})")
+        return
+
+    for assoc in assocs:
+        group = assoc.group
+        current_app.logger.info(f"assign_ots_groups: processing group '{group.name}' (id={group.id}, active={group.active}, direction={assoc.direction})")
+
+        if not group.active:
+            current_app.logger.info(f"assign_ots_groups: skipping inactive group {group.name}")
+            continue
+
+        directions = ['IN', 'OUT'] if assoc.direction == 'BOTH' else [assoc.direction]
+
+        for direction in directions:
+            try:
+                otsClient.add_user_to_group(username, group.name, direction=direction)
+                current_app.logger.info(f"assign_ots_groups: added {username} to OTS group '{group.name}' direction={direction}")
+            except Exception as e:
+                current_app.logger.error(f"assign_ots_groups: FAILED to add {username} to OTS group '{group.name}' direction={direction}: {str(e)}")
+
+        if user:
+            try:
+                existing = GroupUserAssociation.query.filter_by(group_id=group.id, user_id=user.id).first()
+                if not existing:
+                    user_assoc = GroupUserAssociation(group_id=group.id, user_id=user.id, direction=assoc.direction)
+                    db.session.add(user_assoc)
+                    current_app.logger.info(f"assign_ots_groups: created local GroupUserAssociation for user {user.id} -> group {group.id}")
+                else:
+                    current_app.logger.info(f"assign_ots_groups: local association already exists for user {user.id} -> group {group.id}")
+            except Exception as e:
+                current_app.logger.error(f"assign_ots_groups: FAILED to create local association: {str(e)}")
+
+
 def get_frontend_url():
     """
     Get the frontend URL, auto-detecting from request if not explicitly configured.
@@ -131,6 +178,27 @@ def login():
                 db.session.add(user)
                 db.session.commit()
                 current_app.logger.info(f"Login: Added role {role_name} to user {username}")
+
+        # Sync groups from OTS
+        from app.models import OTSGroupModel
+        ots_groups_data = ots_data.get('groups', [])
+        if ots_groups_data:
+            current_app.logger.info(f"Login: User {username} - OTS groups: {ots_groups_data}")
+            for group_data in ots_groups_data:
+                group_name = group_data.get('name') if isinstance(group_data, dict) else str(group_data)
+                if not group_name:
+                    continue
+                group = OTSGroupModel.get_by_name(group_name)
+                if not group:
+                    group = OTSGroupModel.create_group(name=group_name, description="Auto-created from OTS")
+                    if isinstance(group, dict) and 'error' in group:
+                        current_app.logger.error(f"Login: Failed to create group {group_name}: {group['error']}")
+                        continue
+                if group and group not in user.ots_groups:
+                    from app.models import GroupUserAssociation
+                    login_assoc = GroupUserAssociation(group_id=group.id, user_id=user.id, direction='BOTH')
+                    db.session.add(login_assoc)
+                    current_app.logger.info(f"Login: Added group {group_name} to user {username}")
 
         # Sync TAK profiles and Meshtastic configs from roles
         current_app.logger.info(f"Login: Syncing TAK profiles and Meshtastic configs for user {username}")
@@ -575,6 +643,9 @@ def register():
                     if meshtastic not in user.meshtastic:
                         user.meshtastic.append(meshtastic)
 
+            # Assign OTS groups from onboarding code
+            assign_ots_groups(username, onboarding_code, user)
+
             # Increment onboarding code uses
             onboarding_code.uses += 1
 
@@ -983,6 +1054,9 @@ def verify_email():
             for meshtastic in role.meshtastic:
                 if meshtastic not in user.meshtastic:
                     user.meshtastic.append(meshtastic)
+
+        # Assign OTS groups from onboarding code
+        assign_ots_groups(pending.username, onboarding_code, user)
 
         # Increment onboarding code uses
         onboarding_code.uses += 1
@@ -1421,77 +1495,147 @@ def approve_registration(token):
             </html>
             """, 409
 
-        # Update status to pending_verification and generate new verification token
-        pending.approval_status = 'pending_verification'
+        if UserModel.query.filter_by(email=pending.email).first():
+            PendingRegistrationModel.delete_by_id(pending.id)
+            return f"""
+            <html>
+            <head><title>Registration Approval</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+                <h1 style="color: #dc3545;">Email Already Registered</h1>
+                <p>A user with this email already exists.</p>
+            </body>
+            </html>
+            """, 409
+
+        # Get onboarding code
+        onboarding_code = OnboardingCodeModel.get_onboarding_code_by_id(pending.onboarding_code_id)
+        if not onboarding_code:
+            return f"""
+            <html>
+            <head><title>Registration Approval</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+                <h1 style="color: #dc3545;">Error</h1>
+                <p>Onboarding code no longer valid.</p>
+            </body>
+            </html>
+            """, 400
+
+        # Create user in OTS
+        ots = OTSClient(current_app.config['OTS_URL'], current_app.config['OTS_USERNAME'], current_app.config['OTS_PASSWORD'])
+
+        ots_roles = ['user']
+        if onboarding_code.roles:
+            role_names = [role.name.lower() for role in onboarding_code.roles]
+            if any(r in ['administrator', 'admin'] for r in role_names):
+                ots_roles = ['administrator']
+
+        ots.create_user(
+            username=pending.username,
+            password=pending.password,
+            roles=ots_roles
+        )
+        current_app.logger.info(f"Email-link approval: created OTS user {pending.username}")
+
+        # Create local user
+        expiry_date = onboarding_code.userExpiryDate if onboarding_code.userExpiryDate else None
+
+        new_user = UserModel.create_user(
+            username=pending.username,
+            email=pending.email,
+            firstname=pending.firstName,
+            lastname=pending.lastName,
+            callsign=pending.callsign,
+            expirydate=expiry_date,
+            onboardedby=onboarding_code.onboardContact.username if onboarding_code.onboardContact else None
+        )
+
+        if isinstance(new_user, dict) and 'error' in new_user:
+            return f"""
+            <html>
+            <head><title>Registration Approval</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+                <h1 style="color: #dc3545;">Error</h1>
+                <p>Failed to create user in local database.</p>
+            </body>
+            </html>
+            """, 500
+
+        new_user.emailVerified = True
+
+        for role in onboarding_code.roles:
+            new_user.roles.append(role)
+
+        for role in onboarding_code.roles:
+            for tak_profile in role.takprofiles:
+                if tak_profile not in new_user.takprofiles:
+                    new_user.takprofiles.append(tak_profile)
+
+        for role in onboarding_code.roles:
+            for meshtastic in role.meshtastic:
+                if meshtastic not in new_user.meshtastic:
+                    new_user.meshtastic.append(meshtastic)
+
+        assign_ots_groups(pending.username, onboarding_code, new_user)
+
+        onboarding_code.uses += 1
+
+        pending.approval_status = 'approved'
         pending.approved_at = datetime.now()
-        pending.verification_token = secrets.token_urlsafe(48)
-        pending.expires_at = datetime.now() + timedelta(hours=24)  # Reset expiry for verification
 
         db.session.commit()
 
-        # Get frontend URL
+        PendingRegistrationModel.delete_by_id(pending.id)
+
+        # Send welcome email
         frontend_url = get_frontend_url()
-
-        verification_link = f"{frontend_url}/verify-email?token={pending.verification_token}"
-
-        # Send verification email to user
         try:
-            verification_message = f"""Hello {pending.firstName},
+            welcome_message = f"""Hello {new_user.firstName},
 
 Great news! Your registration request for OpenTAK Portal has been approved!
 
-To complete your registration, please verify your email address by clicking the link below:
+Your account is now active and you can log in immediately.
 
-{verification_link}
+Your Account Details:
+- Username: {new_user.username}
+- Email: {new_user.email}
+- Callsign: {new_user.callsign}
 
-This link will expire in 24 hours.
-
-Your registration details:
-- Username: {pending.username}
-- Callsign: {pending.callsign}
-- Email: {pending.email}
-
-Once you verify your email, your account will be created and you can log in.
+Getting Started:
+1. Login to the portal at {frontend_url}/login
+2. Download your TAK certificates from your dashboard
+3. Configure your TAK devices with your certificates
+4. Join the network and start collaborating!
 
 Welcome to the team!
 The OpenTAK Team"""
 
             send_html_email(
-                subject='Registration Approved - Verify Your Email',
-                recipients=[pending.email],
-                message=verification_message,
-                title='Registration Approved!',
-                link_url=verification_link,
-                link_title='Verify Email Address'
+                subject='Welcome to OpenTAK Portal - Registration Approved!',
+                recipients=[new_user.email],
+                message=welcome_message,
+                title='Welcome to OpenTAK!',
+                link_url=f"{frontend_url}/login",
+                link_title='Login to Portal'
             )
         except Exception as e:
-            current_app.logger.error(f"Failed to send verification email: {str(e)}")
-            return f"""
-            <html>
-            <head><title>Registration Approval</title></head>
-            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
-                <h1 style="color: #dc3545;">Error Sending Email</h1>
-                <p>The registration was approved but we couldn't send the verification email: {str(e)}</p>
-            </body>
-            </html>
-            """, 500
+            current_app.logger.error(f"Failed to send welcome email: {str(e)}")
 
-        current_app.logger.info(f"Registration approved for {pending.username} - verification email sent")
+        current_app.logger.info(f"Email-link approval: user {pending.username} created and approved")
 
         return f"""
         <html>
         <head><title>Registration Approved</title></head>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
             <h1 style="color: #28a745;">Registration Approved!</h1>
-            <p>The registration for <strong>{pending.username}</strong> has been approved.</p>
-            <p>A verification email has been sent to <strong>{pending.email}</strong>.</p>
-            <p style="color: #666; margin-top: 20px;">The user must click the verification link in the email to complete their registration.</p>
+            <p>The registration for <strong>{new_user.username}</strong> has been approved.</p>
+            <p>Their account is now active and they can log in immediately.</p>
+            <p>A welcome email has been sent to <strong>{new_user.email}</strong>.</p>
             <div style="margin-top: 30px;">
                 <p style="color: #666;">Registration Details:</p>
                 <ul style="list-style: none; padding: 0;">
-                    <li>Username: {pending.username}</li>
-                    <li>Email: {pending.email}</li>
-                    <li>Callsign: {pending.callsign}</li>
+                    <li>Username: {new_user.username}</li>
+                    <li>Email: {new_user.email}</li>
+                    <li>Callsign: {new_user.callsign}</li>
                 </ul>
             </div>
         </body>

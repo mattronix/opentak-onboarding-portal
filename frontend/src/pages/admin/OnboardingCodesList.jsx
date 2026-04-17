@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { onboardingCodesAPI, rolesAPI, usersAPI } from '../../services/api';
+import { onboardingCodesAPI, rolesAPI, usersAPI, groupsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
@@ -21,6 +21,7 @@ function OnboardingCodesList() {
     expiryDate: '',
     userExpiryDate: '',
     roleIds: [],
+    groups: [],
     autoApprove: false,
     requireApproval: false,
     approverRoleId: null
@@ -40,6 +41,14 @@ function OnboardingCodesList() {
     queryKey: ['roles'],
     queryFn: async () => {
       const response = await rolesAPI.getAll();
+      return response.data;
+    },
+  });
+
+  const { data: groupsData } = useQuery({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const response = await groupsAPI.getAll();
       return response.data;
     },
   });
@@ -101,6 +110,7 @@ function OnboardingCodesList() {
       expiryDate: '',
       userExpiryDate: '',
       roleIds: [],
+      groups: [],
       autoApprove: false,
       requireApproval: false,
       approverRoleId: null
@@ -144,6 +154,7 @@ function OnboardingCodesList() {
         expiryDate: fullCode.expiryDate ? fullCode.expiryDate.split('T')[0] : '',
         userExpiryDate: fullCode.userExpiryDate ? fullCode.userExpiryDate.split('T')[0] : '',
         roleIds: fullCode.roles?.map(r => r.id) || [],
+        groups: fullCode.groups?.map(g => ({ id: g.id, direction: g.direction || 'BOTH' })) || [],
         autoApprove: fullCode.autoApprove || false,
         requireApproval: fullCode.requireApproval || false,
         approverRoleId: fullCode.approverRole?.id || null
@@ -168,6 +179,7 @@ function OnboardingCodesList() {
       expiryDate: formData.expiryDate || null,
       userExpiryDate: formData.userExpiryDate || null,
       roleIds: formData.roleIds,
+      groups: formData.groups,
       autoApprove: formData.autoApprove,
       requireApproval: formData.requireApproval,
       approverRoleId: formData.approverRoleId || null
@@ -185,6 +197,7 @@ function OnboardingCodesList() {
   const codes = codesData?.codes || [];
   const users = usersData?.users || [];
   const roles = rolesData?.roles || [];
+  const otsGroups = groupsData?.groups || [];
 
   return (
     <div className="admin-page">
@@ -210,6 +223,7 @@ function OnboardingCodesList() {
                 <th>Contact</th>
                 <th>Expiry</th>
                 <th>Roles</th>
+                <th>Groups</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -228,6 +242,14 @@ function OnboardingCodesList() {
                   <td>
                     {code.roles?.map(role => (
                       <span key={role.id} className="badge badge-primary">{role.displayName || role.name}</span>
+                    ))}
+                  </td>
+                  <td>
+                    {code.groups?.map(group => (
+                      <span key={group.id} className="badge badge-success">
+                        {group.displayName || group.name}
+                        {group.direction && group.direction !== 'BOTH' && ` (${group.direction})`}
+                      </span>
                     ))}
                   </td>
                   <td>
@@ -339,6 +361,54 @@ function OnboardingCodesList() {
                     ))}
                   </div>
                   <span className="help-text">Roles assigned to new users</span>
+                </div>
+
+                <div className="form-group">
+                  <label>OTS Groups</label>
+                  {otsGroups.length === 0 ? (
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', padding: '0.5rem 0' }}>
+                      No groups available. Sync groups from OTS in the Groups admin page.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {otsGroups.filter(g => g.active).map(group => {
+                        const groupEntry = formData.groups.find(fg => fg.id === group.id);
+                        const isSelected = !!groupEntry;
+                        return (
+                          <div key={group.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => setFormData(prev => ({
+                                ...prev,
+                                groups: isSelected
+                                  ? prev.groups.filter(fg => fg.id !== group.id)
+                                  : [...prev.groups, { id: group.id, direction: 'BOTH' }]
+                              }))}
+                            />
+                            <span style={{ minWidth: '120px' }}>{group.displayName || group.name}</span>
+                            {isSelected && (
+                              <select
+                                value={groupEntry.direction}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  groups: prev.groups.map(fg =>
+                                    fg.id === group.id ? { ...fg, direction: e.target.value } : fg
+                                  )
+                                }))}
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-input)', borderRadius: '4px' }}
+                              >
+                                <option value="BOTH">Both (IN + OUT)</option>
+                                <option value="IN">IN only</option>
+                                <option value="OUT">OUT only</option>
+                              </select>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <span className="help-text">OTS groups and direction assigned to new users (controls data visibility in TAK)</span>
                 </div>
 
                 <div className="form-group">

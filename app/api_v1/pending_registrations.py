@@ -716,6 +716,10 @@ def approve_pending_registration(pending_id):
                 if meshtastic not in user.meshtastic:
                     user.meshtastic.append(meshtastic)
 
+        # Assign OTS groups from onboarding code
+        from app.api_v1.auth import assign_ots_groups
+        assign_ots_groups(pending.username, onboarding_code, user)
+
         # Increment onboarding code uses
         onboarding_code.uses += 1
 

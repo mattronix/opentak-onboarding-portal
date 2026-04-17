@@ -42,6 +42,8 @@ ADMIN_ROLES = {
     'settings_readonly': ('View system settings (read-only)', 'Settings Read-Only'),
     'api_key_admin': ('Manage API keys', 'API Key Admin'),
     'api_key_readonly': ('View API keys (read-only)', 'API Key Read-Only'),
+    'group_admin': ('Manage OTS groups', 'Group Admin'),
+    'group_readonly': ('View OTS groups (read-only)', 'Group Read-Only'),
 }
 
 # Map modules to required roles (administrator always has access)
@@ -57,6 +59,7 @@ MODULE_ROLES = {
     'settings': ['administrator', 'settings_admin', 'settings_readonly'],
     'api_keys': ['administrator', 'api_key_admin', 'api_key_readonly'],
     'api_docs': ['administrator', 'api_key_admin', 'api_key_readonly'],
+    'groups': ['administrator', 'group_admin', 'group_readonly'],
 }
 
 

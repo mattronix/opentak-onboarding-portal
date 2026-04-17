@@ -249,6 +249,7 @@
 
 .modal {
   background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 8px;
   box-shadow: 0 4px 20px var(--shadow-lg);
   max-width: 600px;

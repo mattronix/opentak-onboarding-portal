@@ -6,7 +6,7 @@ CRUD operations for user management
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt
 from app.api_v1 import api_v1
-from app.models import UserModel, UserRoleModel, db
+from app.models import UserModel, UserRoleModel, OTSGroupModel, GroupUserAssociation, db
 from app.ots import OTSClient
 from app.settings import OTS_URL, OTS_USERNAME, OTS_PASSWORD, OTS_VERIFY_SSL
 from datetime import datetime
@@ -83,6 +83,7 @@ def get_users():
             'lastName': user.lastName,
             'callsign': user.callsign,
             'roles': [{'name': role.name, 'displayName': role.display_name} for role in user.roles],
+            'groups': [{'id': a.group.id, 'name': a.group.name, 'displayName': a.group.display_name, 'direction': a.direction} for a in user.group_associations],
             'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None,
             'onboardedBy': user.onboardedBy
         } for user in users],
@@ -137,6 +138,11 @@ def get_user(user_id):
             'name': m.name,
             'description': m.description
         } for m in user.meshtastic],
+        'groups': [{
+            'id': g.id,
+            'name': g.name,
+            'displayName': g.display_name
+        } for g in user.ots_groups],
         'assignedRadios': [{
             'id': r.id,
             'name': r.name,
@@ -218,7 +224,33 @@ def create_user():
                 role = UserRoleModel.get_by_id(role_id)
                 if role:
                     user.roles.append(role)
-            db.session.commit()
+
+        # Add OTS groups with direction
+        if data.get('groups'):
+            for g in data['groups']:
+                group = OTSGroupModel.get_by_id(g['id'])
+                if group:
+                    assoc = GroupUserAssociation(group_id=group.id, user_id=user.id, direction=g.get('direction', 'BOTH'))
+                    db.session.add(assoc)
+                    directions = ['IN', 'OUT'] if assoc.direction == 'BOTH' else [assoc.direction]
+                    for d in directions:
+                        try:
+                            ots.add_user_to_group(data['username'], group.name, direction=d)
+                        except Exception as e:
+                            current_app.logger.error(f"Failed to add {data['username']} to OTS group {group.name} {d}: {e}")
+        elif data.get('groupIds'):
+            for gid in data['groupIds']:
+                group = OTSGroupModel.get_by_id(gid)
+                if group:
+                    assoc = GroupUserAssociation(group_id=group.id, user_id=user.id, direction='BOTH')
+                    db.session.add(assoc)
+                    for d in ('IN', 'OUT'):
+                        try:
+                            ots.add_user_to_group(data['username'], group.name, direction=d)
+                        except Exception as e:
+                            current_app.logger.error(f"Failed to add {data['username']} to OTS group {group.name} {d}: {e}")
+
+        db.session.commit()
 
         return jsonify({
             'message': 'User created successfully',
@@ -291,6 +323,57 @@ def update_user(user_id):
                 user.expiryDate = datetime.fromisoformat(data['expiryDate'].replace('Z', '+00:00'))
             else:
                 user.expiryDate = None
+
+        if 'groups' in data or 'groupIds' in data:
+            old_assocs = {a.group_id: a.direction for a in user.group_associations}
+
+            new_groups_list = data.get('groups', [{'id': gid, 'direction': 'BOTH'} for gid in data.get('groupIds', [])])
+            new_assocs = {g['id']: g.get('direction', 'BOTH') for g in new_groups_list}
+
+            added = set(new_assocs.keys()) - set(old_assocs.keys())
+            removed = set(old_assocs.keys()) - set(new_assocs.keys())
+            changed = {gid for gid in set(new_assocs.keys()) & set(old_assocs.keys()) if new_assocs[gid] != old_assocs[gid]}
+
+            GroupUserAssociation.query.filter_by(user_id=user.id).delete()
+            for g in new_groups_list:
+                group = OTSGroupModel.get_by_id(g['id'])
+                if group:
+                    assoc = GroupUserAssociation(group_id=group.id, user_id=user.id, direction=g.get('direction', 'BOTH'))
+                    db.session.add(assoc)
+
+            try:
+                ots = OTSClient(OTS_URL, OTS_USERNAME, OTS_PASSWORD)
+                for gid in added | changed:
+                    group = OTSGroupModel.get_by_id(gid)
+                    if group:
+                        new_dir = new_assocs[gid]
+                        directions = ['IN', 'OUT'] if new_dir == 'BOTH' else [new_dir]
+                        old_dir = old_assocs.get(gid)
+                        if old_dir:
+                            old_dirs = ['IN', 'OUT'] if old_dir == 'BOTH' else [old_dir]
+                            for d in old_dirs:
+                                if d not in directions:
+                                    try:
+                                        ots.remove_user_from_group(user.username, group.name, direction=d)
+                                    except Exception as e:
+                                        current_app.logger.error(f"Failed to remove {user.username} from OTS group {group.name} {d}: {e}")
+                        for d in directions:
+                            try:
+                                ots.add_user_to_group(user.username, group.name, direction=d)
+                            except Exception as e:
+                                current_app.logger.error(f"Failed to add {user.username} to OTS group {group.name} {d}: {e}")
+                for gid in removed:
+                    group = OTSGroupModel.get_by_id(gid)
+                    if group:
+                        old_dir = old_assocs[gid]
+                        directions = ['IN', 'OUT'] if old_dir == 'BOTH' else [old_dir]
+                        for d in directions:
+                            try:
+                                ots.remove_user_from_group(user.username, group.name, direction=d)
+                            except Exception as e:
+                                current_app.logger.error(f"Failed to remove {user.username} from OTS group {group.name} {d}: {e}")
+            except Exception as e:
+                current_app.logger.error(f"Failed to sync OTS groups for {user.username}: {e}")
 
     # Handle password reset (admin only)
     password_changed = False
