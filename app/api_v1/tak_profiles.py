@@ -227,7 +227,7 @@ def download_tak_profile(profile_id, dl_token_override=None):
 
     dl_token = dl_token_override or request.args.get('dl_token')
     if dl_token:
-        user_id = OneTimeTokenModel.validate_and_use_token(dl_token, f'download_{profile_id}')
+        user_id = OneTimeTokenModel.validate_token(dl_token, f'download_{profile_id}')
         if not user_id:
             return jsonify({'error': 'Invalid or expired download link'}), 403
         user = UserModel.get_user_by_id(user_id)

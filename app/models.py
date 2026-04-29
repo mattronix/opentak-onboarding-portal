@@ -1136,6 +1136,23 @@ class OneTimeTokenModel(db.Model):
         return token_obj.user_id
 
     @staticmethod
+    def validate_token(token, token_type):
+        """
+        Validate a token without consuming it (time-based only).
+        Token remains valid until expiry. Used for ATAK downloads where
+        the client may make multiple requests (preflight, redirects).
+        """
+        token_obj = OneTimeTokenModel.get_token(token, token_type)
+
+        if not token_obj:
+            return None
+
+        if datetime.datetime.now() > token_obj.expires_at:
+            return None
+
+        return token_obj.user_id
+
+    @staticmethod
     def cleanup_expired_tokens():
         """Delete expired tokens (for maintenance)"""
         try:

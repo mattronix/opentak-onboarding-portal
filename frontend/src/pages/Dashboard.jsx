@@ -164,7 +164,7 @@ function Dashboard() {
   const handleOpenInAtak = async (profileId) => {
     try {
       const downloadUrl = await takProfilesAPI.getDownloadUrl(profileId);
-      window.location.href = `tak://import?url=${encodeURIComponent(downloadUrl)}`;
+      window.location.href = `tak://com.atakmap.app/import?url=${encodeURIComponent(downloadUrl)}`;
     } catch (err) {
       console.error('Failed to generate download link:', err);
     }
