@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import './ChangePassword.css';
 
 // Import the centralized API helper
@@ -9,6 +10,7 @@ import api from '../services/api';
 const API_BASE_URL = window.location.origin;
 
 export default function ChangePassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -37,7 +39,7 @@ export default function ChangePassword() {
       return response.json();
     },
     onSuccess: () => {
-      setSuccess('Password changed successfully!');
+      setSuccess(t('profile.passwordChanged'));
       setError('');
       setFormData({
         newPassword: '',
@@ -67,24 +69,24 @@ export default function ChangePassword() {
 
     // Validation
     if (!formData.newPassword || !formData.confirmPassword) {
-      setError('All fields are required');
+      setError(t('profile.allFieldsRequired'));
       return;
     }
 
     if (formData.newPassword.length < 8) {
-      setError('New password must be at least 8 characters long');
+      setError(t('profile.newPasswordTooShort'));
       return;
     }
 
     // Check for disallowed characters
     const disallowedChars = /[&^$]/;
     if (disallowedChars.test(formData.newPassword)) {
-      setError('Password cannot contain &, ^, or $ characters');
+      setError(t('profile.passwordDisallowedChars'));
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('New passwords do not match');
+      setError(t('profile.newPasswordsNoMatch'));
       return;
     }
 
@@ -100,14 +102,14 @@ export default function ChangePassword() {
   return (
     <div className="change-password-container">
       <div className="change-password-card">
-        <h1>Change Password</h1>
+        <h1>{t('profile.changePasswordTitle')}</h1>
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
         <form onSubmit={handleSubmit} className="change-password-form">
           <div className="form-group">
-            <label htmlFor="newPassword">New Password *</label>
+            <label htmlFor="newPassword">{t('profile.newPasswordLabel')} *</label>
             <input
               type="password"
               id="newPassword"
@@ -118,11 +120,11 @@ export default function ChangePassword() {
               autoComplete="new-password"
               minLength={8}
             />
-            <small className="field-hint">Must be at least 8 characters. Cannot contain &amp;, ^, or $ characters.</small>
+            <small className="field-hint">{t('profile.passwordHint')}</small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm New Password *</label>
+            <label htmlFor="confirmPassword">{t('profile.confirmNewPasswordLabel')} *</label>
             <input
               type="password"
               id="confirmPassword"
@@ -142,14 +144,14 @@ export default function ChangePassword() {
               onClick={handleCancel}
               disabled={changeMutation.isPending}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="btn-submit"
               disabled={changeMutation.isPending}
             >
-              {changeMutation.isPending ? 'Changing...' : 'Change Password'}
+              {changeMutation.isPending ? t('profile.changingPassword') : t('profile.changePasswordButton')}
             </button>
           </div>
         </form>

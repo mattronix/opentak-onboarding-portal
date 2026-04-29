@@ -200,31 +200,12 @@ def login():
                     db.session.add(login_assoc)
                     current_app.logger.info(f"Login: Added group {group_name} to user {username}")
 
-        # Sync TAK profiles and Meshtastic configs from roles
-        current_app.logger.info(f"Login: Syncing TAK profiles and Meshtastic configs for user {username}")
-
-        # Add TAK profiles from all roles
-        for role in user.roles:
-            for tak_profile in role.takprofiles:
-                if tak_profile not in user.takprofiles:
-                    user.takprofiles.append(tak_profile)
-                    current_app.logger.info(f"Login: Added TAK profile {tak_profile.name} to user {username} from role {role.name}")
-
-        # Add Meshtastic configs from all roles
-        for role in user.roles:
-            for meshtastic in role.meshtastic:
-                if meshtastic not in user.meshtastic:
-                    user.meshtastic.append(meshtastic)
-                    current_app.logger.info(f"Login: Added Meshtastic config {meshtastic.name} to user {username} from role {role.name}")
-
         # Commit the changes
         db.session.commit()
 
         # Refresh user to get latest state
         db.session.refresh(user)
         current_app.logger.info(f"Login: User {username} final roles after sync: {[r.name for r in user.roles]}")
-        current_app.logger.info(f"Login: User {username} TAK profiles: {[p.name for p in user.takprofiles]}")
-        current_app.logger.info(f"Login: User {username} Meshtastic configs: {[m.name for m in user.meshtastic]}")
 
         # Create JWT tokens (identity must be string for Flask-JWT-Extended)
         access_token = create_access_token(
@@ -475,7 +456,8 @@ def get_current_user():
         'roles': [{'name': role.name, 'displayName': role.display_name} for role in user.roles],
         'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None,
         'onboardedBy': user.onboardedBy,
-        'has_password': user.has_password if user.has_password is not None else True
+        'has_password': user.has_password if user.has_password is not None else True,
+        'language': user.language or 'en'
     }
 
     # Include impersonation info if present in JWT
@@ -630,18 +612,6 @@ def register():
             # Add roles from onboarding code
             for role in onboarding_code.roles:
                 user.roles.append(role)
-
-            # Add TAK profiles from onboarding code roles
-            for role in onboarding_code.roles:
-                for tak_profile in role.takprofiles:
-                    if tak_profile not in user.takprofiles:
-                        user.takprofiles.append(tak_profile)
-
-            # Add Meshtastic configs from onboarding code roles
-            for role in onboarding_code.roles:
-                for meshtastic in role.meshtastic:
-                    if meshtastic not in user.meshtastic:
-                        user.meshtastic.append(meshtastic)
 
             # Assign OTS groups from onboarding code
             assign_ots_groups(username, onboarding_code, user)
@@ -1042,18 +1012,6 @@ def verify_email():
         # Add roles from onboarding code
         for role in onboarding_code.roles:
             user.roles.append(role)
-
-        # Add TAK profiles from onboarding code roles
-        for role in onboarding_code.roles:
-            for tak_profile in role.takprofiles:
-                if tak_profile not in user.takprofiles:
-                    user.takprofiles.append(tak_profile)
-
-        # Add Meshtastic configs from onboarding code roles
-        for role in onboarding_code.roles:
-            for meshtastic in role.meshtastic:
-                if meshtastic not in user.meshtastic:
-                    user.meshtastic.append(meshtastic)
 
         # Assign OTS groups from onboarding code
         assign_ots_groups(pending.username, onboarding_code, user)
@@ -1564,16 +1522,6 @@ def approve_registration(token):
 
         for role in onboarding_code.roles:
             new_user.roles.append(role)
-
-        for role in onboarding_code.roles:
-            for tak_profile in role.takprofiles:
-                if tak_profile not in new_user.takprofiles:
-                    new_user.takprofiles.append(tak_profile)
-
-        for role in onboarding_code.roles:
-            for meshtastic in role.meshtastic:
-                if meshtastic not in new_user.meshtastic:
-                    new_user.meshtastic.append(meshtastic)
 
         assign_ots_groups(pending.username, onboarding_code, new_user)
 

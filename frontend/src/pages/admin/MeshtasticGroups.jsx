@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { meshtasticGroupsAPI, meshtasticAPI, rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -6,6 +7,7 @@ import { Link } from 'react-router-dom';
 import '../../components/AdminTable.css';
 
 function MeshtasticGroups() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showError, showSuccess, confirm } = useNotification();
   const [showModal, setShowModal] = useState(false);
@@ -49,9 +51,9 @@ function MeshtasticGroups() {
       queryClient.invalidateQueries(['meshtasticGroupsAdmin']);
       setShowModal(false);
       resetForm();
-      showSuccess('Channel group created');
+      showSuccess(t('admin.meshtasticGroups.groupCreated'));
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create group'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.meshtasticGroups.failedCreate')),
   });
 
   const updateMutation = useMutation({
@@ -60,9 +62,9 @@ function MeshtasticGroups() {
       queryClient.invalidateQueries(['meshtasticGroupsAdmin']);
       setShowModal(false);
       resetForm();
-      showSuccess('Channel group updated');
+      showSuccess(t('admin.meshtasticGroups.groupUpdated'));
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to update group'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.meshtasticGroups.failedUpdate')),
   });
 
   const deleteMutation = useMutation({
@@ -70,9 +72,9 @@ function MeshtasticGroups() {
     onSuccess: () => {
       queryClient.invalidateQueries(['meshtasticGroupsAdmin']);
       queryClient.invalidateQueries(['meshtasticAdmin']);
-      showSuccess('Channel group deleted');
+      showSuccess(t('admin.meshtasticGroups.groupDeleted'));
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to delete group'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.meshtasticGroups.failedDelete')),
   });
 
   const addChannelMutation = useMutation({
@@ -83,9 +85,9 @@ function MeshtasticGroups() {
       queryClient.invalidateQueries(['meshtasticAdmin']);
       setShowSlotModal(false);
       setSlotData({ channelId: '', slotNumber: 0 });
-      showSuccess('Channel added to group');
+      showSuccess(t('admin.meshtasticGroups.channelAddedSuccess'));
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to add channel'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.meshtasticGroups.failedAddChannel')),
   });
 
   const removeChannelMutation = useMutation({
@@ -94,18 +96,18 @@ function MeshtasticGroups() {
     onSuccess: () => {
       queryClient.invalidateQueries(['meshtasticGroupsAdmin']);
       queryClient.invalidateQueries(['meshtasticAdmin']);
-      showSuccess('Channel removed from group');
+      showSuccess(t('admin.meshtasticGroups.channelRemovedSuccess'));
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to remove channel'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.meshtasticGroups.failedRemoveChannel')),
   });
 
   const regenerateUrlMutation = useMutation({
     mutationFn: (groupId) => meshtasticGroupsAPI.regenerateUrl(groupId),
     onSuccess: () => {
       queryClient.invalidateQueries(['meshtasticGroupsAdmin']);
-      showSuccess('Combined URL regenerated');
+      showSuccess(t('admin.meshtasticGroups.urlRegeneratedSuccess'));
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to regenerate URL'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.meshtasticGroups.failedRegenerate')),
   });
 
   const resetForm = () => {
@@ -155,14 +157,14 @@ function MeshtasticGroups() {
     return [0, 1, 2, 3, 4, 5, 6, 7].filter(s => !usedSlots.includes(s));
   };
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+  if (isLoading) return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
 
   // Show API errors if any
   if (groupsError) {
     return (
       <div className="admin-page">
         <div className="alert alert-error">
-          Failed to load channel groups: {groupsError.response?.data?.error || groupsError.message}
+          {t('admin.meshtasticGroups.failedLoad')}: {groupsError.response?.data?.error || groupsError.message}
         </div>
       </div>
     );
@@ -182,21 +184,21 @@ function MeshtasticGroups() {
     <div className="admin-page">
       <div className="admin-header">
         <div>
-          <h1>Meshtastic Channel Groups</h1>
+          <h1>{t('admin.meshtasticGroups.title')}</h1>
           <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Group channels together (up to 8 per group) for combined QR codes. <Link to="/admin/meshtastic">Manage individual channels</Link>
+            {t('admin.meshtasticGroups.subtitle')} <Link to="/admin/meshtastic">{t('admin.meshtasticGroups.manageChannels')}</Link>
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => {resetForm(); setShowModal(true);}}>+ Create Group</button>
+        <button className="btn btn-primary" onClick={() => {resetForm(); setShowModal(true);}}>{t('admin.meshtasticGroups.createGroup')}</button>
       </div>
 
       <div className="admin-table-container">
         {groups.length === 0 ? (
           <div className="empty-state">
-            No channel groups found. Create a group to organize your Meshtastic channels.
+            {t('admin.meshtasticGroups.noGroups')}
             {allChannels.length > 0 && (
               <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                You have {allChannels.length} channel(s) available to add to groups.
+                {t('admin.meshtasticGroups.channelsAvailable', { count: allChannels.length })}
               </p>
             )}
           </div>
@@ -214,8 +216,8 @@ function MeshtasticGroups() {
                   <h3 style={{ margin: 0 }}>{group.name}</h3>
                   {group.description && <p style={{ color: '#666', margin: '0.25rem 0 0' }}>{group.description}</p>}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    {group.isPublic && <span className="badge badge-success">Public</span>}
-                    <span className="badge badge-secondary">{group.channel_count}/8 slots</span>
+                    {group.isPublic && <span className="badge badge-success">{t('common.public')}</span>}
+                    <span className="badge badge-secondary">{t('admin.meshtasticGroups.slotsCount', { count: group.channel_count })}</span>
                   </div>
                 </div>
                 <div className="table-actions">
@@ -234,13 +236,13 @@ function MeshtasticGroups() {
                       });
                       setShowModal(true);
                     } catch (err) {
-                      showError('Failed to load group details');
+                      showError(t('admin.meshtasticGroups.failedLoadDetails'));
                     }
-                  }}>Edit</button>
+                  }}>{t('common.edit')}</button>
                   <button className="btn btn-sm btn-danger" onClick={async () => {
-                    const confirmed = await confirm(`Delete group "${group.name}"? Channels will be ungrouped but not deleted.`, 'Delete Group');
+                    const confirmed = await confirm(t('admin.meshtasticGroups.deleteConfirm', { name: group.name }), t('admin.meshtasticGroups.deleteGroup'));
                     if (confirmed) deleteMutation.mutate(group.id);
-                  }}>Delete</button>
+                  }}>{t('common.delete')}</button>
                 </div>
               </div>
 
@@ -269,7 +271,7 @@ function MeshtasticGroups() {
                       }}
                     >
                       <div style={{ fontSize: '0.7rem', color: '#999', marginBottom: '0.25rem' }}>
-                        Slot {slot}{slot === 0 ? ' (Primary)' : ''}
+                        {t('admin.meshtasticGroups.slot')} {slot}{slot === 0 ? ` (${t('common.primary')})` : ''}
                       </div>
                       {channel ? (
                         <>
@@ -280,17 +282,17 @@ function MeshtasticGroups() {
                             className="btn btn-sm"
                             style={{ fontSize: '0.7rem', padding: '2px 6px', marginTop: '4px' }}
                             onClick={async () => {
-                              const confirmed = await confirm(`Remove "${channel.name}" from slot ${slot}?`, 'Remove Channel');
+                              const confirmed = await confirm(t('admin.meshtasticGroups.removeChannelConfirm', { name: channel.name, slot }), t('admin.meshtasticGroups.removeChannelTitle'));
                               if (confirmed) {
                                 removeChannelMutation.mutate({ groupId: group.id, channelId: channel.id });
                               }
                             }}
                           >
-                            Remove
+                            {t('common.remove')}
                           </button>
                         </>
                       ) : (
-                        <div style={{ color: '#999', fontSize: '0.8rem' }}>Empty</div>
+                        <div style={{ color: '#999', fontSize: '0.8rem' }}>{t('common.empty')}</div>
                       )}
                     </div>
                   );
@@ -303,7 +305,7 @@ function MeshtasticGroups() {
                     className="btn btn-sm btn-info"
                     onClick={() => openAddChannelModal(group)}
                   >
-                    + Add Channel to Group
+                    {t('admin.meshtasticGroups.addChannel')}
                   </button>
                 )}
                 {group.channel_count > 0 && (
@@ -312,14 +314,14 @@ function MeshtasticGroups() {
                     onClick={() => regenerateUrlMutation.mutate(group.id)}
                     disabled={regenerateUrlMutation.isPending}
                   >
-                    {regenerateUrlMutation.isPending ? 'Regenerating...' : 'Regenerate QR URL'}
+                    {regenerateUrlMutation.isPending ? t('admin.meshtasticGroups.regenerating') : t('admin.meshtasticGroups.regenerateQr')}
                   </button>
                 )}
               </div>
 
               {group.combined_url && (
                 <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f5f5f5', borderRadius: '4px' }}>
-                  <strong>Combined URL:</strong>
+                  <strong>{t('admin.meshtasticGroups.combinedUrl')}:</strong>
                   <code style={{ fontSize: '0.8rem', wordBreak: 'break-all', display: 'block', marginTop: '0.25rem' }}>
                     {group.combined_url}
                   </code>
@@ -327,7 +329,7 @@ function MeshtasticGroups() {
               )}
               {!group.combined_url && group.channel_count > 0 && (
                 <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#fff3cd', borderRadius: '4px', color: '#856404' }}>
-                  No combined URL. Click "Regenerate QR URL" to generate.
+                  {t('admin.meshtasticGroups.noCombinedUrl')}
                 </div>
               )}
             </div>
@@ -340,28 +342,28 @@ function MeshtasticGroups() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editing ? 'Edit' : 'Create'} Channel Group</h2>
+              <h2>{editing ? t('admin.meshtasticGroups.editGroup') : t('admin.meshtasticGroups.createGroupTitle')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
                 <div className="form-group">
-                  <label>Name *</label>
+                  <label>{t('admin.meshtasticGroups.nameLabel')} *</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
-                    placeholder="e.g., Field Operations Channels"
+                    placeholder={t('admin.meshtasticGroups.namePlaceholder')}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{t('admin.meshtasticGroups.descriptionLabel')}</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Describe what this channel group is for"
+                    placeholder={t('admin.meshtasticGroups.descriptionPlaceholder')}
                   />
                 </div>
                 <div className="form-group">
@@ -371,7 +373,7 @@ function MeshtasticGroups() {
                       checked={formData.isPublic}
                       onChange={(e) => setFormData({...formData, isPublic: e.target.checked})}
                     />
-                    Public (visible to all users)
+                    {t('admin.meshtasticGroups.publicLabel')}
                   </label>
                 </div>
                 <div className="form-group">
@@ -381,11 +383,11 @@ function MeshtasticGroups() {
                       checked={formData.showOnHomepage}
                       onChange={(e) => setFormData({...formData, showOnHomepage: e.target.checked})}
                     />
-                    Show on homepage
+                    {t('admin.meshtasticGroups.showOnHomepage')}
                   </label>
                 </div>
                 <div className="form-group">
-                  <label>Roles</label>
+                  <label>{t('admin.meshtasticGroups.rolesLabel')}</label>
                   <div className="checkbox-list">
                     {rolesData?.roles?.map(role => (
                       <label key={role.id} className="checkbox-label">
@@ -405,7 +407,7 @@ function MeshtasticGroups() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Device Configuration (YAML)</label>
+                  <label>{t('admin.meshtasticGroups.deviceConfigLabel')}</label>
                   <textarea
                     value={formData.yamlConfig}
                     onChange={(e) => setFormData({...formData, yamlConfig: e.target.value})}
@@ -428,14 +430,14 @@ bluetooth:
                     style={{ fontFamily: 'monospace', minHeight: '180px' }}
                   />
                   <span className="help-text">
-                    YAML configuration applied when programming radios with this channel group. Placeholders will be replaced with radio-specific values.
+                    {t('admin.meshtasticGroups.deviceConfigHelp')}
                   </span>
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>{t('common.cancel')}</button>
                 <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editing ? 'Update' : 'Create'}
+                  {editing ? t('common.update') : t('common.create')}
                 </button>
               </div>
             </form>
@@ -448,30 +450,30 @@ bluetooth:
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Add Channel to "{selectedGroup.name}"</h2>
+              <h2>{t('admin.meshtasticGroups.addChannelTitle', { name: selectedGroup.name })}</h2>
               <button className="modal-close" onClick={() => setShowSlotModal(false)}>×</button>
             </div>
             <form onSubmit={handleAddChannelSubmit}>
               <div className="modal-body">
                 {error && <div className="alert alert-error">{error}</div>}
                 <div className="form-group">
-                  <label>Select Channel *</label>
+                  <label>{t('admin.meshtasticGroups.selectChannel')} *</label>
                   <select
                     value={slotData.channelId}
                     onChange={(e) => setSlotData({...slotData, channelId: e.target.value})}
                     required
                   >
-                    <option value="">-- Select a channel --</option>
+                    <option value="">{t('admin.meshtasticGroups.selectChannelDefault')}</option>
                     {getAvailableChannelsForGroup(selectedGroup).map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
                   {getAvailableChannelsForGroup(selectedGroup).length === 0 && (
-                    <span className="help-text">No available channels. All channels are already in this group or you need to <Link to="/admin/meshtastic">create a channel</Link> first.</span>
+                    <span className="help-text">{t('admin.meshtasticGroups.noAvailableChannels')} <Link to="/admin/meshtastic">{t('admin.meshtasticGroups.manageChannels')}</Link></span>
                   )}
                 </div>
                 <div className="form-group">
-                  <label>Slot Number *</label>
+                  <label>{t('admin.meshtasticGroups.slotNumber')} *</label>
                   <select
                     value={slotData.slotNumber}
                     onChange={(e) => setSlotData({...slotData, slotNumber: parseInt(e.target.value)})}
@@ -479,21 +481,21 @@ bluetooth:
                   >
                     {getAvailableSlots(selectedGroup).map(slot => (
                       <option key={slot} value={slot}>
-                        Slot {slot}{slot === 0 ? ' (Primary)' : ''}
+                        {t('admin.meshtasticGroups.slot')} {slot}{slot === 0 ? ` (${t('common.primary')})` : ''}
                       </option>
                     ))}
                   </select>
-                  <span className="help-text">Slot 0 is the primary channel. All channels share the same LoRa settings.</span>
+                  <span className="help-text">{t('admin.meshtasticGroups.slotHelp')}</span>
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowSlotModal(false)}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowSlotModal(false)}>{t('common.cancel')}</button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={addChannelMutation.isPending || !slotData.channelId}
                 >
-                  Add Channel
+                  {t('admin.meshtasticGroups.addChannel')}
                 </button>
               </div>
             </form>

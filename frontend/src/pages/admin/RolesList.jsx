@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function RolesList() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
   const { hasRole } = useAuth();
@@ -37,7 +39,7 @@ function RolesList() {
       resetForm();
     },
     onError: (err) => {
-      setError(err.response?.data?.error || 'Failed to create role');
+      setError(err.response?.data?.error || t('admin.roles.failedCreate'));
     },
   });
 
@@ -50,7 +52,7 @@ function RolesList() {
       resetForm();
     },
     onError: (err) => {
-      setError(err.response?.data?.error || 'Failed to update role');
+      setError(err.response?.data?.error || t('admin.roles.failedUpdate'));
     },
   });
 
@@ -61,7 +63,7 @@ function RolesList() {
       queryClient.invalidateQueries(['roles']);
     },
     onError: (err) => {
-      showError(err.response?.data?.error || 'Failed to delete role');
+      showError(err.response?.data?.error || t('admin.roles.failedDelete'));
     },
   });
 
@@ -93,8 +95,8 @@ function RolesList() {
 
   const handleDelete = async (role) => {
     const confirmed = await confirm(
-      `Are you sure you want to delete role "${role.name}"?`,
-      'Delete Role'
+      t('admin.roles.deleteConfirm', { name: role.name }),
+      t('admin.roles.deleteRole')
     );
     if (confirmed) {
       deleteMutation.mutate(role.id);
@@ -113,7 +115,7 @@ function RolesList() {
   };
 
   if (isLoading) {
-    return <div className="admin-page"><div className="loading-state">Loading roles...</div></div>;
+    return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
   }
 
   const roles = rolesData?.roles || [];
@@ -121,11 +123,11 @@ function RolesList() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Roles Management</h1>
+        <h1>{t('admin.roles.title')}</h1>
         <div className="admin-actions">
           {canEdit && (
             <button className="btn btn-primary" onClick={handleCreate}>
-              + Add Role
+              {t('admin.roles.addRole')}
             </button>
           )}
         </div>
@@ -133,16 +135,16 @@ function RolesList() {
 
       <div className="admin-table-container">
         {roles.length === 0 ? (
-          <div className="empty-state">No roles found</div>
+          <div className="empty-state">{t('admin.roles.noRoles')}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Display Name</th>
-                <th>Description</th>
-                <th>User Count</th>
-                <th>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('admin.roles.displayName')}</th>
+                <th>{t('common.description')}</th>
+                <th>{t('admin.roles.userCount')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -154,17 +156,17 @@ function RolesList() {
                   <td>{role.userCount || 0}</td>
                   <td>
                     {role.isProtected ? (
-                      <span className="badge badge-secondary">System Managed</span>
+                      <span className="badge badge-secondary">{t('admin.roles.systemManaged')}</span>
                     ) : (
                       <div className="table-actions">
                         {canEdit && (
                           <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(role)}>
-                            Edit
+                            {t('common.edit')}
                           </button>
                         )}
                         {canEdit && (
                           <button className="btn btn-sm btn-danger" onClick={() => handleDelete(role)}>
-                            Delete
+                            {t('common.delete')}
                           </button>
                         )}
                       </div>
@@ -182,7 +184,7 @@ function RolesList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingRole ? 'Edit Role' : 'Create Role'}</h2>
+              <h2>{editingRole ? t('admin.roles.editRole') : t('admin.roles.createRole')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -190,47 +192,47 @@ function RolesList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Name *</label>
+                  <label>{t('admin.roles.nameLabel')}</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
-                  <span className="help-text">Role identifier (e.g., "administrator", "user_admin")</span>
+                  <span className="help-text">{t('admin.roles.nameHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Display Name</label>
+                  <label>{t('admin.roles.displayNameLabel')}</label>
                   <input
                     type="text"
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    placeholder="Human-readable name shown in UI"
+                    placeholder={t('admin.roles.displayNameHelpExtra')}
                   />
-                  <span className="help-text">Optional friendly name shown in the UI (e.g., "User Admin")</span>
+                  <span className="help-text">{t('admin.roles.displayNameHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{t('admin.roles.descriptionLabel')}</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Optional description of the role"
+                    placeholder={t('admin.roles.descriptionHelp')}
                   />
                 </div>
               </div>
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editingRole ? 'Update' : 'Create'} Role
+                  {editingRole ? t('admin.roles.updateRole') : t('admin.roles.createRole')}
                 </button>
               </div>
             </form>

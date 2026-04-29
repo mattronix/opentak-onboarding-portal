@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -30,6 +31,7 @@ const quillFormats = [
 ];
 
 function AnnouncementsList() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showSuccess, showError, confirm } = useNotification();
   const { hasRole } = useAuth();
@@ -86,7 +88,7 @@ function AnnouncementsList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.announcements.failedCreate')),
   });
 
   const updateMutation = useMutation({
@@ -96,22 +98,22 @@ function AnnouncementsList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to update'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.announcements.failedUpdate')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => announcementsAPI.admin.delete(id),
     onSuccess: () => queryClient.invalidateQueries(['announcements']),
-    onError: (err) => showError(err.response?.data?.error || 'Failed to delete'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.announcements.failedDelete')),
   });
 
   const sendNowMutation = useMutation({
     mutationFn: (id) => announcementsAPI.admin.sendNow(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['announcements']);
-      showSuccess('Announcement sent successfully!');
+      showSuccess(t('admin.announcements.sentSuccess'));
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to send'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.announcements.failedSend')),
   });
 
   const resetForm = () => {
@@ -148,7 +150,7 @@ function AnnouncementsList() {
       setError('');
       setShowModal(true);
     } catch (err) {
-      showError('Failed to load announcement details');
+      showError(t('admin.announcements.failedLoadDetails'));
     }
   };
 
@@ -158,7 +160,7 @@ function AnnouncementsList() {
       setSelectedAnnouncement(response.data);
       setShowStatsModal(true);
     } catch (err) {
-      showError('Failed to load statistics');
+      showError(t('admin.announcements.failedLoadStats'));
     }
   };
 
@@ -168,7 +170,7 @@ function AnnouncementsList() {
       setSelectedAnnouncement(response.data);
       setShowPreviewModal(true);
     } catch (err) {
-      showError('Failed to load announcement');
+      showError(t('admin.announcements.failedLoadDetails'));
     }
   };
 
@@ -203,7 +205,7 @@ function AnnouncementsList() {
     return badges[status] || 'badge-primary';
   };
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+  if (isLoading) return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
 
   const announcements = announcementsData?.announcements || [];
   const roles = rolesData?.roles || [];
@@ -212,28 +214,28 @@ function AnnouncementsList() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Announcements</h1>
+        <h1>{t('admin.announcements.title')}</h1>
         {canEdit && (
           <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-            + Create Announcement
+            {t('admin.announcements.createAnnouncement')}
           </button>
         )}
       </div>
 
       <div className="admin-table-container">
         {announcements.length === 0 ? (
-          <div className="empty-state">No announcements found</div>
+          <div className="empty-state">{t('admin.announcements.noAnnouncements')}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Target</th>
-                <th>Email</th>
-                <th>Scheduled</th>
-                <th>Read</th>
-                <th>Actions</th>
+                <th>{t('common.title')}</th>
+                <th>{t('common.status')}</th>
+                <th>{t('admin.announcements.target')}</th>
+                <th>{t('admin.announcements.email')}</th>
+                <th>{t('admin.announcements.scheduled')}</th>
+                <th>{t('admin.announcements.read')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -242,7 +244,7 @@ function AnnouncementsList() {
                   <td><strong>{a.title}</strong></td>
                   <td><span className={`badge ${getStatusBadge(a.status)}`}>{a.status}</span></td>
                   <td>
-                    {a.targetType === 'all' && 'All Users'}
+                    {a.targetType === 'all' && t('admin.announcements.allUsers')}
                     {a.targetType === 'roles' && (
                       <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                         {a.targetRoles?.map(r => (
@@ -250,32 +252,32 @@ function AnnouncementsList() {
                         ))}
                       </div>
                     )}
-                    {a.targetType === 'users' && `${a.targetUsers?.length || 0} users`}
+                    {a.targetType === 'users' && t('admin.announcements.nUsers', { count: a.targetUsers?.length || 0 })}
                   </td>
-                  <td>{a.sendEmail ? 'Yes' : 'No'}</td>
+                  <td>{a.sendEmail ? t('common.yes') : t('common.no')}</td>
                   <td>{a.scheduledAt ? new Date(a.scheduledAt).toLocaleString() : '-'}</td>
                   <td>{a.readCount} / {a.totalTargeted}</td>
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-sm btn-secondary" onClick={() => handlePreview(a)}>
-                        View
+                        {t('common.view')}
                       </button>
                       <button className="btn btn-sm btn-secondary" onClick={() => handleViewStats(a)}>
-                        Stats
+                        {t('admin.announcements.stats')}
                       </button>
                       {canEdit && a.status !== 'sent' && (
                         <>
                           <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(a)}>
-                            Edit
+                            {t('common.edit')}
                           </button>
                           <button
                             className="btn btn-sm btn-success"
                             onClick={async () => {
-                              const confirmed = await confirm('Send this announcement now?', 'Send Announcement');
+                              const confirmed = await confirm(t('admin.announcements.sendConfirm'), t('admin.announcements.sendAnnouncement'));
                               if (confirmed) sendNowMutation.mutate(a.id);
                             }}
                           >
-                            Send Now
+                            {t('admin.announcements.sendNow')}
                           </button>
                         </>
                       )}
@@ -283,11 +285,11 @@ function AnnouncementsList() {
                         <button
                           className="btn btn-sm btn-danger"
                           onClick={async () => {
-                            const confirmed = await confirm('Delete this announcement?', 'Delete Announcement');
+                            const confirmed = await confirm(t('admin.announcements.deleteConfirm'), t('admin.announcements.deleteAnnouncement'));
                             if (confirmed) deleteMutation.mutate(a.id);
                           }}
                         >
-                          Delete
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -304,7 +306,7 @@ function AnnouncementsList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
             <div className="modal-header">
-              <h2>{editing ? 'Edit Announcement' : 'Create Announcement'}</h2>
+              <h2>{editing ? t('admin.announcements.editTitle') : t('admin.announcements.createTitle')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>x</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -312,7 +314,7 @@ function AnnouncementsList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Title *</label>
+                  <label>{t('common.title')} *</label>
                   <input
                     type="text"
                     value={formData.title}
@@ -322,7 +324,7 @@ function AnnouncementsList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Content *</label>
+                  <label>{t('admin.announcements.contentLabel')}</label>
                   <div style={{ background: 'white', borderRadius: '4px' }}>
                     <ReactQuill
                       theme="snow"
@@ -331,26 +333,26 @@ function AnnouncementsList() {
                       modules={quillModules}
                       formats={quillFormats}
                       style={{ minHeight: '200px' }}
-                      placeholder="Write your announcement..."
+                      placeholder={t('admin.announcements.contentPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Target Audience</label>
+                  <label>{t('admin.announcements.targetAudience')}</label>
                   <select
                     value={formData.targetType}
                     onChange={(e) => setFormData({...formData, targetType: e.target.value})}
                   >
-                    <option value="all">All Users</option>
-                    <option value="roles">Specific Roles</option>
-                    <option value="users">Specific Users</option>
+                    <option value="all">{t('admin.announcements.allUsers')}</option>
+                    <option value="roles">{t('admin.announcements.specificRoles')}</option>
+                    <option value="users">{t('admin.announcements.specificUsers')}</option>
                   </select>
                 </div>
 
                 {formData.targetType === 'roles' && (
                   <div className="form-group">
-                    <label>Select Roles</label>
+                    <label>{t('admin.announcements.selectRoles')}</label>
                     <div className="checkbox-list">
                       {roles.map(role => (
                         <label key={role.id} className="checkbox-label">
@@ -373,7 +375,7 @@ function AnnouncementsList() {
 
                 {formData.targetType === 'users' && (
                   <div className="form-group">
-                    <label>Select Users</label>
+                    <label>{t('admin.announcements.selectUsers')}</label>
                     <div className="checkbox-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                       {users.map(user => (
                         <label key={user.id} className="checkbox-label">
@@ -396,30 +398,30 @@ function AnnouncementsList() {
 
                 <div className="form-group">
                   <label className="checkbox-label">
-                    <span>Send as Email</span>
+                    <span>{t('admin.announcements.sendAsEmail')}</span>
                     <input
                       type="checkbox"
                       checked={formData.sendEmail}
                       onChange={(e) => setFormData({...formData, sendEmail: e.target.checked})}
                     />
                   </label>
-                  <span className="help-text">Also send via email to targeted users</span>
+                  <span className="help-text">{t('admin.announcements.sendAsEmailHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Schedule For</label>
+                  <label>{t('admin.announcements.scheduleFor')}</label>
                   <input
                     type="datetime-local"
                     value={formData.scheduledAt}
                     onChange={(e) => setFormData({...formData, scheduledAt: e.target.value, sendImmediately: false})}
                   />
-                  <span className="help-text">Leave empty to save as draft</span>
+                  <span className="help-text">{t('admin.announcements.scheduleHelp')}</span>
                 </div>
 
                 {!editing && (
                   <div className="form-group">
                     <label className="checkbox-label">
-                      <span>Send Immediately</span>
+                      <span>{t('admin.announcements.sendImmediately')}</span>
                       <input
                         type="checkbox"
                         checked={formData.sendImmediately}
@@ -432,14 +434,14 @@ function AnnouncementsList() {
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editing ? 'Update' : 'Create'}
+                  {editing ? t('common.update') : t('common.create')}
                 </button>
               </div>
             </form>
@@ -452,27 +454,27 @@ function AnnouncementsList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
             <div className="modal-header">
-              <h2>Read Statistics</h2>
+              <h2>{t('admin.announcements.readStatistics')}</h2>
               <button className="modal-close" onClick={() => setShowStatsModal(false)}>x</button>
             </div>
             <div className="modal-body">
               <h3>{selectedAnnouncement.title}</h3>
-              <p><strong>Status:</strong> {selectedAnnouncement.status}</p>
-              <p><strong>Total Targeted:</strong> {selectedAnnouncement.stats?.totalTargeted || 0}</p>
-              <p><strong>Total Reads:</strong> {selectedAnnouncement.stats?.totalReads || 0}</p>
+              <p><strong>{t('common.status')}:</strong> {selectedAnnouncement.status}</p>
+              <p><strong>{t('admin.announcements.totalTargeted')}:</strong> {selectedAnnouncement.stats?.totalTargeted || 0}</p>
+              <p><strong>{t('admin.announcements.totalReads')}:</strong> {selectedAnnouncement.stats?.totalReads || 0}</p>
               {selectedAnnouncement.sendEmail && (
-                <p><strong>Email Opens:</strong> {selectedAnnouncement.stats?.emailOpens || 0}</p>
+                <p><strong>{t('admin.announcements.emailOpens')}:</strong> {selectedAnnouncement.stats?.emailOpens || 0}</p>
               )}
 
               {selectedAnnouncement.reads && selectedAnnouncement.reads.length > 0 && (
                 <>
-                  <h4 style={{ marginTop: '1.5rem' }}>Read By:</h4>
+                  <h4 style={{ marginTop: '1.5rem' }}>{t('admin.announcements.readBy')}:</h4>
                   <table className="admin-table" style={{ fontSize: '0.9rem' }}>
                     <thead>
                       <tr>
-                        <th>User</th>
-                        <th>Read At</th>
-                        {selectedAnnouncement.sendEmail && <th>Email Opened</th>}
+                        <th>{t('admin.announcements.user')}</th>
+                        <th>{t('admin.announcements.readAt')}</th>
+                        {selectedAnnouncement.sendEmail && <th>{t('admin.announcements.emailOpened')}</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -481,7 +483,7 @@ function AnnouncementsList() {
                           <td>{r.username}</td>
                           <td>{new Date(r.readAt).toLocaleString()}</td>
                           {selectedAnnouncement.sendEmail && (
-                            <td>{r.emailOpened ? new Date(r.emailOpenedAt).toLocaleString() : 'No'}</td>
+                            <td>{r.emailOpened ? new Date(r.emailOpenedAt).toLocaleString() : t('common.no')}</td>
                           )}
                         </tr>
                       ))}
@@ -491,7 +493,7 @@ function AnnouncementsList() {
               )}
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowStatsModal(false)}>Close</button>
+              <button className="btn btn-secondary" onClick={() => setShowStatsModal(false)}>{t('common.close')}</button>
             </div>
           </div>
         </div>
@@ -508,18 +510,18 @@ function AnnouncementsList() {
             <div className="modal-body">
               <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8f9fa', borderRadius: '4px', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                  <span><strong>Status:</strong> <span className={`badge ${getStatusBadge(selectedAnnouncement.status)}`}>{selectedAnnouncement.status}</span></span>
-                  <span><strong>Target:</strong> {selectedAnnouncement.targetType === 'all' ? 'All Users' : selectedAnnouncement.targetType === 'roles' ? 'Specific Roles' : 'Specific Users'}</span>
-                  <span><strong>Email:</strong> {selectedAnnouncement.sendEmail ? 'Yes' : 'No'}</span>
+                  <span><strong>{t('common.status')}:</strong> <span className={`badge ${getStatusBadge(selectedAnnouncement.status)}`}>{selectedAnnouncement.status}</span></span>
+                  <span><strong>{t('admin.announcements.target')}:</strong> {selectedAnnouncement.targetType === 'all' ? t('admin.announcements.allUsers') : selectedAnnouncement.targetType === 'roles' ? t('admin.announcements.specificRoles') : t('admin.announcements.specificUsers')}</span>
+                  <span><strong>{t('admin.announcements.email')}:</strong> {selectedAnnouncement.sendEmail ? t('common.yes') : t('common.no')}</span>
                 </div>
                 {selectedAnnouncement.sentAt && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <strong>Sent:</strong> {new Date(selectedAnnouncement.sentAt).toLocaleString()}
+                    <strong>{t('admin.announcements.sent')}:</strong> {new Date(selectedAnnouncement.sentAt).toLocaleString()}
                   </div>
                 )}
                 {selectedAnnouncement.scheduledAt && selectedAnnouncement.status === 'scheduled' && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <strong>Scheduled:</strong> {new Date(selectedAnnouncement.scheduledAt).toLocaleString()}
+                    <strong>{t('admin.announcements.scheduled')}:</strong> {new Date(selectedAnnouncement.scheduledAt).toLocaleString()}
                   </div>
                 )}
               </div>
@@ -544,10 +546,10 @@ function AnnouncementsList() {
                     handleEdit(selectedAnnouncement);
                   }}
                 >
-                  Edit
+                  {t('common.edit')}
                 </button>
               )}
-              <button className="btn btn-primary" onClick={() => setShowPreviewModal(false)}>Close</button>
+              <button className="btn btn-primary" onClick={() => setShowPreviewModal(false)}>{t('common.close')}</button>
             </div>
           </div>
         </div>

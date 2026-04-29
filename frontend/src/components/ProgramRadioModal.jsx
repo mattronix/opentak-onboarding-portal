@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { radiosAPI, meshtasticGroupsAPI } from '../services/api';
 import { meshtasticSerial } from '../services/meshtasticSerial';
 import './ProgramRadioModal.css';
 
 function ProgramRadioModal({ radio, onClose }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1); // 1: Select config, 2: Connect, 3: Programming, 4: Result
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -101,7 +103,7 @@ function ProgramRadioModal({ radio, onClose }) {
       // Auto-start programming after connection
       await startProgramming();
     } catch (err) {
-      const msg = err?.message || (typeof err === 'string' ? err : 'Connection failed');
+      const msg = err?.message || (typeof err === 'string' ? err : t('radio.programmingFailed'));
       setError(msg);
     }
   };
@@ -126,7 +128,7 @@ function ProgramRadioModal({ radio, onClose }) {
       setSuccess(true);
       setStep(4);
     } catch (err) {
-      const msg = err?.message || (typeof err === 'string' ? err : 'An unknown error occurred during programming');
+      const msg = err?.message || (typeof err === 'string' ? err : t('radio.unknownError'));
       setError(msg);
       setStep(4);
     } finally {
@@ -136,9 +138,7 @@ function ProgramRadioModal({ radio, onClose }) {
 
   const handleClose = () => {
     if (isProgramming) {
-      const confirmed = window.confirm(
-        'Programming is in progress!\n\nClosing now may leave your radio in an incomplete state.\n\nAre you sure you want to cancel?'
-      );
+      const confirmed = window.confirm(t('radio.configInProgress'));
       if (!confirmed) return;
     }
     onClose();
@@ -150,16 +150,16 @@ function ProgramRadioModal({ radio, onClose }) {
     <div className="modal-overlay">
       <div className="modal program-radio-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Program Radio: {radio.name}</h2>
+          <h2>{t('common.program')}: {radio.name}</h2>
           <button className="modal-close" onClick={handleClose} disabled={isProgramming}>×</button>
         </div>
 
         <div className="modal-body">
           {!browserSupport.isSupported ? (
             <div className="browser-warning">
-              <h3>Browser Not Supported</h3>
+              <h3>{t('radio.browserNotSupported')}</h3>
               <p>{browserSupport.message}</p>
-              <p>You are using: <strong>{browserSupport.browser}</strong></p>
+              <p>{t('radio.youAreUsing')} <strong>{browserSupport.browser}</strong></p>
             </div>
           ) : (
             <>
@@ -167,19 +167,19 @@ function ProgramRadioModal({ radio, onClose }) {
               <div className="step-indicator">
                 <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
                   <span className="step-number">1</span>
-                  <span className="step-label">Select Config</span>
+                  <span className="step-label">{t('radio.selectConfig')}</span>
                 </div>
                 <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
                   <span className="step-number">2</span>
-                  <span className="step-label">Connect</span>
+                  <span className="step-label">{t('common.connect')}</span>
                 </div>
                 <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}>
                   <span className="step-number">3</span>
-                  <span className="step-label">Program</span>
+                  <span className="step-label">{t('common.program')}</span>
                 </div>
                 <div className={`step ${step >= 4 ? 'active' : ''}`}>
                   <span className="step-number">4</span>
-                  <span className="step-label">Done</span>
+                  <span className="step-label">{t('common.done')}</span>
                 </div>
               </div>
 
@@ -188,13 +188,13 @@ function ProgramRadioModal({ radio, onClose }) {
               {/* Step 1: Select Configuration */}
               {step === 1 && (
                 <div className="program-step">
-                  <h3>Select Channel Group</h3>
-                  <p>Choose which channel group configuration to program onto this radio.</p>
+                  <h3>{t('radio.selectChannelGroup')}</h3>
+                  <p>{t('radio.chooseChannelGroup')}</p>
 
                   {loadingGroups ? (
-                    <div className="loading">Loading channel groups...</div>
+                    <div className="loading">{t('radio.loadingChannelGroups')}</div>
                   ) : groups.length === 0 ? (
-                    <div className="empty-state">No channel groups available. Create one first.</div>
+                    <div className="empty-state">{t('radio.noChannelGroups')}</div>
                   ) : (
                     <>
                       <div className="group-select">
@@ -206,8 +206,8 @@ function ProgramRadioModal({ radio, onClose }) {
                           >
                             <div className="group-name">{group.name}</div>
                             <div className="group-details">
-                              <span className="channel-count">{group.channel_count} channels</span>
-                              {group.yamlConfig && <span className="has-config">Has device config</span>}
+                              <span className="channel-count">{group.channel_count} {t('radio.channels')}</span>
+                              {group.yamlConfig && <span className="has-config">{t('radio.hasDeviceConfig')}</span>}
                             </div>
                             {group.description && (
                               <div className="group-description">{group.description}</div>
@@ -224,33 +224,33 @@ function ProgramRadioModal({ radio, onClose }) {
                             onClick={() => setShowPreview(!showPreview)}
                           >
                             <span className="preview-toggle">{showPreview ? '▼' : '▶'}</span>
-                            <h4>Configuration Preview</h4>
-                            {loadingPreview && <span className="preview-loading">Loading...</span>}
+                            <h4>{t('radio.configPreview')}</h4>
+                            {loadingPreview && <span className="preview-loading">{t('common.loading')}</span>}
                           </div>
 
                           {showPreview && previewConfig && (
                             <div className="preview-content">
                               {/* Radio Info */}
                               <div className="preview-section">
-                                <h5>Target Radio</h5>
+                                <h5>{t('radio.targetRadio')}</h5>
                                 <div className="preview-radio-info">
                                   <span><strong>{previewConfig.radio.name}</strong></span>
                                   {previewConfig.radio.shortName && (
-                                    <span className="radio-detail">Short: {previewConfig.radio.shortName}</span>
+                                    <span className="radio-detail">{t('radio.short')}: {previewConfig.radio.shortName}</span>
                                   )}
                                   {previewConfig.radio.longName && (
-                                    <span className="radio-detail">Long: {previewConfig.radio.longName}</span>
+                                    <span className="radio-detail">{t('radio.long')}: {previewConfig.radio.longName}</span>
                                   )}
                                 </div>
                               </div>
 
                               {/* Channels */}
                               <div className="preview-section">
-                                <h5>Channels ({previewConfig.channels.length})</h5>
+                                <h5>{previewConfig.channels.length} {t('radio.channels')}</h5>
                                 <div className="preview-channels">
                                   {previewConfig.channels.map((channel, idx) => (
                                     <div key={idx} className="preview-channel">
-                                      <span className="channel-slot">Slot {channel.slot_number}</span>
+                                      <span className="channel-slot">{t('radio.slot')} {channel.slot_number}</span>
                                       <span className="channel-name">{channel.name}</span>
                                     </div>
                                   ))}
@@ -260,10 +260,10 @@ function ProgramRadioModal({ radio, onClose }) {
                               {/* YAML Config */}
                               {previewConfig.yaml_config && (
                                 <div className="preview-section">
-                                  <h5>Device Configuration (Rendered)</h5>
+                                  <h5>{t('radio.deviceConfig')}</h5>
                                   {previewConfig.unresolved_placeholders?.length > 0 && (
                                     <div className="preview-warning">
-                                      Missing values for: {previewConfig.unresolved_placeholders.join(', ')}
+                                      {t('radio.missingValues')}{previewConfig.unresolved_placeholders.join(', ')}
                                     </div>
                                   )}
                                   <pre className="preview-yaml">{previewConfig.yaml_config}</pre>
@@ -273,10 +273,10 @@ function ProgramRadioModal({ radio, onClose }) {
                               {/* User Info */}
                               {previewConfig.user && (
                                 <div className="preview-section">
-                                  <h5>Assigned User</h5>
+                                  <h5>{t('radio.assignedUser')}</h5>
                                   <div className="preview-user">
                                     {previewConfig.user.callsign && (
-                                      <span>Callsign: <strong>{previewConfig.user.callsign}</strong></span>
+                                      <span>{t('radio.callsign')}: <strong>{previewConfig.user.callsign}</strong></span>
                                     )}
                                   </div>
                                 </div>
@@ -298,15 +298,15 @@ function ProgramRadioModal({ radio, onClose }) {
                     <div className="connecting-overlay">
                       <div className="connecting-header">
                         <div className="programming-spinner"></div>
-                        <h3>Connecting to Radio...</h3>
+                        <h3>{t('radio.connectingToRadio')}</h3>
                       </div>
-                      <p className="connecting-message">Please wait while we establish connection</p>
+                      <p className="connecting-message">{t('radio.pleaseWait')}</p>
                       <div className="connecting-status">
-                        {statusMessage || 'Initializing...'}
+                        {statusMessage || t('radio.initializing')}
                       </div>
                       {scanLog.length > 0 && (
                         <div className="scan-terminal" style={{ marginTop: '20px', textAlign: 'left' }}>
-                          <div className="terminal-header">Connection Log</div>
+                          <div className="terminal-header">{t('radio.connectionLog')}</div>
                           <div className="terminal-content" ref={terminalRef}>
                             {scanLog.map((entry, idx) => (
                               <div key={idx} className={`terminal-line ${entry.type}`}>
@@ -321,19 +321,19 @@ function ProgramRadioModal({ radio, onClose }) {
                   ) : (
                     /* Show connection instructions when not connecting */
                     <>
-                      <h3>Connect to Radio</h3>
-                      <p>Connect your Meshtastic radio via USB and click the button below.</p>
+                      <h3>{t('radio.connectToRadio')}</h3>
+                      <p>{t('radio.connectDesc')}</p>
 
                       <div className="connection-status">
                         <div className={`status-indicator ${connectionStatus}`}></div>
-                        <span>{statusMessage || 'Ready to connect'}</span>
+                        <span>{statusMessage || t('radio.readyToConnect')}</span>
                       </div>
 
                       <div className="connection-instructions">
                         <ol>
-                          <li>Connect your Meshtastic radio to your computer via USB</li>
-                          <li>Click "Connect Radio" and select the serial port</li>
-                          <li>Wait for the connection to be established</li>
+                          <li>{t('radio.connectStep1')}</li>
+                          <li>{t('radio.connectStep2')}</li>
+                          <li>{t('radio.connectStep3')}</li>
                         </ol>
                       </div>
 
@@ -342,12 +342,12 @@ function ProgramRadioModal({ radio, onClose }) {
                         onClick={handleConnect}
                         disabled={connectionStatus === 'connecting'}
                       >
-                        Connect Radio
+                        {t('radio.connectRadio')}
                       </button>
 
                       {scanLog.length > 0 && (
                         <div className="scan-terminal">
-                          <div className="terminal-header">Connection Log</div>
+                          <div className="terminal-header">{t('radio.connectionLog')}</div>
                           <div className="terminal-content" ref={terminalRef}>
                             {scanLog.map((entry, idx) => (
                               <div key={idx} className={`terminal-line ${entry.type}`}>
@@ -368,17 +368,17 @@ function ProgramRadioModal({ radio, onClose }) {
                 <div className="program-step">
                   <div className="programming-header">
                     <div className="programming-spinner"></div>
-                    <h3>Configuring Radio...</h3>
+                    <h3>{t('radio.configuringRadio')}</h3>
                   </div>
 
                   <div className="programming-warning">
-                    <strong>Please wait</strong> — Do not disconnect or close this window
+                    <strong>{t('radio.pleaseWait')}</strong> — {t('radio.doNotDisconnect')}
                   </div>
 
                   {deviceInfo && (
                     <div className="device-info">
-                      <strong>Device:</strong>
-                      <span>{deviceInfo.longName || deviceInfo.shortName || 'Unknown'}</span>
+                      <strong>{t('radio.device')}:</strong>
+                      <span>{deviceInfo.longName || deviceInfo.shortName || t('common.unknown')}</span>
                       {deviceInfo.firmwareVersion && (
                         <span className="firmware">v{deviceInfo.firmwareVersion}</span>
                       )}
@@ -393,16 +393,16 @@ function ProgramRadioModal({ radio, onClose }) {
                       ></div>
                     </div>
                     <div className="progress-text">
-                      {progress.message || 'Starting configuration...'}
+                      {progress.message || t('radio.startingConfig')}
                     </div>
                     <div className="progress-count">
-                      {progress.total > 0 ? `${progress.current} / ${progress.total}` : 'Preparing...'}
+                      {progress.total > 0 ? `${progress.current} / ${progress.total}` : t('radio.preparing')}
                     </div>
                   </div>
 
                   {scanLog.length > 0 && (
                     <div className="scan-terminal" style={{ marginTop: '16px' }}>
-                      <div className="terminal-header">Programming Log</div>
+                      <div className="terminal-header">{t('radio.programmingLog')}</div>
                       <div className="terminal-content" ref={terminalRef}>
                         {scanLog.map((entry, idx) => (
                           <div key={idx} className={`terminal-line ${entry.type}`}>
@@ -422,23 +422,23 @@ function ProgramRadioModal({ radio, onClose }) {
                   {success ? (
                     <div className="result-success">
                       <div className="result-icon">&#10004;</div>
-                      <h3>Programming Complete!</h3>
-                      <p>The radio has been successfully programmed with the selected configuration.</p>
+                      <h3>{t('radio.programmingComplete')}</h3>
+                      <p>{t('radio.programmingSuccess')}</p>
                       {deviceInfo && (
-                        <p className="device-name">Device: {deviceInfo.longName || deviceInfo.shortName}</p>
+                        <p className="device-name">{t('radio.device')}: {deviceInfo.longName || deviceInfo.shortName}</p>
                       )}
                     </div>
                   ) : (
                     <div className="result-error">
                       <div className="result-icon">&#10006;</div>
-                      <h3>Programming Failed</h3>
-                      <p>{error || 'An unknown error occurred'}</p>
+                      <h3>{t('radio.programmingFailed')}</h3>
+                      <p>{error || t('radio.unknownError')}</p>
                     </div>
                   )}
 
                   {scanLog.length > 0 && (
                     <div className="scan-terminal" style={{ marginTop: '16px' }}>
-                      <div className="terminal-header">Programming Log</div>
+                      <div className="terminal-header">{t('radio.programmingLog')}</div>
                       <div className="terminal-content" ref={terminalRef}>
                         {scanLog.map((entry, idx) => (
                           <div key={idx} className={`terminal-line ${entry.type}`}>
@@ -459,14 +459,14 @@ function ProgramRadioModal({ radio, onClose }) {
           {step === 1 && (
             <>
               <button className="btn btn-secondary" onClick={handleClose}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 className="btn btn-primary"
                 onClick={() => setStep(2)}
                 disabled={!selectedGroupId}
               >
-                Next: Connect Radio
+                {t('radio.nextConnectRadio')}
               </button>
             </>
           )}
@@ -478,14 +478,14 @@ function ProgramRadioModal({ radio, onClose }) {
                 onClick={() => setStep(1)}
                 disabled={connectionStatus === 'connecting'}
               >
-                Back
+                {t('common.back')}
               </button>
             </>
           )}
 
           {step === 3 && (
             <div className="programming-footer-notice">
-              Configuration in progress...
+              {t('radio.configInProgress')}
             </div>
           )}
 
@@ -496,11 +496,11 @@ function ProgramRadioModal({ radio, onClose }) {
                   className="btn btn-secondary"
                   onClick={() => { setStep(2); setError(''); }}
                 >
-                  Try Again
+                  {t('common.tryAgain')}
                 </button>
               )}
               <button className="btn btn-primary" onClick={handleClose}>
-                Close
+                {t('common.close')}
               </button>
             </>
           )}

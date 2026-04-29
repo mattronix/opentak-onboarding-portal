@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { settingsAPI, oidcAPI, rolesAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
 
 // Component for numeric settings (number input with save button)
 function NumericSettingItem({ setting, onSave, saving, formatSettingName, canEdit = true }) {
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(setting?.value || '');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -51,14 +53,14 @@ function NumericSettingItem({ setting, onSave, saving, formatSettingName, canEdi
               onClick={handleSave}
               disabled={saving}
             >
-              Save
+              {t('common.save')}
             </button>
             <button
               className="btn-cancel-setting"
               onClick={handleCancel}
               disabled={saving}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         )}
@@ -69,6 +71,7 @@ function NumericSettingItem({ setting, onSave, saving, formatSettingName, canEdi
 
 // Component for paired settings (toggle + text value)
 function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, saving, formatSettingName, canEdit = true }) {
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(valueSetting?.value || '');
   const [isEditing, setIsEditing] = useState(false);
   const isEnabled = enabledSetting?.value === 'true';
@@ -130,14 +133,14 @@ function PairedSettingItem({ enabledSetting, valueSetting, onToggle, onSave, sav
                   onClick={handleSave}
                   disabled={saving}
                 >
-                  Save
+                  {t('common.save')}
                 </button>
                 <button
                   className="btn-cancel-setting"
                   onClick={handleCancel}
                   disabled={saving}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             )}
@@ -186,6 +189,7 @@ const toHexColor = (value) => {
 
 // Component for color settings
 function ColorSettingItem({ setting, onSave, saving, formatSettingName, canEdit = true }) {
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(setting?.value || '#000000');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -242,14 +246,14 @@ function ColorSettingItem({ setting, onSave, saving, formatSettingName, canEdit 
               onClick={handleSave}
               disabled={saving}
             >
-              Save
+              {t('common.save')}
             </button>
             <button
               className="btn-cancel-setting"
               onClick={handleCancel}
               disabled={saving}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         )}
@@ -260,6 +264,7 @@ function ColorSettingItem({ setting, onSave, saving, formatSettingName, canEdit 
 
 // Component for dropdown settings (e.g. theme selection)
 function DropdownSettingItem({ setting, options, onSave, saving, formatSettingName, canEdit = true }) {
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(setting?.value || '');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -307,14 +312,14 @@ function DropdownSettingItem({ setting, options, onSave, saving, formatSettingNa
               onClick={handleSave}
               disabled={saving}
             >
-              Save
+              {t('common.save')}
             </button>
             <button
               className="btn-cancel-setting"
               onClick={handleCancel}
               disabled={saving}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         )}
@@ -325,6 +330,7 @@ function DropdownSettingItem({ setting, options, onSave, saving, formatSettingNa
 
 // Component for logo upload
 function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChange, saving, canEdit = true }) {
+  const { t } = useTranslation();
   const [preview, setPreview] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -335,13 +341,13 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
     // Validate file type
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please use PNG, JPG, or GIF.');
+      alert(t('admin.settings.invalidFileType'));
       return;
     }
 
     // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('File too large. Maximum size is 2MB.');
+      alert(t('admin.settings.fileTooLarge'));
       return;
     }
 
@@ -371,8 +377,8 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
     <div className="setting-item setting-item-logo">
       <div className="setting-header">
         <div className="setting-info">
-          <h4>Portal Logo</h4>
-          <p className="setting-description">Upload a custom logo for the portal. Supports PNG, JPG, GIF (max 2MB)</p>
+          <h4>{t('admin.settings.portalLogo')}</h4>
+          <p className="setting-description">{t('admin.settings.portalLogoHelp')}</p>
         </div>
       </div>
 
@@ -404,21 +410,21 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
               onChange={(e) => handleFileSelect(e.target.files[0])}
               style={{ display: 'none' }}
             />
-            <p>Drop image here or click to upload</p>
+            <p>{t('admin.settings.dropImage')}</p>
           </div>
         )}
 
         {/* Display Mode */}
         <div className="logo-display-mode">
-          <label>Display Mode:</label>
+          <label>{t('admin.settings.displayMode')}:</label>
           <select
             value={logoSettings?.logo_display_mode || 'logo_and_text'}
             onChange={(e) => onDisplayModeChange(e.target.value)}
             disabled={saving || !canEdit}
           >
-            <option value="logo_only">Logo Only</option>
-            <option value="text_only">Text Only</option>
-            <option value="logo_and_text">Logo and Text</option>
+            <option value="logo_only">{t('admin.settings.logoOnly')}</option>
+            <option value="text_only">{t('admin.settings.textOnly')}</option>
+            <option value="logo_and_text">{t('admin.settings.logoAndText')}</option>
           </select>
         </div>
 
@@ -429,7 +435,7 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
             onClick={onDelete}
             disabled={saving || !canEdit}
           >
-            Reset to Default
+            {t('admin.settings.resetToDefault')}
           </button>
         )}
       </div>
@@ -439,6 +445,7 @@ function LogoUploadSetting({ logoSettings, onUpload, onDelete, onDisplayModeChan
 
 // OIDC Provider Form Modal
 function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: externalError }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     display_name: '',
@@ -485,11 +492,11 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
     if (!file) return;
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please use PNG, JPG, GIF, or SVG.');
+      alert(t('admin.settings.invalidFileType'));
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      alert('File too large. Maximum size is 2MB.');
+      alert(t('admin.settings.fileTooLarge'));
       return;
     }
     setIconFile(file);
@@ -570,7 +577,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal oidc-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{provider ? 'Edit OIDC Provider' : 'Add OIDC Provider'}</h2>
+          <h2>{provider ? t('admin.settings.editProvider') : t('admin.settings.addOidcProvider')}</h2>
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
 
@@ -583,32 +590,32 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
             )}
             <div className="oidc-form-grid">
               <div className="form-group">
-                <label>Internal Name *</label>
+                <label>{t('admin.settings.internalName')} *</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="e.g. keycloak, azure-ad"
+                  placeholder={t('admin.settings.internalNamePlaceholder')}
                   required
                 />
-                <small>Unique identifier (no spaces)</small>
+                <small>{t('admin.settings.internalNameHelp')}</small>
               </div>
 
               <div className="form-group">
-                <label>Display Name *</label>
+                <label>{t('admin.settings.displayNameLabel')} *</label>
                 <input
                   type="text"
                   name="display_name"
                   value={formData.display_name}
                   onChange={handleChange}
-                  placeholder="e.g. Sign in with Keycloak"
+                  placeholder={t('admin.settings.displayNamePlaceholder')}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label>Discovery URL *</label>
+                <label>{t('admin.settings.discoveryUrl')} *</label>
                 <input
                   type="url"
                   name="discovery_url"
@@ -620,43 +627,43 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
               </div>
 
               <div className="form-group">
-                <label>Client ID *</label>
+                <label>{t('admin.settings.clientId')} *</label>
                 <input
                   type="text"
                   name="client_id"
                   value={formData.client_id}
                   onChange={handleChange}
-                  placeholder="your-client-id"
+                  placeholder={t('admin.settings.clientIdPlaceholder')}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label>Client Secret {provider ? '' : '*'}</label>
+                <label>{t('admin.settings.clientSecret')} {provider ? '' : '*'}</label>
                 <input
                   type="password"
                   name="client_secret"
                   value={formData.client_secret}
                   onChange={handleChange}
-                  placeholder={provider ? 'Leave blank to keep existing' : 'your-client-secret'}
+                  placeholder={provider ? t('admin.settings.clientSecretHelp') : t('admin.settings.clientSecretPlaceholder')}
                   required={!provider}
                 />
               </div>
 
               <div className="form-group">
-                <label>Role Claim Path</label>
+                <label>{t('admin.settings.roleClaimPath')}</label>
                 <input
                   type="text"
                   name="role_claim"
                   value={formData.role_claim}
                   onChange={handleChange}
-                  placeholder="e.g. roles, realm_access.roles"
+                  placeholder={t('admin.settings.roleClaimPlaceholder')}
                 />
-                <small>Dot-path to roles in the ID token (e.g. realm_access.roles for Keycloak)</small>
+                <small>{t('admin.settings.roleClaimHelp')}</small>
               </div>
 
               <div className="form-group">
-                <label>Button Color</label>
+                <label>{t('admin.settings.buttonColor')}</label>
                 <div className="oidc-color-row">
                   <input
                     type="color"
@@ -677,12 +684,12 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
               </div>
 
               <div className="form-group">
-                <label>Button Icon</label>
+                <label>{t('admin.settings.buttonIcon')}</label>
                 {effectiveIconUrl && (
                   <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <img src={effectiveIconUrl} alt="Icon preview" style={{ width: 32, height: 32, objectFit: 'contain', background: '#f0f0f0', borderRadius: 4, padding: 2 }} />
+                    <img src={effectiveIconUrl} alt={t('admin.settings.buttonPreview')} style={{ width: 32, height: 32, objectFit: 'contain', background: '#f0f0f0', borderRadius: 4, padding: 2 }} />
                     <button type="button" className="btn-cancel-setting" onClick={handleRemoveIconClick} style={{ fontSize: '0.8rem' }}>
-                      Remove
+                      {t('common.remove')}
                     </button>
                   </div>
                 )}
@@ -692,7 +699,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                   accept=".png,.jpg,.jpeg,.gif,.svg"
                   onChange={(e) => handleIconFileSelect(e.target.files[0])}
                 />
-                <small>Upload an icon image (PNG, JPG, GIF, SVG, max 2MB)</small>
+                <small>{t('admin.settings.buttonIconHelp')}</small>
               </div>
 
               <div className="form-group">
@@ -703,7 +710,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                     checked={formData.enabled}
                     onChange={handleChange}
                   />
-                  Enabled
+                  {t('common.enabled')}
                 </label>
               </div>
 
@@ -715,15 +722,15 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                     checked={formData.sync_roles}
                     onChange={handleChange}
                   />
-                  Sync Roles from OIDC
+                  {t('admin.settings.syncRolesOidc')}
                 </label>
-                <small>When enabled, roles from the OIDC provider will be mapped to local roles using the mappings below</small>
+                <small>{t('admin.settings.syncRolesHelp')}</small>
               </div>
             </div>
 
             {/* Button Preview */}
             <div className="oidc-preview-section">
-              <label>Button Preview</label>
+              <label>{t('admin.settings.buttonPreview')}</label>
               <button
                 type="button"
                 className="oidc-btn-preview"
@@ -740,7 +747,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                 {effectiveIconUrl && (
                   <img src={effectiveIconUrl} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
                 )}
-                {formData.display_name || 'Sign in with Provider'}
+                {formData.display_name || t('admin.settings.signInWithProvider')}
               </button>
             </div>
 
@@ -748,17 +755,17 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
             {formData.sync_roles && (
               <div className="oidc-role-mappings">
                 <div className="oidc-role-mappings-header">
-                  <label>Role Mappings</label>
+                  <label>{t('admin.settings.roleMappings')}</label>
                   <button type="button" className="btn-save-setting" onClick={handleAddMapping}>
-                    + Add Mapping
+                    {t('admin.settings.addMapping')}
                   </button>
                 </div>
                 <small style={{ color: '#666', display: 'block', marginBottom: '0.75rem' }}>
-                  Map OIDC role names to local roles. Unmapped OIDC roles are ignored.
+                  {t('admin.settings.roleMappingsHelp')}
                 </small>
                 {Object.keys(formData.role_mappings).length === 0 ? (
                   <p style={{ color: '#999', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                    No role mappings configured. All users will keep their default roles.
+                    {t('admin.settings.noMappings')}
                   </p>
                 ) : (
                   <div className="oidc-mapping-list">
@@ -768,7 +775,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                           type="text"
                           value={oidcRole}
                           onChange={(e) => handleMappingKeyChange(oidcRole, e.target.value)}
-                          placeholder="OIDC role name"
+                          placeholder={t('admin.settings.oidcRoleName')}
                           className="oidc-mapping-input"
                         />
                         <span className="oidc-mapping-arrow">&rarr;</span>
@@ -777,7 +784,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                           onChange={(e) => handleMappingValueChange(oidcRole, e.target.value)}
                           className="oidc-mapping-select"
                         >
-                          <option value="">-- Select local role --</option>
+                          <option value="">{t('admin.settings.selectLocalRole')}</option>
                           {roles.map(role => (
                             <option key={role.id} value={role.name}>
                               {role.displayName || role.name}
@@ -788,7 +795,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
                           type="button"
                           className="oidc-mapping-remove"
                           onClick={() => handleRemoveMapping(oidcRole)}
-                          title="Remove mapping"
+                          title={t('common.remove')}
                         >
                           &times;
                         </button>
@@ -802,10 +809,10 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : (provider ? 'Update Provider' : 'Add Provider')}
+              {saving ? t('common.saving') : (provider ? t('admin.settings.updateProvider') : t('admin.settings.addProviderBtn'))}
             </button>
           </div>
         </form>
@@ -815,6 +822,7 @@ function OIDCProviderModal({ provider, roles, onSave, onClose, saving, error: ex
 }
 
 function Settings() {
+  const { t } = useTranslation();
   const { hasRole } = useAuth();
   const canEdit = hasRole('settings_admin') || hasRole('administrator');
 
@@ -842,7 +850,7 @@ function Settings() {
   const roles = rolesData?.roles || [];
 
   // Paired settings - these have both _enabled and _value (or _url) variants
-  const pairedSettingKeys = ['brand_name', 'atak_installer_qr', 'itak_installer_qr', 'meshtastic_installer_qr_android', 'meshtastic_installer_qr_iphone'];
+  const pairedSettingKeys = ['brand_name', 'atak_installer_qr', 'itak_installer_qr', 'meshtastic_installer_qr_android', 'meshtastic_installer_qr_iphone', 'help_link', 'help_email'];
 
   useEffect(() => {
     fetchSettings();
@@ -858,7 +866,7 @@ function Settings() {
       setError('');
     } catch (err) {
       console.error('Error fetching settings:', err);
-      setError(err.response?.data?.error || 'Failed to load settings');
+      setError(err.response?.data?.error || t('admin.settings.failedUpdateSetting'));
     } finally {
       setLoading(false);
     }
@@ -889,10 +897,10 @@ function Settings() {
       let response;
       if (editingProvider) {
         response = await oidcAPI.admin.update(editingProvider.id, data);
-        setSuccess('OIDC provider updated');
+        setSuccess(t('admin.settings.oidcUpdated'));
       } else {
         response = await oidcAPI.admin.create(data);
-        setSuccess('OIDC provider created');
+        setSuccess(t('admin.settings.oidcCreated'));
       }
 
       const providerId = response.data.id;
@@ -911,24 +919,24 @@ function Settings() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error saving OIDC provider:', err);
-      setOidcModalError(err.response?.data?.error || 'Failed to save OIDC provider');
+      setOidcModalError(err.response?.data?.error || t('admin.settings.failedSaveOidc'));
     } finally {
       setOidcSaving(false);
     }
   };
 
   const handleOidcDelete = async (provider) => {
-    if (!confirm(`Delete OIDC provider "${provider.display_name}"? This cannot be undone.`)) return;
+    if (!confirm(t('admin.settings.deleteOidcConfirm', { name: provider.display_name }))) return;
     try {
       setSaving(true);
       setError('');
       await oidcAPI.admin.delete(provider.id);
-      setSuccess('OIDC provider deleted');
+      setSuccess(t('admin.settings.oidcDeleted'));
       fetchOidcProviders();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error deleting OIDC provider:', err);
-      setError(err.response?.data?.error || 'Failed to delete OIDC provider');
+      setError(err.response?.data?.error || t('admin.settings.failedDeleteOidc'));
     } finally {
       setSaving(false);
     }
@@ -939,12 +947,12 @@ function Settings() {
       setSaving(true);
       setError('');
       await settingsAPI.admin.uploadLogo(file);
-      setSuccess('Logo uploaded successfully');
+      setSuccess(t('admin.settings.logoUploaded'));
       fetchLogoSettings();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error uploading logo:', err);
-      setError(err.response?.data?.error || 'Failed to upload logo');
+      setError(err.response?.data?.error || t('admin.settings.failedUploadLogo'));
     } finally {
       setSaving(false);
     }
@@ -955,12 +963,12 @@ function Settings() {
       setSaving(true);
       setError('');
       await settingsAPI.admin.deleteLogo();
-      setSuccess('Logo reset to default');
+      setSuccess(t('admin.settings.logoReset'));
       fetchLogoSettings();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error deleting logo:', err);
-      setError(err.response?.data?.error || 'Failed to reset logo');
+      setError(err.response?.data?.error || t('admin.settings.failedResetLogo'));
     } finally {
       setSaving(false);
     }
@@ -971,12 +979,12 @@ function Settings() {
       setSaving(true);
       setError('');
       await settingsAPI.admin.updateByKey('logo_display_mode', mode);
-      setSuccess('Display mode updated');
+      setSuccess(t('admin.settings.displayModeUpdated'));
       fetchLogoSettings();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error updating display mode:', err);
-      setError(err.response?.data?.error || 'Failed to update display mode');
+      setError(err.response?.data?.error || t('admin.settings.failedUpdateDisplayMode'));
     } finally {
       setSaving(false);
     }
@@ -991,13 +999,13 @@ function Settings() {
       const newValue = currentValue === 'true' ? 'false' : 'true';
       await settingsAPI.admin.updateById(settingId, newValue);
 
-      setSuccess('Setting updated successfully');
+      setSuccess(t('admin.settings.settingUpdated'));
       fetchSettings();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error updating setting:', err);
-      setError(err.response?.data?.error || 'Failed to update setting');
+      setError(err.response?.data?.error || t('admin.settings.failedUpdateSetting'));
     } finally {
       setSaving(false);
     }
@@ -1011,13 +1019,13 @@ function Settings() {
 
       await settingsAPI.admin.updateById(settingId, newValue);
 
-      setSuccess('Setting updated successfully');
+      setSuccess(t('admin.settings.settingUpdated'));
       fetchSettings();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error updating setting:', err);
-      setError(err.response?.data?.error || 'Failed to update setting');
+      setError(err.response?.data?.error || t('admin.settings.failedUpdateSetting'));
     } finally {
       setSaving(false);
     }
@@ -1105,12 +1113,12 @@ function Settings() {
   const dropdownSettingKeys = ['default_theme', 'kiosk_default_theme'];
   const dropdownOptions = {
     default_theme: [
-      { value: 'light', label: 'Light' },
-      { value: 'dark', label: 'Dark' },
+      { value: 'light', label: t('admin.settings.light') },
+      { value: 'dark', label: t('admin.settings.dark') },
     ],
     kiosk_default_theme: [
-      { value: 'light', label: 'Light' },
-      { value: 'dark', label: 'Dark' },
+      { value: 'light', label: t('admin.settings.light') },
+      { value: 'dark', label: t('admin.settings.dark') },
     ],
   };
 
@@ -1166,9 +1174,9 @@ function Settings() {
     return (
       <div className="admin-page">
         <div className="admin-header">
-          <h1>Settings</h1>
+          <h1>{t('admin.settings.title')}</h1>
         </div>
-        <div className="loading">Loading settings...</div>
+        <div className="loading">{t('admin.settings.loadingSettings')}</div>
       </div>
     );
   }
@@ -1176,7 +1184,7 @@ function Settings() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Settings</h1>
+        <h1>{t('admin.settings.title')}</h1>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -1186,7 +1194,7 @@ function Settings() {
         {/* Notifications Section */}
         {settings.notifications && settings.notifications.length > 0 && (
           <div className="settings-section">
-            <h2>Notifications</h2>
+            <h2>{t('admin.settings.notifications')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.notifications)}
             </div>
@@ -1196,7 +1204,7 @@ function Settings() {
         {/* Email Section */}
         {settings.email && settings.email.length > 0 && (
           <div className="settings-section">
-            <h2>Email</h2>
+            <h2>{t('admin.settings.email')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.email)}
             </div>
@@ -1206,7 +1214,7 @@ function Settings() {
         {/* Registration Section */}
         {settings.registration && settings.registration.length > 0 && (
           <div className="settings-section">
-            <h2>Registration</h2>
+            <h2>{t('admin.settings.registration')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.registration)}
             </div>
@@ -1216,7 +1224,7 @@ function Settings() {
         {/* Security Section */}
         {settings.security && settings.security.length > 0 && (
           <div className="settings-section">
-            <h2>Security</h2>
+            <h2>{t('admin.settings.security')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.security)}
             </div>
@@ -1226,20 +1234,20 @@ function Settings() {
         {/* OIDC Providers Section */}
         <div className="settings-section">
           <div className="oidc-section-header">
-            <h2>OIDC Providers</h2>
+            <h2>{t('admin.settings.oidcProviders')}</h2>
             <button
               className="btn btn-primary"
               onClick={() => { setEditingProvider(null); setOidcModalError(''); setShowOidcModal(true); }}
               style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
               disabled={!canEdit}
             >
-              + Add Provider
+              {t('admin.settings.addProvider')}
             </button>
           </div>
 
           {oidcProviders.length === 0 ? (
             <p style={{ color: '#666', fontStyle: 'italic' }}>
-              No OIDC providers configured. Add a provider to enable single sign-on.
+              {t('admin.settings.noOidcProviders')}
             </p>
           ) : (
             <div className="oidc-providers-list">
@@ -1252,7 +1260,7 @@ function Settings() {
                         <span className="oidc-provider-name">{provider.name}</span>
                       </div>
                       <span className={`oidc-provider-status ${provider.enabled ? 'enabled' : 'disabled'}`}>
-                        {provider.enabled ? 'Enabled' : 'Disabled'}
+                        {provider.enabled ? t('common.enabled') : t('common.disabled')}
                       </span>
                     </div>
                     <p className="oidc-provider-url">{provider.discovery_url}</p>
@@ -1277,7 +1285,7 @@ function Settings() {
                     </div>
                     {provider.role_mappings && Object.keys(provider.role_mappings).length > 0 && (
                       <div className="oidc-provider-mappings">
-                        <small>Role mappings: {Object.entries(provider.role_mappings).map(([k, v]) => `${k} → ${v}`).join(', ')}</small>
+                        <small>{t('admin.settings.roleMappings')}: {Object.entries(provider.role_mappings).map(([k, v]) => `${k} → ${v}`).join(', ')}</small>
                       </div>
                     )}
                   </div>
@@ -1287,7 +1295,7 @@ function Settings() {
                       onClick={() => { setEditingProvider(provider); setOidcModalError(''); setShowOidcModal(true); }}
                       disabled={!canEdit}
                     >
-                      Edit
+                      {t('common.edit')}
                     </button>
                     <button
                       className="btn-cancel-setting"
@@ -1295,7 +1303,7 @@ function Settings() {
                       style={{ color: '#c33' }}
                       disabled={!canEdit}
                     >
-                      Delete
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
@@ -1307,7 +1315,7 @@ function Settings() {
         {/* QR Code Enrollment Section */}
         {settings.qr_enrollment && settings.qr_enrollment.length > 0 && (
           <div className="settings-section">
-            <h2>QR Code Enrollment</h2>
+            <h2>{t('admin.settings.qrCodeEnrollment')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.qr_enrollment)}
             </div>
@@ -1316,7 +1324,7 @@ function Settings() {
 
         {/* Branding Section */}
         <div className="settings-section">
-          <h2>Branding</h2>
+          <h2>{t('admin.settings.branding')}</h2>
           <div className="settings-list">
             <LogoUploadSetting
               logoSettings={logoSettings}
@@ -1344,7 +1352,7 @@ function Settings() {
         {/* Radios Section */}
         {settings.radios && settings.radios.length > 0 && (
           <div className="settings-section">
-            <h2>Radios</h2>
+            <h2>{t('admin.settings.radiosSection')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.radios)}
             </div>
@@ -1354,9 +1362,9 @@ function Settings() {
         {/* Kiosk Enrollment Section */}
         {settings.kiosk && settings.kiosk.length > 0 && (
           <div className="settings-section">
-            <h2>Kiosk Enrollment</h2>
+            <h2>{t('admin.settings.kioskEnrollment')}</h2>
             <p className="setting-description" style={{ marginBottom: '1rem' }}>
-              Once enabled, the kiosk screen is available at <a href="/kiosk" target="_blank" rel="noopener noreferrer"><code>/kiosk</code></a>
+              {t('admin.settings.kioskEnrollmentHelp')} <a href="/kiosk" target="_blank" rel="noopener noreferrer"><code>/kiosk</code></a>
             </p>
             <div className="settings-list">
               {renderCategorySettings(settings.kiosk)}
@@ -1367,7 +1375,7 @@ function Settings() {
         {/* Appearance Section */}
         {settings.appearance && settings.appearance.length > 0 && (
           <div className="settings-section">
-            <h2>Appearance</h2>
+            <h2>{t('admin.settings.appearance')}</h2>
             <div className="settings-list">
               {getDropdownSettings(settings.appearance).map(setting => (
                 <DropdownSettingItem
@@ -1388,7 +1396,7 @@ function Settings() {
         {/* General Section */}
         {settings.general && settings.general.length > 0 && (
           <div className="settings-section">
-            <h2>General</h2>
+            <h2>{t('admin.settings.general')}</h2>
             <div className="settings-list">
               {renderCategorySettings(settings.general)}
             </div>

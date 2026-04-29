@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import './ApiDocs.css';
 
 function ApiDocs() {
+  const { t } = useTranslation();
   const [expandedSection, setExpandedSection] = useState('authentication');
 
   const toggleSection = (section) => {
@@ -10,8 +12,8 @@ function ApiDocs() {
 
   const apiEndpoints = {
     authentication: {
-      title: 'Authentication',
-      description: 'All API endpoints require authentication. You can use either JWT tokens or API keys.',
+      title: t('admin.apiDocs.sections.authentication.title'),
+      description: t('admin.apiDocs.sections.authentication.description'),
       endpoints: [
         {
           method: 'POST',
@@ -52,8 +54,8 @@ function ApiDocs() {
       ],
     },
     users: {
-      title: 'Users',
-      description: 'Manage user accounts. Requires users:read or users:write permissions.',
+      title: t('admin.apiDocs.sections.users.title'),
+      description: t('admin.apiDocs.sections.users.description'),
       endpoints: [
         {
           method: 'GET',
@@ -125,8 +127,8 @@ function ApiDocs() {
       ],
     },
     roles: {
-      title: 'Roles',
-      description: 'Manage user roles. Requires roles:read or roles:write permissions.',
+      title: t('admin.apiDocs.sections.roles.title'),
+      description: t('admin.apiDocs.sections.roles.description'),
       endpoints: [
         {
           method: 'GET',
@@ -169,8 +171,8 @@ function ApiDocs() {
       ],
     },
     takProfiles: {
-      title: 'TAK Profiles',
-      description: 'Manage TAK client profiles. Requires tak_profiles:read or tak_profiles:write permissions.',
+      title: t('admin.apiDocs.sections.takProfiles.title'),
+      description: t('admin.apiDocs.sections.takProfiles.description'),
       endpoints: [
         {
           method: 'GET',
@@ -221,8 +223,8 @@ function ApiDocs() {
       ],
     },
     onboardingCodes: {
-      title: 'Onboarding Codes',
-      description: 'Manage onboarding invitation codes. Requires onboarding_codes:read or onboarding_codes:write permissions.',
+      title: t('admin.apiDocs.sections.onboardingCodes.title'),
+      description: t('admin.apiDocs.sections.onboardingCodes.description'),
       endpoints: [
         {
           method: 'GET',
@@ -265,8 +267,8 @@ function ApiDocs() {
       ],
     },
     meshtastic: {
-      title: 'Meshtastic',
-      description: 'Manage Meshtastic radio configurations. Requires meshtastic:read or meshtastic:write permissions.',
+      title: t('admin.apiDocs.sections.meshtastic.title'),
+      description: t('admin.apiDocs.sections.meshtastic.description'),
       endpoints: [
         {
           method: 'GET',
@@ -309,8 +311,8 @@ function ApiDocs() {
       ],
     },
     radios: {
-      title: 'Radios',
-      description: 'Manage radio equipment inventory. Requires radios:read or radios:write permissions.',
+      title: t('admin.apiDocs.sections.radios.title'),
+      description: t('admin.apiDocs.sections.radios.description'),
       endpoints: [
         {
           method: 'GET',
@@ -354,8 +356,8 @@ function ApiDocs() {
       ],
     },
     announcements: {
-      title: 'Announcements',
-      description: 'Manage announcements. Requires announcements:read or announcements:write permissions.',
+      title: t('admin.apiDocs.sections.announcements.title'),
+      description: t('admin.apiDocs.sections.announcements.description'),
       endpoints: [
         {
           method: 'GET',
@@ -399,8 +401,8 @@ function ApiDocs() {
       ],
     },
     settings: {
-      title: 'Settings',
-      description: 'Manage system settings. Requires settings:read or settings:write permissions.',
+      title: t('admin.apiDocs.sections.settings.title'),
+      description: t('admin.apiDocs.sections.settings.description'),
       endpoints: [
         {
           method: 'GET',
@@ -437,23 +439,23 @@ function ApiDocs() {
       </div>
       <p className="endpoint-description">{endpoint.description}</p>
       <div className="endpoint-auth">
-        <strong>Authentication:</strong> {endpoint.auth}
+        <strong>{t('admin.apiDocs.authentication')}:</strong> {endpoint.auth}
       </div>
       {endpoint.params && (
         <div className="endpoint-params">
-          <strong>Query Parameters:</strong>
+          <strong>{t('admin.apiDocs.queryParams')}:</strong>
           <pre>{JSON.stringify(endpoint.params, null, 2)}</pre>
         </div>
       )}
       {endpoint.body && (
         <div className="endpoint-body">
-          <strong>Request Body:</strong>
+          <strong>{t('admin.apiDocs.requestBody')}:</strong>
           <pre>{JSON.stringify(endpoint.body, null, 2)}</pre>
         </div>
       )}
       {endpoint.response && (
         <div className="endpoint-response">
-          <strong>Response:</strong>
+          <strong>{t('admin.apiDocs.response')}:</strong>
           <pre>{JSON.stringify(endpoint.response, null, 2)}</pre>
         </div>
       )}
@@ -463,39 +465,38 @@ function ApiDocs() {
   return (
     <div className="admin-page api-docs-page">
       <div className="admin-header">
-        <h1>API Documentation</h1>
+        <h1>{t('admin.apiDocs.title')}</h1>
       </div>
 
       <div className="api-docs-intro">
-        <h2>Getting Started</h2>
+        <h2>{t('admin.apiDocs.gettingStarted')}</h2>
         <p>
-          The OpenTAK Onboarding Portal API allows you to programmatically manage users,
-          roles, TAK profiles, and other resources.
+          {t('admin.apiDocs.introText')}
         </p>
 
-        <h3>Base URL</h3>
+        <h3>{t('admin.apiDocs.baseUrl')}</h3>
         <code className="base-url">{window.location.origin}/api/v1</code>
 
-        <h3>Authentication Methods</h3>
+        <h3>{t('admin.apiDocs.authMethods')}</h3>
         <div className="auth-methods">
           <div className="auth-method">
-            <h4>JWT Token (Bearer)</h4>
-            <p>For user-authenticated requests. Obtain tokens via the login endpoint.</p>
+            <h4>{t('admin.apiDocs.jwtToken')}</h4>
+            <p>{t('admin.apiDocs.jwtDesc')}</p>
             <pre>
 {`Authorization: Bearer <access_token>`}
             </pre>
           </div>
           <div className="auth-method">
-            <h4>API Key</h4>
-            <p>For server-to-server integration. Create API keys in the admin panel.</p>
+            <h4>{t('admin.apiDocs.apiKey')}</h4>
+            <p>{t('admin.apiDocs.apiKeyDesc')}</p>
             <pre>
 {`X-API-Key: otak_your_api_key_here`}
             </pre>
           </div>
         </div>
 
-        <h3>Response Format</h3>
-        <p>All responses are returned in JSON format. Successful responses typically include the requested data:</p>
+        <h3>{t('admin.apiDocs.responseFormat')}</h3>
+        <p>{t('admin.apiDocs.responseDesc')}</p>
         <pre>
 {`{
   "users": [...],
@@ -503,7 +504,7 @@ function ApiDocs() {
   "page": 1
 }`}
         </pre>
-        <p>Error responses include an error message and code:</p>
+        <p>{t('admin.apiDocs.errorDesc')}</p>
         <pre>
 {`{
   "error": "Error description",
@@ -511,15 +512,14 @@ function ApiDocs() {
 }`}
         </pre>
 
-        <h3>Rate Limiting</h3>
+        <h3>{t('admin.apiDocs.rateLimiting')}</h3>
         <p>
-          API keys have configurable rate limits (default: 1000 requests/hour).
-          When exceeded, you'll receive a <code>429 Too Many Requests</code> response.
+          {t('admin.apiDocs.rateLimitDesc')}
         </p>
       </div>
 
       <div className="api-docs-sections">
-        <h2>API Endpoints</h2>
+        <h2>{t('admin.apiDocs.apiEndpoints')}</h2>
         {Object.entries(apiEndpoints).map(([key, section]) => (
           <div key={key} className="api-section">
             <div

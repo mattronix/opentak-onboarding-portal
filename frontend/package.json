@@ -15,9 +15,12 @@
     "@meshtastic/transport-web-serial": "^0.2.5",
     "@tanstack/react-query": "^5.90.3",
     "axios": "^1.12.2",
+    "i18next": "^26.0.8",
+    "i18next-browser-languagedetector": "^8.2.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-i18next": "^17.0.6",
     "react-quill-new": "^3.3.3",
     "react-router-dom": "^7.9.4"
   },

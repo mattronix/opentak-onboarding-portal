@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { takProfilesAPI, meshtasticAPI, meshtasticGroupsAPI, radiosAPI, settingsAPI, qrAPI } from '../services/api';
 import { QRCodeSVG } from 'qrcode.react';
@@ -11,6 +12,7 @@ import ConfigValidatorModal from '../components/ConfigValidatorModal';
 import './Dashboard.css';
 
 function Dashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -159,6 +161,15 @@ function Dashboard() {
     takProfilesAPI.download(profileId);
   };
 
+  const handleOpenInAtak = async (profileId) => {
+    try {
+      const downloadUrl = await takProfilesAPI.getDownloadUrl(profileId);
+      window.location.href = `tak://import?url=${encodeURIComponent(downloadUrl)}`;
+    } catch (err) {
+      console.error('Failed to generate download link:', err);
+    }
+  };
+
   const handleOpenAtakLink = () => {
     if (atakQrData?.qr_string) {
       window.location.href = atakQrData.qr_string;
@@ -223,32 +234,32 @@ function Dashboard() {
   // Step 1: Install Apps (always shown)
   steps.push({
     index: stepIndex++,
-    title: 'Install Apps',
+    title: t('dashboard.installApps'),
     content: (
       <div className="install-options">
         {settings?.meshtastic_homepage_icon_enabled && (
           <div className="install-item">
             <img src={`${API_BASE_URL}/static/img/meshtastic.png`} alt="Meshtastic" className="icon" style={{ width: '100px', height: '100px' }} onError={(e) => { e.target.parentElement.remove(); }} />
-            <p>Get Meshtastic</p>
+            <p>{t('dashboard.getMeshtastic')}</p>
             <div className="links">
               {settings?.meshtastic_installer_qr_android_enabled && (
-                <a href={settings?.meshtastic_installer_qr_android_url || "https://play.google.com/store/apps/details?id=com.geeksville.mesh"} target="_blank" rel="noopener noreferrer">Android</a>
+                <a href={settings?.meshtastic_installer_qr_android_url || "https://play.google.com/store/apps/details?id=com.geeksville.mesh"} target="_blank" rel="noopener noreferrer">{t('dashboard.android')}</a>
               )}
               {settings?.meshtastic_installer_qr_android_enabled && settings?.meshtastic_installer_qr_iphone_enabled && ' | '}
               {settings?.meshtastic_installer_qr_iphone_enabled && (
-                <a href={settings?.meshtastic_installer_qr_iphone_url || "https://apps.apple.com/app/meshtastic/id1586432531"} target="_blank" rel="noopener noreferrer">iPhone</a>
+                <a href={settings?.meshtastic_installer_qr_iphone_url || "https://apps.apple.com/app/meshtastic/id1586432531"} target="_blank" rel="noopener noreferrer">{t('dashboard.iphone')}</a>
               )}
             </div>
             <div className="installer-qr-group">
               {settings?.meshtastic_installer_qr_android_enabled && settings?.meshtastic_installer_qr_android_url && (
                 <div className="installer-qr">
-                  <span className="qr-platform-label">Android</span>
+                  <span className="qr-platform-label">{t('dashboard.android')}</span>
                   <QRCodeSVG value={settings.meshtastic_installer_qr_android_url} size={80} level="M" />
                 </div>
               )}
               {settings?.meshtastic_installer_qr_iphone_enabled && settings?.meshtastic_installer_qr_iphone_url && (
                 <div className="installer-qr">
-                  <span className="qr-platform-label">iPhone</span>
+                  <span className="qr-platform-label">{t('dashboard.iphone')}</span>
                   <QRCodeSVG value={settings.meshtastic_installer_qr_iphone_url} size={80} level="M" />
                 </div>
               )}
@@ -258,9 +269,9 @@ function Dashboard() {
         {settings?.atak_homepage_icon_enabled && (
           <div className="install-item">
             <img src={`${API_BASE_URL}/static/img/atak.png`} alt="ATAK" className="icon" style={{ width: '100px', height: '100px' }} onError={(e) => { e.target.parentElement.remove(); }} />
-            <p>Get ATAK</p>
+            <p>{t('dashboard.getAtak')}</p>
             <div className="links">
-              <a href={settings?.atak_installer_qr_url || "https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en"} target="_blank" rel="noopener noreferrer">Android</a>
+              <a href={settings?.atak_installer_qr_url || "https://play.google.com/store/apps/details?id=com.atakmap.app.civ&hl=en"} target="_blank" rel="noopener noreferrer">{t('dashboard.android')}</a>
             </div>
             {settings?.atak_installer_qr_enabled && settings?.atak_installer_qr_url && (
               <div className="installer-qr">
@@ -272,9 +283,9 @@ function Dashboard() {
         {settings?.itak_homepage_icon_enabled && (
           <div className="install-item">
             <img src={`${API_BASE_URL}/static/img/itak.jpg`} alt="iTAK" className="icon" style={{ width: '100px', height: '100px' }} onError={(e) => { e.target.parentElement.remove(); }} />
-            <p>Get iTAK</p>
+            <p>{t('dashboard.getItak')}</p>
             <div className="links">
-              <a href={settings?.itak_installer_qr_url || "https://apps.apple.com/app/itak/id1561656396"} target="_blank" rel="noopener noreferrer">iPhone</a>
+              <a href={settings?.itak_installer_qr_url || "https://apps.apple.com/app/itak/id1561656396"} target="_blank" rel="noopener noreferrer">{t('dashboard.iphone')}</a>
             </div>
             {settings?.itak_installer_qr_enabled && settings?.itak_installer_qr_url && (
               <div className="installer-qr">
@@ -286,9 +297,9 @@ function Dashboard() {
         {settings?.truststore_homepage_icon_enabled && (
           <div className="install-item">
             <img src={`${API_BASE_URL}/static/img/certificate.png`} alt="TrustStore" className="icon" style={{ width: '100px', height: '100px' }} onError={(e) => { e.target.parentElement.remove(); }} />
-            <p>TrustStore</p>
+            <p>{t('dashboard.trustStore')}</p>
             <div className="links">
-              <a href={`${settings?.ots_url || API_BASE_URL.replace(':5000', ':8080')}/api/truststore`} target="_blank" rel="noopener noreferrer">Download</a>
+              <a href={`${settings?.ots_url || API_BASE_URL.replace(':5000', ':8080')}/api/truststore`} target="_blank" rel="noopener noreferrer">{t('common.download')}</a>
             </div>
           </div>
         )}
@@ -300,18 +311,18 @@ function Dashboard() {
   if (hasAnyQRCode) {
     steps.push({
       index: stepIndex++,
-      title: 'Login to ATAK',
+      title: t('dashboard.loginToAtak'),
       content: (
         <div className="qr-codes-grid">
           {settings?.generate_atak_qr_code && (
             <div className="qr-code-section">
-              <h3 className="qr-label">ATAK (Android)</h3>
+              <h3 className="qr-label">{t('dashboard.atakAndroid')}</h3>
               {loadingAtakQR ? (
-                <div className="qr-loading">Loading QR code...</div>
+                <div className="qr-loading">{t('dashboard.loadingQr')}</div>
               ) : atakError ? (
                 <div className="qr-error">
-                  <p>Failed to load ATAK QR code</p>
-                  <button onClick={handleRefreshAtakQR} className="refresh-btn" style={{ background: accentColor }}>Retry</button>
+                  <p>{t('dashboard.failedLoadAtakQr')}</p>
+                  <button onClick={handleRefreshAtakQR} className="refresh-btn" style={{ background: accentColor }}>{t('common.retry')}</button>
                 </div>
               ) : atakQrData?.qr_string ? (
                 <>
@@ -324,33 +335,33 @@ function Dashboard() {
                   <div className="qr-info">
                     {(atakQrData.expires_at || atakQrData.max_uses != null) && (
                       <p className="expiry-info">
-                        {atakQrData.expires_at && (<>Expires in: <strong>{formatExpiry(atakQrData.expires_at)}</strong></>)}
-                        {atakQrData.max_uses != null && (<>{atakQrData.expires_at ? ' | ' : ''}Uses: <strong>{atakQrData.total_uses ?? 0}/{atakQrData.max_uses}</strong></>)}
+                        {atakQrData.expires_at && (<>{t('dashboard.expiresIn')} <strong>{formatExpiry(atakQrData.expires_at)}</strong></>)}
+                        {atakQrData.max_uses != null && (<>{atakQrData.expires_at ? ' | ' : ''}{t('dashboard.uses')} <strong>{atakQrData.total_uses ?? 0}/{atakQrData.max_uses}</strong></>)}
                       </p>
                     )}
                     <div className="qr-actions">
-                      <button onClick={handleRefreshAtakQR} className="refresh-btn" disabled={fetchingAtakQR} style={{ background: accentColor }}>{fetchingAtakQR ? 'Refreshing...' : 'Refresh Code'}</button>
-                      <button onClick={handleOpenAtakLink} className="open-btn" style={{ background: accentColor }}>Open in ATAK</button>
+                      <button onClick={handleRefreshAtakQR} className="refresh-btn" disabled={fetchingAtakQR} style={{ background: accentColor }}>{fetchingAtakQR ? t('common.refreshing') : t('dashboard.refreshCode')}</button>
+                      <button onClick={handleOpenAtakLink} className="open-btn" style={{ background: accentColor }}>{t('dashboard.openInAtak')}</button>
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="qr-error">
-                  <p>QR code not available</p>
-                  <button onClick={handleRefreshAtakQR} className="refresh-btn" style={{ background: accentColor }}>Retry</button>
+                  <p>{t('dashboard.qrNotAvailable')}</p>
+                  <button onClick={handleRefreshAtakQR} className="refresh-btn" style={{ background: accentColor }}>{t('common.retry')}</button>
                 </div>
               )}
             </div>
           )}
           {settings?.generate_itak_qr_code && (
             <div className="qr-code-section">
-              <h3 className="qr-label">iTAK (iOS)</h3>
+              <h3 className="qr-label">{t('dashboard.itakIos')}</h3>
               {loadingItakQR ? (
-                <div className="qr-loading">Loading QR code...</div>
+                <div className="qr-loading">{t('dashboard.loadingQr')}</div>
               ) : itakError ? (
                 <div className="qr-error">
-                  <p>Failed to load iTAK QR code</p>
-                  <small>Your OTS server may not support iTAK enrollment</small>
+                  <p>{t('dashboard.failedLoadItakQr')}</p>
+                  <small>{t('dashboard.itakNotSupported')}</small>
                 </div>
               ) : itakQrData?.qr_string ? (
                 <div className="qr-code-container">
@@ -360,7 +371,7 @@ function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="qr-error"><p>QR code not available</p></div>
+                <div className="qr-error"><p>{t('dashboard.qrNotAvailable')}</p></div>
               )}
             </div>
           )}
@@ -373,13 +384,13 @@ function Dashboard() {
   if (settings?.callsign_qr_code_enabled && user?.callsign) {
     steps.push({
       index: stepIndex++,
-      title: 'Set Your Callsign',
+      title: t('dashboard.setCallsign'),
       content: (
         <>
-          <p className="step-description">Scan this QR code with ATAK to automatically set your callsign to <strong>{user.callsign}</strong></p>
+          <p className="step-description">{t('dashboard.scanCallsignQr')} <strong>{user.callsign}</strong></p>
           <div className="qr-codes-grid">
             <div className="qr-code-section">
-              <h3 className="qr-label">ATAK Callsign</h3>
+              <h3 className="qr-label">{t('dashboard.atakCallsign')}</h3>
               <div className="qr-code-container">
                 <QRCodeSVG value={getCallsignQRUrl()} size={250} level="H" className="qr-code-large" />
                 <div className="tak-logo-overlay">
@@ -388,7 +399,7 @@ function Dashboard() {
               </div>
               <div className="qr-info">
                 <div className="qr-actions">
-                  <button onClick={handleOpenCallsignLink} className="open-btn" style={{ background: accentColor }}>Open in ATAK</button>
+                  <button onClick={handleOpenCallsignLink} className="open-btn" style={{ background: accentColor }}>{t('dashboard.openInAtak')}</button>
                 </div>
               </div>
             </div>
@@ -402,23 +413,26 @@ function Dashboard() {
   if (takProfiles && takProfiles.length > 0) {
     steps.push({
       index: stepIndex++,
-      title: 'Download Data Packages',
+      title: t('dashboard.downloadDataPackages'),
       content: (
         <table className="packages-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Download</th>
+              <th>{t('common.name')}</th>
+              <th>{t('common.description')}</th>
+              <th>{t('common.download')}</th>
             </tr>
           </thead>
           <tbody>
             {takProfiles.map((profile) => (
               <tr key={profile.id}>
                 <td>{profile.name}</td>
-                <td>{profile.description || 'TAK Profile'}</td>
+                <td>{profile.description || t('dashboard.takProfile')}</td>
                 <td>
-                  <button className="download-btn" onClick={() => handleDownloadProfile(profile.id)} style={{ background: accentColor }}>DOWNLOAD</button>
+                  {settings?.open_in_atak_enabled && (
+                    <button className="download-btn" onClick={() => handleOpenInAtak(profile.id)} style={{ background: '#4CAF50' }}>{t('dashboard.openInAtak')}</button>
+                  )}
+                  <button className="download-btn" onClick={() => handleDownloadProfile(profile.id)} style={{ background: accentColor }}>{t('common.download')}</button>
                 </td>
               </tr>
             ))}
@@ -433,10 +447,10 @@ function Dashboard() {
   if (groupsWithChannels.length > 0) {
     steps.push({
       index: stepIndex++,
-      title: 'Meshtastic Channel Groups',
+      title: t('dashboard.meshtasticChannelGroups'),
       content: (
         <>
-          <p style={{ color: '#666', marginBottom: '1rem' }}>Scan to configure channels in the group.</p>
+          <p style={{ color: '#666', marginBottom: '1rem' }}>{t('dashboard.scanToConfigureChannels')}</p>
           <div className="meshtastic-grid" style={{ justifyContent: 'center' }}>
             {groupsWithChannels.map((group) => {
               const slotMap = {};
@@ -452,28 +466,28 @@ function Dashboard() {
                           <QRCodeSVG value={group.combined_url} size={300} level="H" className="qr-code" imageSettings={{ src: `${API_BASE_URL}/static/img/meshtastic.png`, height: 50, width: 50, excavate: true }} />
                         </div>
                         <div style={{ padding: '1rem 0', minWidth: '180px' }}>
-                          <p style={{ margin: '0 0 1rem', fontSize: '1.1rem', color: '#333', fontWeight: 600 }}>Slots:</p>
+                          <p style={{ margin: '0 0 1rem', fontSize: '1.1rem', color: '#333', fontWeight: 600 }}>{t('dashboard.slot')}:</p>
                           {[0, 1, 2, 3, 4, 5, 6, 7].map(slot => (
                             <p key={slot} style={{ margin: '0.5rem 0', fontSize: '1.1rem', color: slotMap[slot] ? '#333' : '#999' }}>
-                              {slot}: {slotMap[slot] ? <strong>{slotMap[slot]}</strong> : <em>unused</em>}
+                              {slot}: {slotMap[slot] ? <strong>{slotMap[slot]}</strong> : <em>{t('dashboard.unused')}</em>}
                             </p>
                           ))}
                         </div>
                       </div>
                       <div className="qr-actions">
-                        <button onClick={() => window.location.href = group.combined_url} className="open-btn" style={{ background: accentColor }}>Open in Meshtastic</button>
+                        <button onClick={() => window.location.href = group.combined_url} className="open-btn" style={{ background: accentColor }}>{t('dashboard.openInMeshtastic')}</button>
                       </div>
                     </>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       {(Array.isArray(group.channels) ? group.channels : []).filter(c => c.url).map((channel) => (
                         <div key={channel.id} style={{ textAlign: 'center', padding: '0.5rem', background: '#f9f9f9', borderRadius: '4px' }}>
-                          <p style={{ margin: '0 0 0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Slot {channel.slot_number}: {channel.name}</p>
+                          <p style={{ margin: '0 0 0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>{t('dashboard.slot')} {channel.slot_number}: {channel.name}</p>
                           <div className="qr-section">
                             <QRCodeSVG value={channel.url} size={150} level="H" className="qr-code" imageSettings={{ src: `${API_BASE_URL}/static/img/meshtastic.png`, height: 30, width: 30, excavate: true }} />
                           </div>
                           <div className="qr-actions" style={{ marginTop: '0.5rem' }}>
-                            <button onClick={() => window.location.href = channel.url} className="open-btn" style={{ background: accentColor, fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>Open in Meshtastic</button>
+                            <button onClick={() => window.location.href = channel.url} className="open-btn" style={{ background: accentColor, fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>{t('dashboard.openInMeshtastic')}</button>
                           </div>
                         </div>
                       ))}
@@ -493,7 +507,7 @@ function Dashboard() {
   if (ungroupedChannels.length > 0) {
     steps.push({
       index: stepIndex++,
-      title: 'Meshtastic Channels',
+      title: t('dashboard.meshtasticChannels'),
       content: (
         <div className="meshtastic-grid" style={{ justifyContent: 'center' }}>
           {ungroupedChannels.map((config) => (
@@ -508,12 +522,12 @@ function Dashboard() {
               {config.url && (
                 <>
                   <div className="qr-actions" style={{ marginTop: '1rem' }}>
-                    <button onClick={() => window.location.href = config.url} className="open-btn" style={{ background: accentColor }}>Open in Meshtastic</button>
+                    <button onClick={() => window.location.href = config.url} className="open-btn" style={{ background: accentColor }}>{t('dashboard.openInMeshtastic')}</button>
                   </div>
                   <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.75rem' }}>
-                    Can't Scan?{' '}
+                    {t('dashboard.cantScan')}{' '}
                     <button onClick={() => handleCopyMeshtasticLink(config.url, config.id)} style={{ background: 'none', border: 'none', color: copiedMeshtastic === config.id ? '#28a745' : '#007bff', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit', fontWeight: 500 }}>
-                      {copiedMeshtastic === config.id ? 'Copied!' : 'Copy Link'}
+                      {copiedMeshtastic === config.id ? t('common.copied') : t('dashboard.copyLink')}
                     </button>
                   </p>
                 </>
@@ -531,11 +545,11 @@ function Dashboard() {
   if (showRadiosStep) {
     steps.push({
       index: stepIndex++,
-      title: 'Your Meshtastic Radios',
+      title: t('dashboard.yourRadios'),
       content: (
         <div style={{ textAlign: 'center' }}>
           {loadingRadios ? (
-            <p>Loading radios...</p>
+            <p>{t('dashboard.loadingRadios')}</p>
           ) : userRadios.length > 0 ? (
             <div className="radios-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', marginBottom: '1rem' }}>
               {userRadios.map((radio) => (
@@ -550,18 +564,18 @@ function Dashboard() {
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={() => setValidatingRadio(radio)}
-                          title="Compare radio config with target"
+                          title={t('dashboard.compareConfig')}
                         >
-                          Validate
+                          {t('common.validate')}
                         </button>
                       )}
                       {settings?.user_program_radio_enabled && (
                         <button
                           className="btn btn-sm btn-primary"
                           onClick={() => setProgrammingRadio(radio)}
-                          title="Program radio with config"
+                          title={t('dashboard.programConfig')}
                         >
-                          Program
+                          {t('common.program')}
                         </button>
                       )}
                     </div>
@@ -570,14 +584,14 @@ function Dashboard() {
               ))}
             </div>
           ) : (
-            <p style={{ color: '#666', marginBottom: '1rem' }}>No radios assigned to you yet.</p>
+            <p style={{ color: '#666', marginBottom: '1rem' }}>{t('dashboard.noRadiosAssigned')}</p>
           )}
           {settings?.user_radio_enrollment_enabled && (
             <button
               className="btn btn-primary"
               onClick={() => setShowEnrollModal(true)}
             >
-              + Register Radio
+              {t('dashboard.registerRadio')}
             </button>
           )}
         </div>
@@ -590,7 +604,7 @@ function Dashboard() {
   return (
     <div className="dashboard" style={{ '--accent-color': accentColor }}>
       <div className="dashboard-header">
-        <h1>Welcome, {user?.callsign || user?.username}</h1>
+        <h1>{t('dashboard.welcome')}{user?.callsign || user?.username}</h1>
         <p className="portal-name" style={{ color: accentColor }}>{brandName}</p>
       </div>
 
@@ -598,34 +612,51 @@ function Dashboard() {
       <div className="user-info-section">
         <div className="info-grid">
           <div className="info-card">
-            <h3>Roles</h3>
+            <h3>{t('common.roles')}</h3>
             <div className="roles-list">
               {user?.roles?.map((role) => (
                 <span key={role.name || role} className="role-badge" style={{ background: primaryColor }}>
                   {role.displayName || role.name || role}
                 </span>
-              )) || <span className="role-badge" style={{ background: primaryColor }}>user</span>}
+              )) || <span className="role-badge" style={{ background: primaryColor }}>{t('dashboard.user')}</span>}
             </div>
           </div>
         </div>
         <div className="action-buttons">
-          <button className="action-btn edit-profile" style={{ background: accentColor }} onClick={() => navigate('/edit-profile')}>EDIT PROFILE</button>
-          <button className="action-btn change-password" style={{ background: accentColor }} onClick={() => navigate('/change-password')}>CHANGE PASSWORD</button>
+          <button className="action-btn edit-profile" style={{ background: accentColor }} onClick={() => navigate('/edit-profile')}>{t('dashboard.editProfile')}</button>
+          <button className="action-btn change-password" style={{ background: accentColor }} onClick={() => navigate('/change-password')}>{t('dashboard.changePassword')}</button>
         </div>
       </div>
 
       <div className="welcome-section">
         <div className="welcome-text">
-          <p>This portal is designed to help you get your ATAK client setup and ready to use. If you do not have ATAK you can download it using the icons below, once you have ATAK you can download and import the profiles.</p>
+          <p>{t('dashboard.introText')}</p>
         </div>
+        {(settings?.help_link_enabled || settings?.help_email_enabled) && (
+          <div className="help-buttons">
+            {settings?.help_link_enabled && settings?.help_link_value && (
+              <a href={settings.help_link_value} target="_blank" rel="noopener noreferrer" className="action-btn" style={{ background: accentColor }}>
+                {t('dashboard.helpLink')}
+              </a>
+            )}
+            {settings?.help_email_enabled && settings?.help_email_value && (
+              <>
+                <a href={`mailto:${settings.help_email_value}`} className="action-btn" style={{ background: accentColor }}>
+                  {t('dashboard.helpEmail')}
+                </a>
+                <span className="help-email-text">{settings.help_email_value}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="get-started-section">
         <div className="workflow-header">
-          <h1>Get started with ATAK</h1>
+          <h1>{t('dashboard.getStarted')}</h1>
           <div className="workflow-controls">
-            <button className="workflow-btn" onClick={collapseAll} style={{ background: accentColor }}>Collapse All</button>
-            <button className="workflow-btn" onClick={() => expandAll(totalSteps)} style={{ background: accentColor }}>Expand All</button>
+            <button className="workflow-btn" onClick={collapseAll} style={{ background: accentColor }}>{t('dashboard.collapseAll')}</button>
+            <button className="workflow-btn" onClick={() => expandAll(totalSteps)} style={{ background: accentColor }}>{t('dashboard.expandAll')}</button>
           </div>
         </div>
 
@@ -649,7 +680,7 @@ function Dashboard() {
                       onClick={(e) => { e.stopPropagation(); goToNextStep(idx, totalSteps); }}
                       style={{ background: accentColor }}
                     >
-                      Next Step →
+                      {t('dashboard.nextStep')}
                     </button>
                   )}
                 </div>

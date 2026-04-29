@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { radiosAPI, usersAPI, settingsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -13,6 +14,7 @@ import '../../components/AdminTable.css';
 const FRONTEND_URL = window.location.origin;
 
 function RadiosList() {
+  const { t } = useTranslation();
   const { radioId } = useParams();
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
@@ -77,14 +79,14 @@ function RadiosList() {
   const copyClaimUrl = async (radio) => {
     try {
       if (!radio.meshtasticId) {
-        showError('Radio has no node ID (MAC address not set)');
+        showError(t('admin.radios.noNodeId'));
         return;
       }
       const claimUrl = `${FRONTEND_URL}/claim-radio/${encodeURIComponent(radio.meshtasticId)}`;
       await navigator.clipboard.writeText(claimUrl);
       // Brief visual feedback could be added here
     } catch (err) {
-      showError('Failed to copy URL to clipboard');
+      showError(t('admin.radios.failedCopyUrl'));
     }
   };
 
@@ -95,7 +97,7 @@ function RadiosList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create radio'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.radios.failedCreate')),
   });
 
   const updateMutation = useMutation({
@@ -105,13 +107,13 @@ function RadiosList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to update radio'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.radios.failedUpdate')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => radiosAPI.delete(id),
     onSuccess: () => queryClient.invalidateQueries(['radios']),
-    onError: (err) => showError(err.response?.data?.error || 'Failed to delete radio'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.radios.failedDelete')),
   });
 
   const resetForm = () => {
@@ -136,8 +138,8 @@ function RadiosList() {
 
   const handleFactoryReset = async (radio) => {
     const confirmed = await confirm(
-      `This will erase ALL settings on "${radio.name}" and restore factory defaults.\n\nThe device will reboot. Are you sure?`,
-      'Factory Reset Radio'
+      t('radio.factoryResetConfirm', { name: radio.name }),
+      t('radio.factoryResetTitle')
     );
     if (!confirmed) return;
 
@@ -152,7 +154,7 @@ function RadiosList() {
       await meshtasticSerial.factoryReset();
       await meshtasticSerial.disconnect();
     } catch (err) {
-      showError(`Factory reset failed: ${err.message}`);
+      showError(t('admin.radios.factoryResetFailed', { error: err.message }));
     } finally {
       setResettingRadio(null);
     }
@@ -182,7 +184,7 @@ function RadiosList() {
       setScanLog([]);
       setShowModal(true);
     } catch (err) {
-      showError('Failed to load radio details: ' + (err.response?.data?.error || err.message));
+      showError(t('admin.radios.failedLoadDetails', { error: err.response?.data?.error || err.message }));
     }
   };
 
@@ -207,7 +209,7 @@ function RadiosList() {
 
   const handleLearnFromUSB = async () => {
     if (!browserSupport.isSupported) {
-      setError('Web Serial API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+      setError(t('radio.webSerialNotSupported'));
       return;
     }
 
@@ -219,7 +221,7 @@ function RadiosList() {
     }
 
     setScanning(true);
-    setScanStatus('Connecting to radio...');
+    setScanStatus(t('radio.connectingToRadio'));
     setError('');
     setScanLog([]);
 
@@ -246,7 +248,7 @@ function RadiosList() {
           displayName = shortName;
         }
 
-        setScanStatus(`Done: ${displayName}`);
+        setScanStatus(t('admin.radios.deviceInfoLoaded'));
         setFormData(prev => ({
           ...prev,
           platform: 'meshtastic',
@@ -281,15 +283,15 @@ function RadiosList() {
       if (!gotData) {
         const finalInfo = meshtasticSerial.getDeviceInfo();
         if (finalInfo?.shortName || finalInfo?.longName) {
-          setScanStatus('Device info loaded!');
+          setScanStatus(t('admin.radios.deviceInfoLoaded'));
         } else {
-          setScanStatus('Connected but limited info available.');
+          setScanStatus(t('admin.radios.limitedInfo'));
         }
         await meshtasticSerial.disconnect();
       }
     } catch (err) {
       console.error('Scan error:', err);
-      setError(`Failed to read from radio: ${err.message}`);
+      setError(t('admin.radios.failedRead', { error: err.message }));
     } finally {
       setScanning(false);
       if (!gotData) {
@@ -344,7 +346,7 @@ function RadiosList() {
 
   const handleFindViaUSB = async () => {
     if (!browserSupport.isSupported) {
-      showError('Web Serial API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+      showError(t('radio.webSerialNotSupported'));
       return;
     }
 
@@ -393,11 +395,11 @@ function RadiosList() {
         if (info) {
           _showCreateForInfo(info);
         } else {
-          showError('Could not read device info from radio');
+          showError(t('admin.radios.couldNotRead'));
         }
       }
     } catch (err) {
-      showError(`Failed to read from radio: ${err.message}`);
+      showError(t('admin.radios.failedRead', { error: err.message }));
     } finally {
       setFindingRadio(false);
     }
@@ -481,19 +483,19 @@ function RadiosList() {
     }
   }, [radioId, radios.length]);
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+  if (isLoading) return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
 
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Radios Management</h1>
+        <h1>{t('admin.radios.title')}</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             className="btn btn-secondary"
             onClick={exportRadiosCSV}
             disabled={!radios.length}
           >
-            Export CSV
+            {t('admin.radios.exportCsv')}
           </button>
           {canEdit && browserSupport.isSupported && (
             <button
@@ -501,12 +503,12 @@ function RadiosList() {
               onClick={handleFindViaUSB}
               disabled={findingRadio}
             >
-              {findingRadio ? 'Scanning...' : 'Find via USB'}
+              {findingRadio ? t('radio.scanning') : t('admin.radios.findViaUsb')}
             </button>
           )}
           {canEdit && (
             <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-              + Add Radio
+              {t('admin.radios.addRadio')}
             </button>
           )}
         </div>
@@ -514,19 +516,19 @@ function RadiosList() {
 
       <div className="admin-table-container">
         {radios.length === 0 ? (
-          <div className="empty-state">No radios found</div>
+          <div className="empty-state">{t('admin.radios.noRadios')}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Platform</th>
-                <th>Type</th>
-                <th>Model</th>
-                <th>MAC</th>
-                <th>Node ID</th>
-                <th>Assigned To</th>
-                <th>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('admin.radios.platform')}</th>
+                <th>{t('admin.radios.type')}</th>
+                <th>{t('admin.radios.model')}</th>
+                <th>{t('admin.radios.mac')}</th>
+                <th>{t('admin.radios.nodeId')}</th>
+                <th>{t('admin.radios.assignedTo')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -557,7 +559,7 @@ function RadiosList() {
                               setShowValidateModal(true);
                             }}
                           >
-                            Validate
+                            {t('common.validate')}
                           </button>
                           <button
                             className="btn btn-sm btn-primary"
@@ -566,7 +568,7 @@ function RadiosList() {
                               setShowProgramModal(true);
                             }}
                           >
-                            Program
+                            {t('common.program')}
                           </button>
                           {canEdit && (
                             <button
@@ -574,7 +576,7 @@ function RadiosList() {
                               onClick={() => handleFactoryReset(radio)}
                               disabled={resettingRadio === radio.id}
                             >
-                              {resettingRadio === radio.id ? 'Resetting...' : 'Factory Reset'}
+                              {resettingRadio === radio.id ? t('radio.resetting') : t('radio.factoryReset')}
                             </button>
                           )}
                         </>
@@ -583,22 +585,22 @@ function RadiosList() {
                         <button
                           className="btn btn-sm btn-info"
                           onClick={() => copyClaimUrl(radio)}
-                          title="Copy claim URL"
+                          title={t('radio.copyClaimUrl')}
                         >
-                          Copy Claim URL
+                          {t('radio.copyClaimUrl')}
                         </button>
                       )}
                       {canEdit && (
                         <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(radio)}>
-                          Edit
+                          {t('common.edit')}
                         </button>
                       )}
                       {canEdit && (
                         <button className="btn btn-sm btn-danger" onClick={async () => {
-                          const confirmed = await confirm(`Delete "${radio.name}"?`, 'Delete Radio');
+                          const confirmed = await confirm(t('admin.radios.deleteConfirm', { name: radio.name }), t('admin.radios.deleteRadio'));
                           if (confirmed) deleteMutation.mutate(radio.id);
                         }}>
-                          Delete
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -615,7 +617,7 @@ function RadiosList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editing ? 'Edit Radio' : 'Create Radio'}</h2>
+              <h2>{editing ? t('admin.radios.editRadio') : t('admin.radios.createRadio')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -623,10 +625,10 @@ function RadiosList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Radio Type *</label>
+                  <label>{t('radio.radioType')} *</label>
                   <select value={formData.radioType} onChange={(e) => setFormData({...formData, radioType: e.target.value, model: ''})} required>
-                    <option value="meshtastic">Meshtastic</option>
-                    <option value="other">Other</option>
+                    <option value="meshtastic">{t('radio.meshtastic')}</option>
+                    <option value="other">{t('radio.other')}</option>
                   </select>
                 </div>
 
@@ -647,10 +649,10 @@ function RadiosList() {
                         disabled={scanning}
                         style={{ whiteSpace: 'nowrap' }}
                       >
-                        {scanning ? 'Scanning...' : 'Learn from USB'}
+                        {scanning ? t('radio.scanning') : t('admin.radios.learnFromUsb')}
                       </button>
                       <span style={{ color: '#666', fontSize: '0.9rem' }}>
-                        {scanStatus || 'Connect a Meshtastic radio via USB to auto-fill device info'}
+                        {scanStatus || t('admin.radios.learnFromUsbHelp')}
                       </span>
                     </div>
                     {/* Terminal Log Box */}
@@ -681,64 +683,64 @@ function RadiosList() {
                 )}
                 {formData.radioType === 'meshtastic' && !browserSupport.isSupported && (
                   <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
-                    USB scanning requires Chrome, Edge, or Opera browser.
+                    {t('radio.usbRequiresChrome')}
                   </div>
                 )}
 
                 <div className="form-group">
-                  <label>Name *</label>
+                  <label>{t('common.name')} *</label>
                   <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{t('common.description')}</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label>Model</label>
+                  <label>{t('admin.radios.modelLabel')}</label>
                   {formData.radioType === 'meshtastic' ? (
                     <select value={formData.model} onChange={(e) => setFormData({...formData, model: e.target.value})}>
-                      <option value="">Select model...</option>
+                      <option value="">{t('admin.radios.selectModel')}</option>
                       {getModelOptions().map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
                   ) : (
-                    <input type="text" value={formData.model} onChange={(e) => setFormData({...formData, model: e.target.value})} placeholder="Enter model name" />
+                    <input type="text" value={formData.model} onChange={(e) => setFormData({...formData, model: e.target.value})} placeholder={t('admin.radios.enterModel')} />
                   )}
                 </div>
 
                 <div className="form-group">
-                  <label>Vendor</label>
+                  <label>{t('admin.radios.vendorLabel')}</label>
                   <input type="text" value={formData.vendor} onChange={(e) => setFormData({...formData, vendor: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label>Software Version</label>
+                  <label>{t('admin.radios.softwareVersion')}</label>
                   <input type="text" value={formData.softwareVersion} onChange={(e) => setFormData({...formData, softwareVersion: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label>Short Name</label>
+                  <label>{t('admin.radios.shortNameLabel')}</label>
                   <input type="text" value={formData.shortName} onChange={(e) => setFormData({...formData, shortName: e.target.value})} maxLength={4} />
-                  <span className="help-text">4 character identifier</span>
+                  <span className="help-text">{t('admin.radios.shortNameHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Long Name</label>
+                  <label>{t('admin.radios.longNameLabel')}</label>
                   <input type="text" value={formData.longName} onChange={(e) => setFormData({...formData, longName: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label>MAC Address</label>
+                  <label>{t('admin.radios.macLabel')}</label>
                   <input type="text" value={formData.mac} onChange={(e) => setFormData({...formData, mac: e.target.value})} placeholder="AA:BB:CC:DD:EE:FF" />
                 </div>
 
                 <div className="form-group">
-                  <label>Assigned To</label>
+                  <label>{t('admin.radios.assignedToLabel')}</label>
                   <select value={formData.assignedTo || ''} onChange={(e) => setFormData({...formData, assignedTo: e.target.value ? parseInt(e.target.value) : null})}>
-                    <option value="">Unassigned</option>
+                    <option value="">{t('admin.radios.unassigned')}</option>
                     {users.map(user => (
                       <option key={user.id} value={user.id}>{user.username} ({user.firstName} {user.lastName})</option>
                     ))}
@@ -746,9 +748,9 @@ function RadiosList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Owner</label>
+                  <label>{t('admin.radios.ownerLabel')}</label>
                   <select value={formData.owner || ''} onChange={(e) => setFormData({...formData, owner: e.target.value ? parseInt(e.target.value) : null})}>
-                    <option value="">No Owner</option>
+                    <option value="">{t('admin.radios.noOwner')}</option>
                     {users.map(user => (
                       <option key={user.id} value={user.id}>{user.username} ({user.firstName} {user.lastName})</option>
                     ))}
@@ -770,7 +772,7 @@ function RadiosList() {
                           setShowValidateModal(true);
                         }}
                       >
-                        Validate
+                        {t('common.validate')}
                       </button>
                       <button
                         type="button"
@@ -781,17 +783,17 @@ function RadiosList() {
                           setShowProgramModal(true);
                         }}
                       >
-                        Program
+                        {t('common.program')}
                       </button>
                     </>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
-                    {editing ? 'Update' : 'Create'} Radio
+                    {editing ? t('admin.radios.updateRadio') : t('admin.radios.createRadio')}
                   </button>
                 </div>
               </div>

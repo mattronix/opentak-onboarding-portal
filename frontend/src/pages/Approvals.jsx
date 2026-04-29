@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { approvalsAPI } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import './Approvals.css';
 
 function Approvals() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showSuccess, showError, confirm } = useNotification();
   const { refreshApproverStatus } = useAuth();
@@ -27,7 +29,7 @@ function Approvals() {
       showSuccess(response.data.message);
     },
     onError: (err) => {
-      showError(err.response?.data?.error || 'Failed to approve registration');
+      showError(err.response?.data?.error || t('approvals.failedApprove'));
     },
     onSettled: () => {
       setActionLoading(null);
@@ -42,7 +44,7 @@ function Approvals() {
       showSuccess(response.data.message);
     },
     onError: (err) => {
-      showError(err.response?.data?.error || 'Failed to reject registration');
+      showError(err.response?.data?.error || t('approvals.failedReject'));
     },
     onSettled: () => {
       setActionLoading(null);
@@ -51,8 +53,8 @@ function Approvals() {
 
   const handleApprove = async (pending) => {
     const confirmed = await confirm(
-      `Approve registration for ${pending.username}?\n\nTheir account will be created immediately and they can log in right away.`,
-      'Approve Registration'
+      t('approvals.approveConfirm', { username: pending.username }),
+      t('approvals.approveRegistration')
     );
     if (!confirmed) return;
     setActionLoading(pending.id);
@@ -61,8 +63,8 @@ function Approvals() {
 
   const handleReject = async (pending) => {
     const confirmed = await confirm(
-      `Reject registration for ${pending.username}?\n\nThis action cannot be undone. The user will be notified.`,
-      'Reject Registration'
+      t('approvals.rejectConfirm', { username: pending.username }),
+      t('approvals.rejectRegistration')
     );
     if (!confirmed) return;
     setActionLoading(pending.id);
@@ -97,7 +99,7 @@ function Approvals() {
   if (isLoading) {
     return (
       <div className="approvals-container">
-        <div className="loading">Loading pending approvals...</div>
+        <div className="loading">{t('approvals.loadingApprovals')}</div>
       </div>
     );
   }
@@ -106,7 +108,7 @@ function Approvals() {
     return (
       <div className="approvals-container">
         <div className="error-message">
-          {error.response?.data?.error || 'Failed to load approvals'}
+          {error.response?.data?.error || t('approvals.loadingApprovals')}
         </div>
       </div>
     );
@@ -116,12 +118,12 @@ function Approvals() {
     return (
       <div className="approvals-container">
         <div className="approvals-header">
-          <h1>Approvals</h1>
+          <h1>{t('approvals.title')}</h1>
         </div>
         <div className="not-approver-message">
-          <h2>No Approver Access</h2>
-          <p>You are not configured as an approver for any onboarding codes.</p>
-          <p>Contact an administrator if you believe you should have approver access.</p>
+          <h2>{t('approvals.noAccess')}</h2>
+          <p>{t('approvals.noAccessDesc')}</p>
+          <p>{t('approvals.contactAdmin')}</p>
         </div>
       </div>
     );
@@ -133,10 +135,10 @@ function Approvals() {
   return (
     <div className="approvals-container">
       <div className="approvals-header">
-        <h1>Pending Approvals</h1>
+        <h1>{t('approvals.title')}</h1>
         <div className="approver-info">
           <span className="approver-badge">
-            Approver for: {approverForCodes.map(c => c.name).join(', ')}
+            {t('approvals.approverFor')}: {approverForCodes.map(c => c.name).join(', ')}
           </span>
         </div>
       </div>
@@ -148,13 +150,13 @@ function Approvals() {
               <path fill="#28a745" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
           </div>
-          <h2>All Caught Up!</h2>
-          <p>There are no pending registrations waiting for your approval.</p>
+          <h2>{t('approvals.allCaughtUp')}</h2>
+          <p>{t('approvals.noPending')}</p>
         </div>
       ) : (
         <>
           <div className="approvals-count">
-            <span className="count-badge">{pendingApprovals.length}</span> registration{pendingApprovals.length !== 1 ? 's' : ''} pending your approval
+            <span className="count-badge">{pendingApprovals.length}</span> {t('approvals.registrations')} {t('approvals.pendingYourApproval')}
           </div>
 
           <div className="approvals-list">
@@ -167,31 +169,31 @@ function Approvals() {
                   </div>
                   <div className="expiry-info">
                     <span className={`expiry-badge ${pending.is_expired ? 'expired' : ''}`}>
-                      {pending.is_expired ? 'Expired' : `Expires in ${getTimeRemaining(pending.expires_at)}`}
+                      {pending.is_expired ? t('common.expired') : t('approvals.expiresIn', { time: getTimeRemaining(pending.expires_at) })}
                     </span>
                   </div>
                 </div>
 
                 <div className="approval-card-body">
                   <div className="detail-row">
-                    <span className="label">Email:</span>
+                    <span className="label">{t('common.email')}</span>
                     <span className="value">{pending.email}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="label">Callsign:</span>
+                    <span className="label">{t('admin.users.callsign')}</span>
                     <span className="value">{pending.callsign}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="label">Onboarding Code:</span>
+                    <span className="label">{t('approvals.onboardingCode')}</span>
                     <span className="value">{pending.onboarding_code?.name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="label">Requested:</span>
+                    <span className="label">{t('approvals.requested')}</span>
                     <span className="value">{formatDate(pending.created_at)}</span>
                   </div>
                   {pending.approver_role && (
                     <div className="detail-row">
-                      <span className="label">Your Role:</span>
+                      <span className="label">{t('approvals.yourRole')}</span>
                       <span className="value role-badge">{pending.approver_role.displayName || pending.approver_role.name}</span>
                     </div>
                   )}
@@ -203,14 +205,14 @@ function Approvals() {
                     onClick={() => handleApprove(pending)}
                     disabled={actionLoading === pending.id || pending.is_expired}
                   >
-                    {actionLoading === pending.id ? 'Processing...' : 'Approve'}
+                    {actionLoading === pending.id ? t('common.processing') : t('approvals.approve')}
                   </button>
                   <button
                     className="btn btn-danger"
                     onClick={() => handleReject(pending)}
                     disabled={actionLoading === pending.id}
                   >
-                    {actionLoading === pending.id ? 'Processing...' : 'Reject'}
+                    {actionLoading === pending.id ? t('common.processing') : t('approvals.reject')}
                   </button>
                 </div>
               </div>

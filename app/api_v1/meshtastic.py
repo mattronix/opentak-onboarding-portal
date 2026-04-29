@@ -61,7 +61,8 @@ def get_meshtastic_configs():
             configs_dict[c.id] = c
     for c in public_configs:
         if c.id not in configs_dict:
-            configs_dict[c.id] = c
+            if not c.roles and not c.users:
+                configs_dict[c.id] = c
 
     configs = list(configs_dict.values())
 

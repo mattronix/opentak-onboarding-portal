@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { announcementsAPI } from '../services/api';
 import './AnnouncementHistory.css';
 
 function AnnouncementHistory() {
+  const { t } = useTranslation();
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
   const { data, isLoading } = useQuery({
@@ -36,15 +38,15 @@ function AnnouncementHistory() {
   return (
     <div className="announcement-history-page">
       <div className="page-header">
-        <h1>Announcement History</h1>
-        <p>View all announcements that were sent to you</p>
+        <h1>{t('announcements.title')}</h1>
+        <p>{t('announcements.subtitle')}</p>
       </div>
 
       {isLoading ? (
-        <div className="loading">Loading announcements...</div>
+        <div className="loading">{t('announcements.loadingAnnouncements')}</div>
       ) : announcements.length === 0 ? (
         <div className="empty-state">
-          <p>No announcements have been sent to you yet.</p>
+          <p>{t('announcements.noAnnouncements')}</p>
         </div>
       ) : (
         <div className="announcements-list">
@@ -58,10 +60,10 @@ function AnnouncementHistory() {
                 <h3>{announcement.title}</h3>
                 <div className="announcement-badges">
                   {!announcement.isRead && (
-                    <span className="badge badge-unread">Unread</span>
+                    <span className="badge badge-unread">{t('announcements.unread')}</span>
                   )}
                   {announcement.isDismissed && (
-                    <span className="badge badge-dismissed">Dismissed</span>
+                    <span className="badge badge-dismissed">{t('announcements.dismissed')}</span>
                   )}
                 </div>
               </div>
@@ -90,7 +92,7 @@ function AnnouncementHistory() {
               <div dangerouslySetInnerHTML={{ __html: selectedAnnouncement.content }} />
             </div>
             <div className="modal-footer">
-              <span className="date">Posted: {formatDate(selectedAnnouncement.sentAt)}</span>
+              <span className="date">{t('announcements.posted')}: {formatDate(selectedAnnouncement.sentAt)}</span>
             </div>
           </div>
         </div>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { onboardingCodesAPI, rolesAPI, usersAPI, groupsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function OnboardingCodesList() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
   const { hasRole } = useAuth();
@@ -68,7 +70,7 @@ function OnboardingCodesList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create code'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.onboardingCodes.failedCreate')),
   });
 
   const updateMutation = useMutation({
@@ -78,13 +80,13 @@ function OnboardingCodesList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to update code'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.onboardingCodes.failedUpdate')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => onboardingCodesAPI.delete(id),
     onSuccess: () => queryClient.invalidateQueries(['onboardingCodes']),
-    onError: (err) => showError(err.response?.data?.error || 'Failed to delete code'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.onboardingCodes.failedDelete')),
   });
 
   const generateUUID = () => {
@@ -162,7 +164,7 @@ function OnboardingCodesList() {
       setError('');
       setShowModal(true);
     } catch (err) {
-      showError('Failed to load code details: ' + (err.response?.data?.error || err.message));
+      showError(t('admin.onboardingCodes.failedLoad') + ': ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -192,7 +194,7 @@ function OnboardingCodesList() {
     }
   };
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+  if (isLoading) return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
 
   const codes = codesData?.codes || [];
   const users = usersData?.users || [];
@@ -202,29 +204,29 @@ function OnboardingCodesList() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Onboarding Codes Management</h1>
+        <h1>{t('admin.onboardingCodes.title')}</h1>
         {canEdit && (
           <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-            + Add Code
+            {t('admin.onboardingCodes.addCode')}
           </button>
         )}
       </div>
 
       <div className="admin-table-container">
         {codes.length === 0 ? (
-          <div className="empty-state">No onboarding codes found</div>
+          <div className="empty-state">{t('admin.onboardingCodes.noCodes')}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Code</th>
-                <th>Uses</th>
-                <th>Contact</th>
-                <th>Expiry</th>
-                <th>Roles</th>
-                <th>Groups</th>
-                <th>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('admin.onboardingCodes.code')}</th>
+                <th>{t('admin.onboardingCodes.usesCol')}</th>
+                <th>{t('admin.onboardingCodes.contact')}</th>
+                <th>{t('admin.onboardingCodes.expiry')}</th>
+                <th>{t('common.roles')}</th>
+                <th>{t('admin.onboardingCodes.groups')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -232,13 +234,13 @@ function OnboardingCodesList() {
                 <tr key={code.id}>
                   <td>
                   <strong>{code.name}</strong>
-                  {code.autoApprove && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>Auto</span>}
-                  {code.requireApproval && <span className="badge badge-warning" style={{ marginLeft: '0.5rem' }}>Approval</span>}
+                  {code.autoApprove && <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>{t('admin.onboardingCodes.auto')}</span>}
+                  {code.requireApproval && <span className="badge badge-warning" style={{ marginLeft: '0.5rem' }}>{t('admin.onboardingCodes.approval')}</span>}
                 </td>
                   <td><code>{code.onboardingCode}</code></td>
                   <td>{code.uses} / {code.maxUses || '∞'}</td>
                   <td>{code.onboardContact?.username || '-'}</td>
-                  <td>{code.expiryDate ? new Date(code.expiryDate).toLocaleDateString() : 'Never'}</td>
+                  <td>{code.expiryDate ? new Date(code.expiryDate).toLocaleDateString() : t('common.never')}</td>
                   <td>
                     {code.roles?.map(role => (
                       <span key={role.id} className="badge badge-primary">{role.displayName || role.name}</span>
@@ -257,21 +259,21 @@ function OnboardingCodesList() {
                       <button
                         className="btn btn-sm btn-success"
                         onClick={() => copyOnboardingUrl(code.onboardingCode, code.id)}
-                        title="Copy registration URL"
+                        title={t('common.copyUrl')}
                       >
-                        {copiedCodeId === code.id ? '✓ Copied!' : '📋 Copy URL'}
+                        {copiedCodeId === code.id ? t('common.copied') : t('common.copyUrl')}
                       </button>
                       {canEdit && (
                         <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(code)}>
-                          Edit
+                          {t('common.edit')}
                         </button>
                       )}
                       {canEdit && (
                         <button className="btn btn-sm btn-danger" onClick={async () => {
-                          const confirmed = await confirm(`Delete code "${code.name}"?`, 'Delete Code');
+                          const confirmed = await confirm(t('admin.onboardingCodes.deleteConfirm', { name: code.name }), t('admin.onboardingCodes.deleteCode'));
                           if (confirmed) deleteMutation.mutate(code.id);
                         }}>
-                          Delete
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -288,7 +290,7 @@ function OnboardingCodesList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editing ? 'Edit Onboarding Code' : 'Create Onboarding Code'}</h2>
+              <h2>{editing ? t('admin.onboardingCodes.editCode') : t('admin.onboardingCodes.createCode')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -296,53 +298,53 @@ function OnboardingCodesList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Name *</label>
+                  <label>{t('admin.onboardingCodes.nameLabel')}</label>
                   <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                  <span className="help-text">Friendly name for this code</span>
+                  <span className="help-text">{t('admin.onboardingCodes.nameHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Code *</label>
+                  <label>{t('admin.onboardingCodes.codeLabel')}</label>
                   <input type="text" value={formData.onboardingCode} onChange={(e) => setFormData({...formData, onboardingCode: e.target.value})} required disabled={!!editing} />
-                  <span className="help-text">{editing ? 'Code cannot be changed' : 'Unique code for registration'}</span>
+                  <span className="help-text">{editing ? t('admin.onboardingCodes.codeCannotChange') : t('admin.onboardingCodes.codeHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{t('common.description')}</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label>Max Uses</label>
-                  <input type="number" value={formData.maxUses} onChange={(e) => setFormData({...formData, maxUses: e.target.value})} min="0" placeholder="Unlimited" />
-                  <span className="help-text">Leave blank for unlimited uses</span>
+                  <label>{t('admin.onboardingCodes.maxUses')}</label>
+                  <input type="number" value={formData.maxUses} onChange={(e) => setFormData({...formData, maxUses: e.target.value})} min="0" placeholder={t('admin.onboardingCodes.unlimited')} />
+                  <span className="help-text">{t('admin.onboardingCodes.maxUsesHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Onboard Contact</label>
+                  <label>{t('admin.onboardingCodes.onboardContact')}</label>
                   <select value={formData.onboardContact || ''} onChange={(e) => setFormData({...formData, onboardContact: e.target.value ? parseInt(e.target.value) : null})}>
-                    <option value="">No Contact</option>
+                    <option value="">{t('admin.onboardingCodes.noContact')}</option>
                     {users.map(user => (
                       <option key={user.id} value={user.id}>{user.username}{(user.firstName || user.lastName) ? ` (${[user.firstName, user.lastName].filter(Boolean).join(' ')})` : ''}</option>
                     ))}
                   </select>
-                  <span className="help-text">User who will receive new registrations</span>
+                  <span className="help-text">{t('admin.onboardingCodes.contactHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Code Expiry Date</label>
+                  <label>{t('admin.onboardingCodes.codeExpiryDate')}</label>
                   <input type="date" value={formData.expiryDate} onChange={(e) => setFormData({...formData, expiryDate: e.target.value})} />
-                  <span className="help-text">When this code expires</span>
+                  <span className="help-text">{t('admin.onboardingCodes.codeExpiryHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>User Account Expiry Date</label>
+                  <label>{t('admin.onboardingCodes.userExpiryDate')}</label>
                   <input type="date" value={formData.userExpiryDate} onChange={(e) => setFormData({...formData, userExpiryDate: e.target.value})} />
-                  <span className="help-text">When accounts created with this code expire</span>
+                  <span className="help-text">{t('admin.onboardingCodes.userExpiryHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Roles</label>
+                  <label>{t('common.roles')}</label>
                   <div className="checkbox-list">
                     {roles.map(role => (
                       <label key={role.id} className="checkbox-label">
@@ -360,14 +362,14 @@ function OnboardingCodesList() {
                       </label>
                     ))}
                   </div>
-                  <span className="help-text">Roles assigned to new users</span>
+                  <span className="help-text">{t('admin.onboardingCodes.rolesHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>OTS Groups</label>
+                  <label>{t('admin.onboardingCodes.otsGroupsLabel')}</label>
                   {otsGroups.length === 0 ? (
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', padding: '0.5rem 0' }}>
-                      No groups available. Sync groups from OTS in the Groups admin page.
+                      {t('admin.onboardingCodes.noGroupsAvailable')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -398,9 +400,9 @@ function OnboardingCodesList() {
                                 }))}
                                 style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-input)', borderRadius: '4px' }}
                               >
-                                <option value="BOTH">Both (IN + OUT)</option>
-                                <option value="IN">IN only</option>
-                                <option value="OUT">OUT only</option>
+                                <option value="BOTH">{t('common.both')}</option>
+                                <option value="IN">{t('common.inOnly')}</option>
+                                <option value="OUT">{t('common.outOnly')}</option>
                               </select>
                             )}
                           </div>
@@ -408,7 +410,7 @@ function OnboardingCodesList() {
                       })}
                     </div>
                   )}
-                  <span className="help-text">OTS groups and direction assigned to new users (controls data visibility in TAK)</span>
+                  <span className="help-text">{t('admin.onboardingCodes.otsGroupsHelp')}</span>
                 </div>
 
                 <div className="form-group">
@@ -419,9 +421,9 @@ function OnboardingCodesList() {
                       onChange={(e) => setFormData({...formData, autoApprove: e.target.checked, requireApproval: e.target.checked ? false : formData.requireApproval})}
                       style={{ width: 'auto' }}
                     />
-                    <span style={{ fontWeight: 'normal' }}>Auto-Approve Registrations</span>
+                    <span style={{ fontWeight: 'normal' }}>{t('admin.onboardingCodes.autoApprove')}</span>
                   </label>
-                  <span className="help-text">Skip email verification - users are approved immediately upon registration</span>
+                  <span className="help-text">{t('admin.onboardingCodes.autoApproveHelp')}</span>
                 </div>
 
                 <div className="form-group">
@@ -432,35 +434,35 @@ function OnboardingCodesList() {
                       onChange={(e) => setFormData({...formData, requireApproval: e.target.checked, autoApprove: e.target.checked ? false : formData.autoApprove})}
                       style={{ width: 'auto' }}
                     />
-                    <span style={{ fontWeight: 'normal' }}>Require Approval</span>
+                    <span style={{ fontWeight: 'normal' }}>{t('admin.onboardingCodes.requireApproval')}</span>
                   </label>
-                  <span className="help-text">Registrations require manual approval via email - approvers will receive Yes/No email links</span>
+                  <span className="help-text">{t('admin.onboardingCodes.requireApprovalHelp')}</span>
                 </div>
 
                 {formData.requireApproval && (
                   <div className="form-group">
-                    <label>Approver Role *</label>
+                    <label>{t('admin.onboardingCodes.approverRole')}</label>
                     <select
                       value={formData.approverRoleId || ''}
                       onChange={(e) => setFormData({...formData, approverRoleId: e.target.value ? parseInt(e.target.value) : null})}
                       required
                     >
-                      <option value="">Select a role...</option>
+                      <option value="">{t('admin.onboardingCodes.selectRole')}</option>
                       {roles.map(role => (
                         <option key={role.id} value={role.id}>{role.displayName || role.name}</option>
                       ))}
                     </select>
-                    <span className="help-text">All users with this role will receive approval emails with Yes/No links</span>
+                    <span className="help-text">{t('admin.onboardingCodes.approverRoleHelp')}</span>
                   </div>
                 )}
               </div>
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editing ? 'Update' : 'Create'} Code
+                  {editing ? t('admin.onboardingCodes.updateCode') : t('admin.onboardingCodes.createCodeBtn')}
                 </button>
               </div>
             </form>

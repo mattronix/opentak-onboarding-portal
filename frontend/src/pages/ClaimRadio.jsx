@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { radiosAPI, settingsAPI } from '../services/api';
 import './ClaimRadio.css';
 
 function ClaimRadio() {
+  const { t } = useTranslation();
   const { nodeId } = useParams();
   const navigate = useNavigate();
   const [error, setError] = useState('');
@@ -36,7 +38,7 @@ function ClaimRadio() {
       setTimeout(() => navigate('/dashboard'), 3000);
     },
     onError: (err) => {
-      setError(err.response?.data?.error || 'Failed to claim radio');
+      setError(err.response?.data?.error || t('claimRadio.claimingDisabled'));
     },
   });
 
@@ -49,7 +51,7 @@ function ClaimRadio() {
     return (
       <div className="claim-radio-page">
         <div className="claim-radio-container">
-          <div className="loading">Loading...</div>
+          <div className="loading">{t('common.loading')}</div>
         </div>
       </div>
     );
@@ -61,10 +63,10 @@ function ClaimRadio() {
       <div className="claim-radio-page">
         <div className="claim-radio-container">
           <div className="claim-radio-error">
-            <h2>Feature Disabled</h2>
-            <p>Radio claiming is not enabled on this portal.</p>
+            <h2>{t('claimRadio.featureDisabled')}</h2>
+            <p>{t('claimRadio.claimingDisabled')}</p>
             <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
+              {t('claimRadio.goToDashboard')}
             </button>
           </div>
         </div>
@@ -78,10 +80,10 @@ function ClaimRadio() {
       <div className="claim-radio-page">
         <div className="claim-radio-container">
           <div className="claim-radio-error">
-            <h2>Radio Not Found</h2>
-            <p>The radio you're trying to claim doesn't exist or you don't have access to it.</p>
+            <h2>{t('claimRadio.radioNotFound')}</h2>
+            <p>{t('claimRadio.radioNotFoundDesc')}</p>
             <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
+              {t('claimRadio.goToDashboard')}
             </button>
           </div>
         </div>
@@ -95,10 +97,10 @@ function ClaimRadio() {
       <div className="claim-radio-page">
         <div className="claim-radio-container">
           <div className="claim-radio-error">
-            <h2>Already Assigned</h2>
-            <p>This radio is already assigned to someone.</p>
+            <h2>{t('claimRadio.alreadyAssigned')}</h2>
+            <p>{t('claimRadio.alreadyAssignedDesc')}</p>
             <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
+              {t('claimRadio.goToDashboard')}
             </button>
           </div>
         </div>
@@ -112,9 +114,9 @@ function ClaimRadio() {
         <div className="claim-radio-container">
           <div className="claim-radio-success">
             <div className="success-icon">&#10004;</div>
-            <h2>Radio Claimed!</h2>
-            <p>You are now the owner of <strong>{radioData?.name}</strong></p>
-            <p className="redirect-text">Redirecting to dashboard...</p>
+            <h2>{t('claimRadio.radioClaimed')}</h2>
+            <p>{t('claimRadio.nowOwner', { name: radioData?.name })}</p>
+            <p className="redirect-text">{t('claimRadio.redirectingToDashboard')}</p>
           </div>
         </div>
       </div>
@@ -124,7 +126,7 @@ function ClaimRadio() {
   return (
     <div className="claim-radio-page">
       <div className="claim-radio-container">
-        <h1>Claim Radio</h1>
+        <h1>{t('claimRadio.title')}</h1>
 
         {error && <div className="alert alert-error">{error}</div>}
 
@@ -134,15 +136,15 @@ function ClaimRadio() {
             {radioData?.platform && (
               <span className="badge badge-primary">{radioData.platform}</span>
             )}
-            {radioData?.model && <span className="detail">Model: {radioData.model}</span>}
-            {radioData?.meshtasticId && <span className="detail">Node ID: <code>{radioData.meshtasticId}</code></span>}
-            {radioData?.shortName && <span className="detail">Short Name: {radioData.shortName}</span>}
-            {radioData?.longName && <span className="detail">Long Name: {radioData.longName}</span>}
+            {radioData?.model && <span className="detail">{t('claimRadio.model')}: {radioData.model}</span>}
+            {radioData?.meshtasticId && <span className="detail">{t('claimRadio.nodeId')}: <code>{radioData.meshtasticId}</code></span>}
+            {radioData?.shortName && <span className="detail">{t('claimRadio.shortName')}: {radioData.shortName}</span>}
+            {radioData?.longName && <span className="detail">{t('claimRadio.longName')}: {radioData.longName}</span>}
           </div>
         </div>
 
         <p className="claim-description">
-          By claiming this radio, it will be assigned to you. This allows you to view and manage this radio from your dashboard.
+          {t('claimRadio.claimDesc')}
         </p>
 
         <div className="claim-actions">
@@ -151,13 +153,13 @@ function ClaimRadio() {
             onClick={handleClaim}
             disabled={claimMutation.isPending}
           >
-            {claimMutation.isPending ? 'Claiming...' : 'Claim This Radio'}
+            {claimMutation.isPending ? t('claimRadio.claiming') : t('claimRadio.claimButton')}
           </button>
           <button
             className="btn btn-secondary"
             onClick={() => navigate('/dashboard')}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './RegistrationSuccess.css';
 
 function RegistrationSuccess() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [countdown, setCountdown] = useState(10);
@@ -35,19 +37,19 @@ function RegistrationSuccess() {
           </div>
         </div>
 
-        <h1>Welcome to OpenTAK!</h1>
+        <h1>{t('auth.welcomeTitle')}</h1>
         <p className="success-message">{message}</p>
 
         {user && (
           <div className="user-info-card">
-            <h2>Your Account Details</h2>
+            <h2>{t('auth.yourAccountDetails')}</h2>
             <div className="info-grid">
               <div className="info-item">
-                <span className="info-label">Username:</span>
+                <span className="info-label">{t('common.username')}:</span>
                 <span className="info-value">{user.username}</span>
               </div>
               <div className="info-item">
-                <span className="info-label">Email:</span>
+                <span className="info-label">{t('common.email')}:</span>
                 <span className="info-value">{user.email}</span>
               </div>
               <div className="info-item">
@@ -59,36 +61,36 @@ function RegistrationSuccess() {
         )}
 
         <div className="welcome-section">
-          <h3>What's Next?</h3>
+          <h3>{t('auth.whatsNext')}</h3>
           <div className="next-steps">
             <div className="step">
               <div className="step-number">1</div>
               <div className="step-content">
-                <h4>Check Your Email</h4>
-                <p>We've sent you a welcome email with important information about getting started.</p>
+                <h4>{t('auth.checkYourEmailStep')}</h4>
+                <p>{t('auth.welcomeEmailSent')}</p>
               </div>
             </div>
             <div className="step">
               <div className="step-number">2</div>
               <div className="step-content">
-                <h4>Login to Your Account</h4>
-                <p>Use your username and password to access the portal.</p>
+                <h4>{t('auth.loginToAccount')}</h4>
+                <p>{t('auth.loginToAccountDesc')}</p>
               </div>
             </div>
             <div className="step">
               <div className="step-number">3</div>
               <div className="step-content">
-                <h4>Download Your Certificates</h4>
-                <p>Once logged in, download your TAK certificates and configure your devices.</p>
+                <h4>{t('auth.downloadCerts')}</h4>
+                <p>{t('auth.downloadCertsDesc')}</p>
               </div>
             </div>
           </div>
         </div>
 
         <div className="redirect-info">
-          <p>Redirecting to login in <strong>{countdown}</strong> seconds...</p>
+          <p>{t('auth.redirectingIn')}<strong>{countdown}</strong> {t('auth.seconds')}</p>
           <button onClick={() => navigate('/login')} className="btn-login">
-            Go to Login Now
+            {t('auth.goToLoginNow')}
           </button>
         </div>
       </div>

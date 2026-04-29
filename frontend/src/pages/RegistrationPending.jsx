@@ -1,7 +1,9 @@
 import { useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './VerifyEmail.css';
 
 function RegistrationPending() {
+  const { t } = useTranslation();
   const location = useLocation();
   const email = location.state?.email || 'your email';
   const message = location.state?.message;
@@ -16,10 +18,10 @@ function RegistrationPending() {
           </svg>
         </div>
 
-        <h1>Registration Pending Approval</h1>
+        <h1>{t('auth.pendingApprovalTitle')}</h1>
 
         <p className="verify-message">
-          {message || 'Your registration request has been submitted and is awaiting approval.'}
+          {message || t('auth.pendingApprovalDesc')}
         </p>
 
         <p className="verify-email-address">
@@ -27,25 +29,25 @@ function RegistrationPending() {
         </p>
 
         <div className="verify-instructions">
-          <p>An administrator will review your registration request. You will receive an email at the address above once your request has been approved or declined.</p>
+          <p>{t('auth.pendingApprovalInfo')}</p>
           <p className="verify-note">
-            This process may take up to 7 days.
+            {t('auth.pendingApprovalTime')}
           </p>
         </div>
 
         <div className="verify-tips">
-          <h3>What happens next?</h3>
+          <h3>{t('auth.whatHappensNext')}</h3>
           <ul>
-            <li>Your registration details are being reviewed by an administrator</li>
-            <li>You will receive an email notification when your request is processed</li>
-            <li>If approved, you can log in using your credentials</li>
-            <li>If declined, you will be notified via email with further instructions</li>
+            <li>{t('auth.pendingStep1')}</li>
+            <li>{t('auth.pendingStep2')}</li>
+            <li>{t('auth.pendingStep3')}</li>
+            <li>{t('auth.pendingStep4')}</li>
           </ul>
         </div>
 
         <div className="verify-actions">
           <Link to="/login" className="btn btn-secondary">
-            Back to Login
+            {t('auth.backToLogin')}
           </Link>
         </div>
       </div>

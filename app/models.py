@@ -211,6 +211,7 @@ class UserModel(db.Model):
     onboarContactFor = relationship("OnboardingCodeModel", backref="user")
     expiryDate = mapped_column(DateTime, nullable=True)
     emailVerified: Mapped[bool] = mapped_column(default=False, nullable=True)
+    language: Mapped[str] = mapped_column(String(5), default='en', nullable=True, server_default='en')
 
     # OIDC fields
     has_password = Column(Boolean, default=True, nullable=True)       # False for OIDC-created users who haven't set a password
@@ -308,6 +309,7 @@ class TakProfileModel(db.Model):
     isPublic: Mapped[bool] = mapped_column(nullable=True, default=True)
     takTemplateFolderLocation: Mapped[str] = mapped_column(nullable=True)
     takPrefFileLocation: Mapped[str] = mapped_column(nullable=True)
+    injectCallsign: Mapped[bool] = mapped_column(nullable=True, default=False, server_default='0')
 
     users = relationship(
         "UserModel",
@@ -326,9 +328,9 @@ class TakProfileModel(db.Model):
     )
 
     @staticmethod
-    def create_tak_profile(name, description, is_public=None, template_folder_location=None, pref_file_location=None, roles=[]):
+    def create_tak_profile(name, description, is_public=None, template_folder_location=None, pref_file_location=None, inject_callsign=False, roles=[]):
         try:
-            tak_profile = TakProfileModel(name=name, description=description, isPublic=is_public, takTemplateFolderLocation=template_folder_location, takPrefFileLocation=pref_file_location, roles=roles)
+            tak_profile = TakProfileModel(name=name, description=description, isPublic=is_public, takTemplateFolderLocation=template_folder_location, takPrefFileLocation=pref_file_location, injectCallsign=inject_callsign, roles=roles)
             db.session.add(tak_profile)
             db.session.commit()
             return tak_profile
@@ -1395,6 +1397,12 @@ class SystemSettingsModel(db.Model):
                 'value': '',
                 'category': 'general',
                 'description': 'Support email address'
+            },
+            {
+                'key': 'open_in_atak_enabled',
+                'value': 'true',
+                'category': 'general',
+                'description': 'Show Open in ATAK button on dashboard for TAK profiles'
             },
             # General - Feature Toggles
             {

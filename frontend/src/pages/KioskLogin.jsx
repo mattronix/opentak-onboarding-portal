@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { kioskAPI, settingsAPI, oidcAPI } from '../services/api';
 import './Auth.css';
 
 const API_BASE_URL = window.location.origin;
 
 function KioskLogin() {
+  const { t } = useTranslation();
   const { sessionId } = useParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -138,22 +140,22 @@ function KioskLogin() {
           </div>
         )}
         <h2>{brandName}</h2>
-        <h3>Kiosk Login</h3>
+        <h3>{t('kiosk.loginTitle')}</h3>
 
         {state === 'checking' && (
-          <p style={{ textAlign: 'center', color: '#666' }}>Checking session...</p>
+          <p style={{ textAlign: 'center', color: '#666' }}>{t('kiosk.checkingSession')}</p>
         )}
 
         {state === 'login' && (
           <>
             <p style={{ textAlign: 'center', color: '#666', marginBottom: '1rem' }}>
-              Log in to authenticate the kiosk
+              {t('kiosk.logInToAuth')}
             </p>
             <form onSubmit={handleLogin} className="auth-form">
               {error && <div className="alert alert-error">{error}</div>}
 
               <div className="form-group">
-                <label htmlFor="username">Username</label>
+                <label htmlFor="username">{t('common.username')}</label>
                 <input
                   id="username"
                   type="text"
@@ -161,19 +163,19 @@ function KioskLogin() {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   autoFocus
-                  placeholder="Enter your username"
+                  placeholder={t('auth.enterUsername')}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="password">Password</label>
+                <label htmlFor="password">{t('common.password')}</label>
                 <input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="Enter your password"
+                  placeholder={t('auth.enterPassword')}
                 />
               </div>
 
@@ -182,7 +184,7 @@ function KioskLogin() {
                 disabled={loading}
                 className="btn btn-primary btn-block"
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? t('auth.loggingIn') : t('auth.login')}
               </button>
             </form>
 
@@ -190,7 +192,7 @@ function KioskLogin() {
             {oidcProviders.length > 0 && (
               <div className="oidc-providers">
                 <div className="oidc-divider">
-                  <span>or</span>
+                  <span>{t('common.or')}</span>
                 </div>
                 {oidcProviders.map((provider) => (
                   <button
@@ -224,14 +226,14 @@ function KioskLogin() {
           <div style={{ textAlign: 'center' }}>
             {error && <div className="alert alert-error">{error}</div>}
             <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-              You are about to log in to a kiosk. This will allow the kiosk screen to access your account.
+              {t('kiosk.loginDesc')}
             </p>
             <button
               className="btn btn-primary btn-block"
               onClick={handleConfirm}
               disabled={loading}
             >
-              {loading ? 'Authenticating...' : 'Confirm Kiosk Login'}
+              {loading ? t('kiosk.authenticating') : t('kiosk.confirmKioskLogin')}
             </button>
           </div>
         )}
@@ -239,26 +241,26 @@ function KioskLogin() {
         {state === 'success' && (
           <div style={{ textAlign: 'center' }}>
             <div className="alert" style={{ background: '#d4edda', color: '#155724', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-              You are now logged in on the kiosk!
+              {t('kiosk.loggedIn')}
             </div>
-            <p style={{ color: '#666' }}>You can close this page.</p>
+            <p style={{ color: '#666' }}>{t('kiosk.canClosePage')}</p>
           </div>
         )}
 
         {state === 'expired' && (
           <div style={{ textAlign: 'center' }}>
             <div className="alert alert-error">
-              This kiosk session has expired or is no longer available.
+              {t('kiosk.sessionExpired')}
             </div>
             <p style={{ color: '#666', marginTop: '1rem' }}>
-              Please scan the QR code on the kiosk again.
+              {t('kiosk.scanAgain')}
             </p>
           </div>
         )}
 
         {state === 'error' && (
           <div style={{ textAlign: 'center' }}>
-            <div className="alert alert-error">{error || 'Something went wrong.'}</div>
+            <div className="alert alert-error">{error || t('kiosk.somethingWrong')}</div>
           </div>
         )}
       </div>

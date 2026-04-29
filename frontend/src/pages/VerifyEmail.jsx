@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import './VerifyEmail.css';
 
 function VerifyEmail() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('verifying'); // verifying, success, error
-  const [message, setMessage] = useState('Verifying your email...');
+  const [message, setMessage] = useState(t('auth.verifyingEmail'));
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -15,7 +17,7 @@ function VerifyEmail() {
 
     if (!token) {
       setStatus('error');
-      setMessage('No verification token provided');
+      setMessage(t('auth.noVerificationToken'));
       return;
     }
 
@@ -40,7 +42,7 @@ function VerifyEmail() {
       } catch (error) {
         setStatus('error');
         setMessage(
-          error.response?.data?.error || 'Email verification failed. Please try again.'
+          error.response?.data?.error || t('auth.verificationFailedDesc')
         );
       }
     };
@@ -51,7 +53,7 @@ function VerifyEmail() {
   return (
     <div className="verify-email-container">
       <div className="verify-email-card">
-        <h1>Email Verification</h1>
+        <h1>{t('auth.emailVerification')}</h1>
 
         {status === 'verifying' && (
           <div className="verify-status">
@@ -63,18 +65,18 @@ function VerifyEmail() {
         {status === 'success' && (
           <div className="verify-status success">
             <div className="success-icon">✓</div>
-            <h2>Success!</h2>
+            <h2>{t('auth.success')}</h2>
             <p>{message}</p>
             {user && (
               <div className="user-details">
-                <p><strong>Username:</strong> {user.username}</p>
-                <p><strong>Email:</strong> {user.email}</p>
+                <p><strong>{t('common.username')}:</strong> {user.username}</p>
+                <p><strong>{t('common.email')}:</strong> {user.email}</p>
                 <p><strong>Callsign:</strong> {user.callsign}</p>
               </div>
             )}
-            <p className="redirect-message">Redirecting to login page...</p>
+            <p className="redirect-message">{t('auth.redirectingToLogin')}</p>
             <button onClick={() => navigate('/login')} className="btn-primary">
-              Go to Login Now
+              {t('auth.goToLoginNow')}
             </button>
           </div>
         )}
@@ -82,14 +84,14 @@ function VerifyEmail() {
         {status === 'error' && (
           <div className="verify-status error">
             <div className="error-icon">✗</div>
-            <h2>Verification Failed</h2>
+            <h2>{t('auth.verificationFailed')}</h2>
             <p className="error-message">{message}</p>
             <div className="error-actions">
               <button onClick={() => navigate('/register')} className="btn-secondary">
-                Register Again
+                {t('auth.registerAgain')}
               </button>
               <button onClick={() => navigate('/login')} className="btn-primary">
-                Go to Login
+                {t('auth.goToLogin')}
               </button>
             </div>
           </div>

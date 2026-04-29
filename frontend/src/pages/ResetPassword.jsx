@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { settingsAPI } from '../services/api';
 import './Auth.css';
@@ -8,6 +9,7 @@ import './Auth.css';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 function ResetPassword() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [token, setToken] = useState('');
@@ -36,7 +38,7 @@ function ResetPassword() {
     if (tokenParam) {
       setToken(tokenParam);
     } else {
-      setError('Invalid or missing reset token');
+      setError(t('auth.invalidResetToken'));
     }
   }, [searchParams]);
 
@@ -45,19 +47,19 @@ function ResetPassword() {
     setError('');
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsNoMatch'));
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
     // Check for disallowed characters
     const disallowedChars = /[&^$]/;
     if (disallowedChars.test(newPassword)) {
-      setError('Password cannot contain &, ^, or $ characters');
+      setError(t('auth.passwordNoSpecial'));
       return;
     }
 
@@ -88,9 +90,9 @@ function ResetPassword() {
               <img src={logoPath} alt={brandName} />
             </div>
           )}
-          <h2>Password Reset Successful</h2>
+          <h2>{t('auth.resetSuccess')}</h2>
           <div className="alert alert-success">
-            <p>Your password has been reset successfully. Redirecting to login...</p>
+            <p>{t('auth.resetSuccessDesc')}</p>
           </div>
         </div>
       </div>
@@ -105,8 +107,8 @@ function ResetPassword() {
             <img src={logoPath} alt={brandName} />
           </div>
         )}
-        <h2>Reset Password</h2>
-        <p>Enter your new password below.</p>
+        <h2>{t('auth.resetPasswordTitle')}</h2>
+        <p>{t('auth.resetPasswordDesc')}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && (
@@ -116,7 +118,7 @@ function ResetPassword() {
           )}
 
           <div className="form-group">
-            <label htmlFor="newPassword">New Password</label>
+            <label htmlFor="newPassword">{t('auth.newPassword')}</label>
             <input
               id="newPassword"
               type="password"
@@ -124,23 +126,23 @@ function ResetPassword() {
               onChange={(e) => setNewPassword(e.target.value)}
               required
               autoFocus
-              placeholder="Enter new password"
+              placeholder={t('auth.enterNewPassword')}
               minLength={8}
             />
             <small style={{ color: '#666', fontSize: '0.85em' }}>
-              Must be at least 8 characters. Cannot contain &amp;, ^, or $ characters.
+              {t('auth.passwordMinLength')}
             </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
             <input
               id="confirmPassword"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              placeholder="Confirm new password"
+              placeholder={t('auth.confirmNewPassword')}
               minLength={8}
             />
           </div>
@@ -150,12 +152,12 @@ function ResetPassword() {
             disabled={loading || !token}
             className="btn btn-primary btn-block"
           >
-            {loading ? 'Resetting...' : 'Reset Password'}
+            {loading ? t('auth.resetting') : t('auth.resetPasswordTitle')}
           </button>
 
           <div className="auth-links">
             <p>
-              <Link to="/login">Back to Login</Link>
+              <Link to="/login">{t('auth.backToLogin')}</Link>
             </p>
           </div>
         </form>

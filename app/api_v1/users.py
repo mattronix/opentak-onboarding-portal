@@ -108,7 +108,7 @@ def get_user(user_id):
 
     # Users can view their own profile, admins and user readonly can view any
     is_user_viewer = has_any_role(['administrator', 'user_admin', 'user_readonly'])
-    if not is_user_viewer and current_user_id != user_id:
+    if not is_user_viewer and int(current_user_id) != user_id:
         return jsonify({'error': 'Permission denied'}), 403
 
     user = UserModel.get_user_by_id(user_id)
@@ -150,7 +150,8 @@ def get_user(user_id):
             'radioType': r.radioType
         } for r in UserModel.query.get(user_id).radios_assigned.all()] if hasattr(UserModel.query.get(user_id), 'radios_assigned') else [],
         'expiryDate': user.expiryDate.isoformat() if user.expiryDate else None,
-        'onboardedBy': user.onboardedBy
+        'onboardedBy': user.onboardedBy,
+        'language': user.language or 'en'
     }), 200
 
 
@@ -287,7 +288,7 @@ def update_user(user_id):
     current_user_id = claims.get('sub')
 
     is_admin = 'administrator' in roles
-    is_own_profile = current_user_id == user_id
+    is_own_profile = int(current_user_id) == user_id
 
     if not is_admin and not is_own_profile:
         return jsonify({'error': 'Permission denied'}), 403
@@ -307,6 +308,8 @@ def update_user(user_id):
         user.lastName = data['lastName']
     if data.get('callsign'):
         user.callsign = data['callsign']
+    if 'language' in data:
+        user.language = data['language']
 
     # Admin-only fields
     if is_admin:

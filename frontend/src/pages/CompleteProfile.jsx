@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, settingsAPI } from '../services/api';
 import './Auth.css';
 
 function CompleteProfile() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const [formData, setFormData] = useState({
@@ -42,11 +44,11 @@ function CompleteProfile() {
 
     // Validate required fields
     if (!user?.email && !formData.email) {
-      setError('Email is required');
+      setError(t('auth.emailRequired'));
       return;
     }
     if (!user?.callsign && !formData.callsign) {
-      setError('Callsign is required');
+      setError(t('auth.callsignRequired'));
       return;
     }
 
@@ -65,7 +67,7 @@ function CompleteProfile() {
       await updateUser();
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update profile');
+      setError(err.response?.data?.error || t('auth.failedUpdateProfile'));
     } finally {
       setLoading(false);
     }
@@ -83,8 +85,8 @@ function CompleteProfile() {
             <img src={logoPath} alt={brandName} />
           </div>
         )}
-        <h2>Complete Your Profile</h2>
-        <p>Please provide the following information to continue.</p>
+        <h2>{t('auth.completeProfileTitle')}</h2>
+        <p>{t('auth.completeProfileDesc')}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && (
@@ -95,7 +97,7 @@ function CompleteProfile() {
 
           {needsEmail && (
             <div className="form-group">
-              <label htmlFor="email">Email Address *</label>
+              <label htmlFor="email">{t('auth.emailLabel')}</label>
               <input
                 id="email"
                 name="email"
@@ -104,14 +106,14 @@ function CompleteProfile() {
                 onChange={handleChange}
                 required
                 autoFocus
-                placeholder="your.email@example.com"
+                placeholder={t('auth.emailPlaceholder')}
               />
             </div>
           )}
 
           {needsCallsign && (
             <div className="form-group">
-              <label htmlFor="callsign">Callsign *</label>
+              <label htmlFor="callsign">{t('auth.callsignLabel')}</label>
               <input
                 id="callsign"
                 name="callsign"
@@ -120,7 +122,7 @@ function CompleteProfile() {
                 onChange={handleChange}
                 required
                 autoFocus={!needsEmail}
-                placeholder="Your callsign"
+                placeholder={t('auth.callsignPlaceholder')}
               />
             </div>
           )}
@@ -130,7 +132,7 @@ function CompleteProfile() {
             disabled={loading}
             className="btn btn-primary btn-block"
           >
-            {loading ? 'Saving...' : 'Continue'}
+            {loading ? t('common.saving') : t('auth.continue')}
           </button>
         </form>
       </div>

@@ -1,13 +1,16 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { settingsAPI } from '../services/api';
+import { settingsAPI, usersAPI } from '../services/api';
 import { useState, useEffect } from 'react';
 import AnnouncementsBadge from './AnnouncementsBadge';
 import './Layout.css';
 
 function Layout() {
+  const { t } = useTranslation();
   const { user, logout, hasAnyAdminRole, hasModuleAccess, approverStatus, impersonating, stopImpersonation } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -100,12 +103,12 @@ function Layout() {
 
         <div className={`navbar-menu ${mobileMenuOpen ? 'open' : ''}`}>
           <Link to="/dashboard" className="nav-link">
-            Homepage
+            {t('layout.homepage')}
           </Link>
 
           {approverStatus?.isApprover && (
             <Link to="/approvals" className="nav-link approvals-link">
-              Approvals
+              {t('layout.approvals')}
               {approverStatus.pendingCount > 0 && (
                 <span className="approvals-badge">{approverStatus.pendingCount}</span>
               )}
@@ -115,26 +118,26 @@ function Layout() {
           {hasAnyAdminRole() && (
             <div className={`nav-dropdown ${adminDropdownOpen ? 'open' : ''}`}>
               <span className="nav-link" onClick={toggleAdminDropdown}>
-                Admin
+                {t('layout.admin')}
                 <svg className="dropdown-arrow" viewBox="0 0 24 24" width="16" height="16">
                   <path fill="currentColor" d="M7 10l5 5 5-5z"/>
                 </svg>
               </span>
               <div className="dropdown-content">
-                <Link to="/admin">Admin Overview</Link>
-                {hasModuleAccess('users') && <Link to="/admin/users">Users</Link>}
-                {hasModuleAccess('roles') && <Link to="/admin/roles">Roles</Link>}
-                {hasModuleAccess('groups') && <Link to="/admin/groups">OTS Groups</Link>}
-                {hasModuleAccess('onboarding_codes') && <Link to="/admin/onboarding-codes">Onboarding Codes</Link>}
-                {hasModuleAccess('pending_registrations') && <Link to="/admin/pending-registrations">Pending Registrations</Link>}
-                {hasModuleAccess('tak_profiles') && <Link to="/admin/tak-profiles">TAK Profiles</Link>}
-                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic">Meshtastic Channels</Link>}
-                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic/groups">Meshtastic Channel Groups</Link>}
-                {hasModuleAccess('radios') && <Link to="/admin/radios">Radios</Link>}
-                {hasModuleAccess('announcements') && <Link to="/admin/announcements">Announcements</Link>}
-                {hasModuleAccess('settings') && <Link to="/admin/settings">Settings</Link>}
-                {hasModuleAccess('api_keys') && <Link to="/admin/api-keys">API Keys</Link>}
-                {hasModuleAccess('api_docs') && <Link to="/admin/api-docs">API Docs</Link>}
+                <Link to="/admin">{t('layout.adminOverview')}</Link>
+                {hasModuleAccess('users') && <Link to="/admin/users">{t('layout.users')}</Link>}
+                {hasModuleAccess('roles') && <Link to="/admin/roles">{t('layout.roles')}</Link>}
+                {hasModuleAccess('groups') && <Link to="/admin/groups">{t('layout.otsGroups')}</Link>}
+                {hasModuleAccess('onboarding_codes') && <Link to="/admin/onboarding-codes">{t('layout.onboardingCodes')}</Link>}
+                {hasModuleAccess('pending_registrations') && <Link to="/admin/pending-registrations">{t('layout.pendingRegistrations')}</Link>}
+                {hasModuleAccess('tak_profiles') && <Link to="/admin/tak-profiles">{t('layout.takProfiles')}</Link>}
+                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic">{t('layout.meshtasticChannels')}</Link>}
+                {hasModuleAccess('meshtastic') && <Link to="/admin/meshtastic/groups">{t('layout.meshtasticChannelGroups')}</Link>}
+                {hasModuleAccess('radios') && <Link to="/admin/radios">{t('layout.radios')}</Link>}
+                {hasModuleAccess('announcements') && <Link to="/admin/announcements">{t('layout.announcements')}</Link>}
+                {hasModuleAccess('settings') && <Link to="/admin/settings">{t('layout.settings')}</Link>}
+                {hasModuleAccess('api_keys') && <Link to="/admin/api-keys">{t('layout.apiKeys')}</Link>}
+                {hasModuleAccess('api_docs') && <Link to="/admin/api-docs">{t('layout.apiDocs')}</Link>}
               </div>
             </div>
           )}
@@ -149,12 +152,29 @@ function Layout() {
               </svg>
             </span>
             <div className="dropdown-content">
-              <Link to="/profile">Profile</Link>
+              <Link to="/profile">{t('layout.profile')}</Link>
               <button onClick={toggleTheme} className="theme-toggle-btn">
-                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                {theme === 'dark' ? t('layout.lightMode') : t('layout.darkMode')}
               </button>
+              <div className="language-switcher">
+                <select
+                  value={i18n.language}
+                  onChange={(e) => {
+                    const lang = e.target.value;
+                    i18n.changeLanguage(lang);
+                    if (user?.id) {
+                      usersAPI.update(user.id, { language: lang }).catch(() => {});
+                    }
+                  }}
+                  className="lang-select"
+                >
+                  <option value="en">English</option>
+                  <option value="nl">Nederlands</option>
+                  <option value="de">Deutsch</option>
+                </select>
+              </div>
               <button onClick={handleLogout} className="logout-btn">
-                Logout
+                {t('auth.logout')}
               </button>
             </div>
           </div>
@@ -164,11 +184,11 @@ function Layout() {
       {impersonating && (
         <div className="impersonation-banner">
           <span>
-            Viewing as <strong>{user?.callsign || user?.username}</strong>
-            {' '}&mdash; logged in as {impersonating.username}
+            {t('layout.viewingAs')} <strong>{user?.callsign || user?.username}</strong>
+            {' '}&mdash; {t('layout.loggedInAs')} {impersonating.username}
           </span>
           <button className="impersonation-stop-btn" onClick={stopImpersonation}>
-            Stop Impersonating
+            {t('layout.stopImpersonating')}
           </button>
         </div>
       )}
@@ -182,7 +202,7 @@ function Layout() {
           <span style={{ fontSize: '0.85rem', color: '#999' }}>
             {version && `v${version.version || version.commit}`}
           </span>
-          <p style={{ margin: 0 }}>&copy; {new Date().getFullYear()} {brandName}. All rights reserved.</p>
+          <p style={{ margin: 0 }}>&copy; {new Date().getFullYear()} {brandName}. {t('common.allRightsReserved')}</p>
           <span style={{ fontSize: '0.85rem', color: 'transparent' }}>spacer</span>
         </div>
       </footer>

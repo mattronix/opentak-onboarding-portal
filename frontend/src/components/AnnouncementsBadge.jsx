@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { announcementsAPI } from '../services/api';
 import './AnnouncementsBadge.css';
 
 function AnnouncementsBadge() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showPanel, setShowPanel] = useState(false);
@@ -65,7 +67,7 @@ function AnnouncementsBadge() {
       <button
         className="announcements-badge-btn"
         onClick={() => setShowPanel(!showPanel)}
-        title="Announcements"
+        title={t('notifications.announcements')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -80,12 +82,12 @@ function AnnouncementsBadge() {
           <div className="announcements-backdrop" onClick={() => setShowPanel(false)} />
           <div className="announcements-panel">
             <div className="panel-header">
-              <h3>Announcements</h3>
+              <h3>{t('notifications.announcements')}</h3>
               <button onClick={() => setShowPanel(false)}>x</button>
             </div>
             <div className="panel-body">
               {announcements.length === 0 ? (
-                <p className="no-announcements">No announcements</p>
+                <p className="no-announcements">{t('notifications.noAnnouncements')}</p>
               ) : (
                 <ul className="announcements-list">
                   {announcements.map(a => (
@@ -101,7 +103,7 @@ function AnnouncementsBadge() {
                       <button
                         className="dismiss-btn"
                         onClick={(e) => handleDismiss(e, a.id)}
-                        title="Dismiss"
+                        title={t('announcements.dismissed')}
                       >
                         x
                       </button>
@@ -118,7 +120,7 @@ function AnnouncementsBadge() {
                   navigate('/announcements');
                 }}
               >
-                View All History
+                {t('notifications.viewAllHistory')}
               </button>
             </div>
           </div>
@@ -136,7 +138,7 @@ function AnnouncementsBadge() {
               <div dangerouslySetInnerHTML={{ __html: selectedAnnouncement.content }} />
             </div>
             <div className="modal-footer">
-              <span className="date">Posted: {new Date(selectedAnnouncement.sentAt).toLocaleString()}</span>
+              <span className="date">{t('announcements.posted')}: {new Date(selectedAnnouncement.sentAt).toLocaleString()}</span>
             </div>
           </div>
         </div>

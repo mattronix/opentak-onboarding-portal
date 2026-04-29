@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usersAPI, rolesAPI, groupsAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function UsersList() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { showError, showSuccess, confirm } = useNotification();
@@ -76,10 +78,10 @@ function UsersList() {
       queryClient.invalidateQueries(['group-members']);
       setShowModal(false);
       resetForm();
-      showSuccess('User created successfully');
+      showSuccess(t('admin.users.userCreated'));
     },
     onError: (err) => {
-      setError(err.response?.data?.error || 'Failed to create user');
+      setError(err.response?.data?.error || t('admin.users.failedCreate'));
     },
   });
 
@@ -93,13 +95,13 @@ function UsersList() {
       setShowModal(false);
       resetForm();
       if (response.data?.passwordChanged) {
-        showSuccess('User updated and password reset successfully');
+        showSuccess(t('admin.users.userUpdatedPassword'));
       } else {
-        showSuccess('User updated successfully');
+        showSuccess(t('admin.users.userUpdated'));
       }
     },
     onError: (err) => {
-      setError(err.response?.data?.error || 'Failed to update user');
+      setError(err.response?.data?.error || t('admin.users.failedUpdate'));
     },
   });
 
@@ -110,7 +112,7 @@ function UsersList() {
       queryClient.invalidateQueries(['users']);
     },
     onError: (err) => {
-      showError(err.response?.data?.error || 'Failed to delete user');
+      showError(err.response?.data?.error || t('admin.users.failedDelete'));
     },
   });
 
@@ -154,8 +156,8 @@ function UsersList() {
 
   const handleDelete = async (user) => {
     const confirmed = await confirm(
-      `Are you sure you want to delete user "${user.username}"?`,
-      'Delete User'
+      t('admin.users.deleteConfirm', { username: user.username }),
+      t('admin.users.deleteUser')
     );
     if (confirmed) {
       deleteMutation.mutate(user.id);
@@ -164,15 +166,15 @@ function UsersList() {
 
   const handleImpersonate = async (user) => {
     const confirmed = await confirm(
-      `Impersonate user "${user.username}"? You will see the portal as this user.`,
-      'Impersonate User'
+      t('admin.users.impersonateConfirm', { username: user.username }),
+      t('admin.users.impersonateUser')
     );
     if (!confirmed) return;
     const result = await startImpersonation(user.id);
     if (result.success) {
       navigate('/dashboard');
     } else {
-      showError(result.error || 'Failed to impersonate user');
+      showError(result.error || t('admin.users.failedUpdate'));
     }
   };
 
@@ -184,13 +186,13 @@ function UsersList() {
     const username = formData.username.toLowerCase().trim();
     const usernamePattern = /^[a-z0-9]+$/;
     if (!usernamePattern.test(username)) {
-      setError('Username can only contain letters and numbers (no spaces, underscores, dashes, or special characters)');
+      setError(t('auth.usernameOnlyLetters'));
       return;
     }
 
     // Validate username length
     if (username.length < 3 || username.length > 32) {
-      setError('Username must be between 3 and 32 characters');
+      setError(t('auth.usernameLength'));
       return;
     }
 
@@ -198,14 +200,14 @@ function UsersList() {
     if (formData.password) {
       const disallowedChars = /[&^$]/;
       if (disallowedChars.test(formData.password)) {
-        setError('Password cannot contain &, ^, or $ characters');
+        setError(t('auth.passwordNoSpecial'));
         return;
       }
     }
 
     // Ensure roles data is loaded before submitting
     if (!rolesData?.roles) {
-      setError('Roles data not loaded. Please try again.');
+      setError(t('admin.users.rolesNotLoaded'));
       return;
     }
 
@@ -238,7 +240,7 @@ function UsersList() {
       updateMutation.mutate({ id: editingUser.id, data: submitData });
     } else {
       if (!submitData.password) {
-        setError('Password is required for new users');
+        setError(t('admin.users.passwordRequired'));
         return;
       }
       createMutation.mutate(submitData);
@@ -255,7 +257,7 @@ function UsersList() {
   };
 
   if (isLoading) {
-    return <div className="admin-page"><div className="loading-state">Loading users...</div></div>;
+    return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
   }
 
   const users = usersData?.users || [];
@@ -266,18 +268,18 @@ function UsersList() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>Users Management</h1>
+        <h1>{t('admin.users.title')}</h1>
         <div className="admin-actions">
           <input
             type="text"
             className="search-box"
-            placeholder="Search users..."
+            placeholder={t('admin.users.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {canEdit && (
             <button className="btn btn-primary" onClick={handleCreate}>
-              + Add User
+              {t('admin.users.addUser')}
             </button>
           )}
         </div>
@@ -285,19 +287,19 @@ function UsersList() {
 
       <div className="admin-table-container">
         {users.length === 0 ? (
-          <div className="empty-state">No users found</div>
+          <div className="empty-state">{t('admin.users.noUsers')}</div>
         ) : (
           <>
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Username</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Callsign</th>
-                  <th>Roles</th>
-                  <th>Expiry Date</th>
-                  {canEdit && <th>Actions</th>}
+                  <th>{t('admin.users.username')}</th>
+                  <th>{t('admin.users.name')}</th>
+                  <th>{t('admin.users.email')}</th>
+                  <th>{t('admin.users.callsign')}</th>
+                  <th>{t('admin.users.roles')}</th>
+                  <th>{t('admin.users.expiryDate')}</th>
+                  {canEdit && <th>{t('common.actions')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -314,20 +316,20 @@ function UsersList() {
                         </span>
                       ))}
                     </td>
-                    <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'Never'}</td>
+                    <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : t('common.never')}</td>
                     {canEdit && (
                       <td>
                         <div className="table-actions">
                           <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(user)}>
-                            Edit
+                            {t('common.edit')}
                           </button>
                           {isAdmin() && user.id !== currentUser?.id && (
                             <button className="btn btn-sm btn-warning" onClick={() => handleImpersonate(user)}>
-                              Impersonate
+                              {t('admin.users.impersonate')}
                             </button>
                           )}
                           <button className="btn btn-sm btn-danger" onClick={() => handleDelete(user)}>
-                            Delete
+                            {t('common.delete')}
                           </button>
                         </div>
                       </td>
@@ -344,17 +346,17 @@ function UsersList() {
                   disabled={page === 1}
                   onClick={() => setPage(p => p - 1)}
                 >
-                  Previous
+                  {t('common.previous')}
                 </button>
                 <span className="pagination-info">
-                  Page {page} of {totalPages} ({total} total)
+                  {t('admin.users.pageInfo', { page, totalPages, total })}
                 </span>
                 <button
                   className="btn btn-secondary btn-sm"
                   disabled={page === totalPages}
                   onClick={() => setPage(p => p + 1)}
                 >
-                  Next
+                  {t('common.next')}
                 </button>
               </div>
             )}
@@ -367,7 +369,7 @@ function UsersList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingUser ? 'Edit User' : 'Create User'}</h2>
+              <h2>{editingUser ? t('admin.users.editUser') : t('admin.users.createUser')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -375,7 +377,7 @@ function UsersList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Username *</label>
+                  <label>{t('admin.users.usernameLabel')}</label>
                   <input
                     type="text"
                     value={formData.username}
@@ -385,11 +387,11 @@ function UsersList() {
                     minLength={3}
                     maxLength={32}
                   />
-                  {!editingUser && <span className="help-text">Letters and numbers only (3-32 characters)</span>}
+                  {!editingUser && <span className="help-text">{t('admin.users.usernameHelp')}</span>}
                 </div>
 
                 <div className="form-group">
-                  <label>Email *</label>
+                  <label>{t('admin.users.emailLabel')}</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -399,7 +401,7 @@ function UsersList() {
                 </div>
 
                 <div className="form-group">
-                  <label>First Name *</label>
+                  <label>{t('admin.users.firstNameLabel')}</label>
                   <input
                     type="text"
                     value={formData.firstName}
@@ -409,7 +411,7 @@ function UsersList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Last Name *</label>
+                  <label>{t('admin.users.lastNameLabel')}</label>
                   <input
                     type="text"
                     value={formData.lastName}
@@ -419,7 +421,7 @@ function UsersList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Callsign *</label>
+                  <label>{t('admin.users.callsignLabel')}</label>
                   <input
                     type="text"
                     value={formData.callsign}
@@ -429,7 +431,7 @@ function UsersList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Password {!editingUser && '*'}</label>
+                  <label>{t('admin.users.passwordLabel')} {!editingUser && '*'}</label>
                   <input
                     type="password"
                     value={formData.password}
@@ -437,23 +439,22 @@ function UsersList() {
                     required={!editingUser}
                   />
                   <span className="help-text">
-                    {editingUser ? 'Leave blank to keep current password. ' : ''}
-                    Cannot contain &amp;, ^, or $ characters.
+                    {t('admin.users.passwordHelp')}
                   </span>
                 </div>
 
                 <div className="form-group">
-                  <label>Expiry Date</label>
+                  <label>{t('admin.users.expiryDateLabel')}</label>
                   <input
                     type="date"
                     value={formData.expiryDate}
                     onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
                   />
-                  <span className="help-text">Leave blank for no expiry</span>
+                  <span className="help-text">{t('admin.users.expiryDateHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Roles</label>
+                  <label>{t('admin.users.roles')}</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {rolesData?.roles?.map(role => (
                       <label key={role.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'normal' }}>
@@ -469,7 +470,7 @@ function UsersList() {
                 </div>
 
                 <div className="form-group">
-                  <label>OTS Groups</label>
+                  <label>{t('admin.users.otsGroups')}</label>
                   {groupsData?.groups?.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {groupsData.groups.filter(g => g.active).map(group => {
@@ -499,9 +500,9 @@ function UsersList() {
                                 }))}
                                 style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-input)', borderRadius: '4px' }}
                               >
-                                <option value="BOTH">Both (IN + OUT)</option>
-                                <option value="IN">IN only</option>
-                                <option value="OUT">OUT only</option>
+                                <option value="BOTH">{t('common.both')}</option>
+                                <option value="IN">{t('common.inOnly')}</option>
+                                <option value="OUT">{t('common.outOnly')}</option>
                               </select>
                             )}
                           </div>
@@ -510,23 +511,23 @@ function UsersList() {
                     </div>
                   ) : (
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                      No groups available. Sync groups from OTS in the Groups admin page.
+                      {t('admin.users.noGroupsAvailable')}
                     </div>
                   )}
-                  <span className="help-text">OTS groups this user belongs to (synced to OTS on save)</span>
+                  <span className="help-text">{t('admin.users.otsGroupsHelp')}</span>
                 </div>
               </div>
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editingUser ? 'Update' : 'Create'} User
+                  {editingUser ? t('admin.users.updateUser') : t('admin.users.createUser')}
                 </button>
               </div>
             </form>

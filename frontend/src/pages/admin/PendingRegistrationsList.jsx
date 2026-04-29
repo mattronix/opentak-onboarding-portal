@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import './PendingRegistrationsList.css';
 
 function PendingRegistrationsList() {
+  const { t } = useTranslation();
   const [pendingRegistrations, setPendingRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,7 +66,7 @@ function PendingRegistrationsList() {
       setPendingRegistrations(response.data.pending_registrations);
       setLoading(false);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to fetch pending registrations');
+      setError(err.response?.data?.error || t('admin.pendingRegistrations.failedFetch'));
       setLoading(false);
     }
   };
@@ -87,14 +89,14 @@ function PendingRegistrationsList() {
       }
     } catch (err) {
       console.error('Failed to fetch onboarding codes:', err);
-      setError('Failed to load onboarding codes. Please refresh the page.');
+      setError(t('admin.pendingRegistrations.failedLoadCodes'));
     }
   };
 
   const handleDelete = async (id, username) => {
     const confirmed = await confirm(
-      `Are you sure you want to delete the pending registration for ${username}?`,
-      'Delete Registration'
+      t('admin.pendingRegistrations.deleteConfirm', { username }),
+      t('admin.pendingRegistrations.deleteRegistration')
     );
     if (!confirmed) return;
 
@@ -103,17 +105,17 @@ function PendingRegistrationsList() {
       await axios.delete(`${API_URL}/api/v1/pending-registrations/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      showSuccess('Pending registration deleted');
+      showSuccess(t('admin.pendingRegistrations.deleteRegistration'));
       fetchPendingRegistrations(); // Refresh list
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to delete pending registration');
+      showError(err.response?.data?.error || t('admin.pendingRegistrations.failedDelete'));
     }
   };
 
   const handleResendEmail = async (id, email) => {
     const confirmed = await confirm(
-      `Resend verification email to ${email}?\n\nThis will extend the expiry date by 24 hours.`,
-      'Resend Email'
+      t('admin.pendingRegistrations.resendConfirm', { email }),
+      t('admin.pendingRegistrations.resendEmail')
     );
     if (!confirmed) return;
 
@@ -125,14 +127,14 @@ function PendingRegistrationsList() {
       showSuccess(response.data.message);
       fetchPendingRegistrations(); // Refresh to show updated expiry
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to resend email');
+      showError(err.response?.data?.error || t('admin.pendingRegistrations.failedResend'));
     }
   };
 
   const handleCleanupExpired = async () => {
     const confirmed = await confirm(
-      'Clean up all expired pending registrations?',
-      'Clean Up Expired'
+      t('admin.pendingRegistrations.cleanUpConfirm'),
+      t('admin.pendingRegistrations.cleanUpExpired')
     );
     if (!confirmed) return;
 
@@ -144,14 +146,14 @@ function PendingRegistrationsList() {
       showSuccess(response.data.message);
       fetchPendingRegistrations(); // Refresh list
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to cleanup expired registrations');
+      showError(err.response?.data?.error || t('admin.pendingRegistrations.failedCleanup'));
     }
   };
 
   const handleApprove = async (id, username) => {
     const confirmed = await confirm(
-      `Manually approve registration for ${username}?\n\nThis will create the user account without requiring email verification.`,
-      'Approve Registration'
+      t('admin.pendingRegistrations.approveConfirm', { username }),
+      t('admin.pendingRegistrations.approveManually')
     );
     if (!confirmed) return;
 
@@ -163,24 +165,24 @@ function PendingRegistrationsList() {
       showSuccess(response.data.message);
       fetchPendingRegistrations(); // Refresh list
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to approve registration');
+      showError(err.response?.data?.error || t('admin.pendingRegistrations.failedApprove'));
     }
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('common.unknown');
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
   const getTimeRemaining = (expiresAt) => {
-    if (!expiresAt) return 'N/A';
+    if (!expiresAt) return t('common.unknown');
     const now = new Date();
     const expiry = new Date(expiresAt);
     const diff = expiry - now;
 
     if (diff <= 0) {
-      return 'Expired';
+      return t('common.expired');
     }
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -244,13 +246,13 @@ function PendingRegistrationsList() {
     const username = formData.username.toLowerCase().trim();
     const usernamePattern = /^[a-z0-9]+$/;
     if (username && !usernamePattern.test(username)) {
-      setFormError('Username can only contain letters and numbers (no spaces, underscores, dashes, or special characters)');
+      setFormError(t('auth.usernameOnlyLetters'));
       return;
     }
 
     // Validate username length
     if (username && (username.length < 3 || username.length > 32)) {
-      setFormError('Username must be between 3 and 32 characters');
+      setFormError(t('auth.usernameLength'));
       return;
     }
 
@@ -258,7 +260,7 @@ function PendingRegistrationsList() {
     if (formData.password) {
       const disallowedChars = /[&^$]/;
       if (disallowedChars.test(formData.password)) {
-        setFormError('Password cannot contain &, ^, or $ characters');
+        setFormError(t('auth.passwordNoSpecial'));
         return;
       }
     }
@@ -278,7 +280,7 @@ function PendingRegistrationsList() {
         await axios.post(`${API_URL}/api/v1/pending-registrations`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        showSuccess('Pending registration created and verification email sent!');
+        showSuccess(t('admin.pendingRegistrations.createdSuccess'));
       } else {
         // For edit, only send fields that are filled
         const updateData = {};
@@ -293,39 +295,39 @@ function PendingRegistrationsList() {
         await axios.put(`${API_URL}/api/v1/pending-registrations/${selectedPending.id}`, updateData, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        showSuccess('Pending registration updated and verification email sent!');
+        showSuccess(t('admin.pendingRegistrations.updatedSuccess'));
       }
 
       closeModal();
       fetchPendingRegistrations();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save pending registration');
+      setFormError(err.response?.data?.error || t('admin.pendingRegistrations.failedSave'));
     } finally {
       setFormLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="loading">Loading pending registrations...</div>;
+    return <div className="loading">{t('common.loading')}</div>;
   }
 
   return (
     <div className="pending-registrations-container">
       <div className="pending-registrations-header">
-        <h1>Pending Registrations</h1>
+        <h1>{t('admin.pendingRegistrations.title')}</h1>
         <div className="header-actions">
           {canEdit && (
             <button onClick={openCreateModal} className="btn-primary">
-              Create New
+              {t('admin.pendingRegistrations.createNew')}
             </button>
           )}
           {canEdit && (
             <button onClick={handleCleanupExpired} className="btn-warning">
-              Clean Up Expired
+              {t('admin.pendingRegistrations.cleanUpExpired')}
             </button>
           )}
           <button onClick={fetchPendingRegistrations} className="btn-secondary">
-            Refresh
+            {t('admin.pendingRegistrations.restart')}
           </button>
         </div>
       </div>
@@ -334,23 +336,23 @@ function PendingRegistrationsList() {
 
       {pendingRegistrations.length === 0 ? (
         <div className="no-data">
-          <p>No pending registrations found.</p>
-          <p className="hint">Pending registrations appear here when users register but haven't verified their email yet.</p>
+          <p>{t('admin.pendingRegistrations.noRegistrations')}</p>
+          <p className="hint">{t('admin.pendingRegistrations.noRegistrationsDesc')}</p>
         </div>
       ) : (
         <div className="pending-registrations-table-container">
           <table className="pending-registrations-table">
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Name</th>
-                <th>Callsign</th>
-                <th>Onboarding Code</th>
-                <th>Created</th>
-                <th>Expires</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t('common.username')}</th>
+                <th>{t('common.email')}</th>
+                <th>{t('common.name')}</th>
+                <th>{t('admin.pendingRegistrations.callsignLabel')}</th>
+                <th>{t('admin.pendingRegistrations.onboardingCode')}</th>
+                <th>{t('admin.pendingRegistrations.created')}</th>
+                <th>{t('admin.pendingRegistrations.expires')}</th>
+                <th>{t('common.status')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -365,34 +367,34 @@ function PendingRegistrationsList() {
                       <span title={pending.onboarding_code.code}>
                         {pending.onboarding_code.name}
                       </span>
-                    ) : 'N/A'}
+                    ) : t('common.unknown')}
                   </td>
                   <td>{formatDate(pending.created_at)}</td>
                   <td>{formatDate(pending.expires_at)}</td>
                   <td>
                     {pending.approval_status === 'pending_approval' ? (
                       <div>
-                        <span className="status-badge approval-pending" title="Waiting for approver to approve/reject">
-                          Awaiting Approval
+                        <span className="status-badge approval-pending" title={t('admin.pendingRegistrations.awaitingApproval')}>
+                          {t('admin.pendingRegistrations.awaitingApproval')}
                         </span>
                         {pending.onboarding_code?.approverRole && (
-                          <div className="approval-info" title="Users with this role can approve">
-                            <small>By: {pending.onboarding_code.approverRole.displayName || pending.onboarding_code.approverRole.name}</small>
+                          <div className="approval-info" title={t('admin.pendingRegistrations.approveManually')}>
+                            <small>{t('admin.pendingRegistrations.by')}: {pending.onboarding_code.approverRole.displayName || pending.onboarding_code.approverRole.name}</small>
                           </div>
                         )}
                       </div>
                     ) : pending.is_expired ? (
                       <span className="status-badge expired">
-                        Expired
+                        {t('common.expired')}
                       </span>
                     ) : (
                       <div>
-                        <span className="status-badge pending" title="Waiting for email verification">
+                        <span className="status-badge pending" title={t('admin.pendingRegistrations.resendDesc')}>
                           {getTimeRemaining(pending.expires_at)}
                         </span>
                         {pending.approved_by && (
-                          <div className="approval-info" title={`Approved on ${formatDate(pending.approved_at)}`}>
-                            <small>Approved by: {pending.approved_by.firstName || pending.approved_by.username}</small>
+                          <div className="approval-info" title={t('admin.pendingRegistrations.approvedBy')}>
+                            <small>{t('admin.pendingRegistrations.approvedBy')}: {pending.approved_by.firstName || pending.approved_by.username}</small>
                           </div>
                         )}
                       </div>
@@ -403,36 +405,36 @@ function PendingRegistrationsList() {
                       <button
                         onClick={() => handleApprove(pending.id, pending.username)}
                         className="btn-small btn-success"
-                        title="Manually approve this registration without email verification"
+                        title={t('admin.pendingRegistrations.approveManually')}
                       >
-                        Approve
+                        {t('admin.pendingRegistrations.approveManually')}
                       </button>
                     )}
                     {canEdit && (
                       <button
                         onClick={() => openEditModal(pending)}
                         className="btn-small btn-secondary"
-                        title="Edit pending registration"
+                        title={t('admin.pendingRegistrations.editDesc')}
                       >
-                        Edit
+                        {t('common.edit')}
                       </button>
                     )}
                     {canEdit && pending.approval_status !== 'pending_approval' && (
                       <button
                         onClick={() => handleResendEmail(pending.id, pending.email)}
                         className="btn-small btn-info"
-                        title="Resend verification email and extend expiry by 24 hours"
+                        title={t('admin.pendingRegistrations.resendDesc')}
                       >
-                        {pending.is_expired ? 'Restart' : 'Resend'}
+                        {pending.is_expired ? t('admin.pendingRegistrations.restart') : t('admin.pendingRegistrations.resend')}
                       </button>
                     )}
                     {canEdit && (
                       <button
                         onClick={() => handleDelete(pending.id, pending.username)}
                         className="btn-small btn-danger"
-                        title="Delete pending registration"
+                        title={t('admin.pendingRegistrations.deleteDesc')}
                       >
-                        Delete
+                        {t('common.delete')}
                       </button>
                     )}
                   </td>
@@ -445,9 +447,9 @@ function PendingRegistrationsList() {
 
       <div className="pending-registrations-stats">
         <p>
-          Total pending: <strong>{pendingRegistrations.length}</strong> |
-          Expired: <strong>{pendingRegistrations.filter(p => p.is_expired).length}</strong> |
-          Active: <strong>{pendingRegistrations.filter(p => !p.is_expired).length}</strong>
+          {t('admin.pendingRegistrations.totalPending')}: <strong>{pendingRegistrations.length}</strong> |
+          {t('common.expired')}: <strong>{pendingRegistrations.filter(p => p.is_expired).length}</strong> |
+          {t('common.active')}: <strong>{pendingRegistrations.filter(p => !p.is_expired).length}</strong>
         </p>
       </div>
 
@@ -456,7 +458,7 @@ function PendingRegistrationsList() {
         <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Create Pending Registration' : 'Edit Pending Registration'}</h2>
+              <h2>{modalMode === 'create' ? t('admin.pendingRegistrations.createPending') : t('admin.pendingRegistrations.editPending')}</h2>
               <button className="close-btn" onClick={closeModal}>&times;</button>
             </div>
 
@@ -465,7 +467,7 @@ function PendingRegistrationsList() {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="username">Username *</label>
+                  <label htmlFor="username">{t('admin.pendingRegistrations.usernameLabel')} *</label>
                   <input
                     type="text"
                     id="username"
@@ -473,17 +475,17 @@ function PendingRegistrationsList() {
                     value={formData.username}
                     onChange={handleFormChange}
                     required={modalMode === 'create'}
-                    placeholder="Enter username"
+                    placeholder={t('common.username')}
                     pattern="[a-zA-Z0-9]+"
-                    title="Only letters and numbers allowed"
+                    title={t('auth.usernameOnlyLetters')}
                     minLength={3}
                     maxLength={32}
                   />
-                  <small>Letters and numbers only (3-32 characters, will be lowercase)</small>
+                  <small>{t('admin.pendingRegistrations.usernameHelp')}</small>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="email">Email *</label>
+                  <label htmlFor="email">{t('admin.pendingRegistrations.emailLabel')} *</label>
                   <input
                     type="email"
                     id="email"
@@ -491,14 +493,14 @@ function PendingRegistrationsList() {
                     value={formData.email}
                     onChange={handleFormChange}
                     required={modalMode === 'create'}
-                    placeholder="user@example.com"
+                    placeholder={t('admin.pendingRegistrations.emailPlaceholder')}
                   />
                 </div>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="firstName">First Name *</label>
+                  <label htmlFor="firstName">{t('admin.pendingRegistrations.firstNameLabel')} *</label>
                   <input
                     type="text"
                     id="firstName"
@@ -506,12 +508,12 @@ function PendingRegistrationsList() {
                     value={formData.firstName}
                     onChange={handleFormChange}
                     required={modalMode === 'create'}
-                    placeholder="First name"
+                    placeholder={t('admin.pendingRegistrations.firstNameLabel')}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="lastName">Last Name *</label>
+                  <label htmlFor="lastName">{t('admin.pendingRegistrations.lastNameLabel')} *</label>
                   <input
                     type="text"
                     id="lastName"
@@ -519,14 +521,14 @@ function PendingRegistrationsList() {
                     value={formData.lastName}
                     onChange={handleFormChange}
                     required={modalMode === 'create'}
-                    placeholder="Last name"
+                    placeholder={t('admin.pendingRegistrations.lastNameLabel')}
                   />
                 </div>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="callsign">Callsign *</label>
+                  <label htmlFor="callsign">{t('admin.pendingRegistrations.callsignLabel')} *</label>
                   <input
                     type="text"
                     id="callsign"
@@ -534,12 +536,12 @@ function PendingRegistrationsList() {
                     value={formData.callsign}
                     onChange={handleFormChange}
                     required={modalMode === 'create'}
-                    placeholder="Callsign"
+                    placeholder={t('admin.pendingRegistrations.callsignLabel')}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="password">Password *</label>
+                  <label htmlFor="password">{t('admin.pendingRegistrations.passwordLabel')} *</label>
                   <input
                     type="password"
                     id="password"
@@ -547,17 +549,17 @@ function PendingRegistrationsList() {
                     value={formData.password}
                     onChange={handleFormChange}
                     required={modalMode === 'create'}
-                    placeholder={modalMode === 'edit' ? 'Leave blank to keep current' : 'Enter password'}
+                    placeholder={modalMode === 'edit' ? t('admin.pendingRegistrations.passwordHelpEdit') : t('admin.pendingRegistrations.passwordLabel')}
                   />
                   <small>
-                    {modalMode === 'edit' ? 'Leave blank to keep current. ' : ''}
-                    Cannot contain &amp;, ^, or $ characters.
+                    {modalMode === 'edit' ? t('admin.pendingRegistrations.passwordHelpEdit') + '. ' : ''}
+                    {t('auth.passwordNoSpecial')}
                   </small>
                 </div>
               </div>
 
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="onboarding_code_id">Onboarding Code *</label>
+                <label htmlFor="onboarding_code_id">{t('admin.pendingRegistrations.onboardingCodeLabel')} *</label>
                 <select
                   id="onboarding_code_id"
                   name="onboarding_code_id"
@@ -570,7 +572,7 @@ function PendingRegistrationsList() {
                     appearance: 'auto'
                   }}
                 >
-                  <option value="">-- Select an onboarding code --</option>
+                  <option value="">{t('admin.pendingRegistrations.selectCode')}</option>
                   {onboardingCodes.map((code) => (
                     <option key={code.id} value={code.id}>
                       {code.name} ({code.onboardingCode})
@@ -579,12 +581,12 @@ function PendingRegistrationsList() {
                 </select>
                 {onboardingCodes.length === 0 && (
                   <small style={{ color: '#dc3545', fontWeight: '500', display: 'block', marginTop: '0.5rem' }}>
-                    ⚠️ No onboarding codes found. Please create an onboarding code first in the Onboarding Codes section.
+                    {t('admin.pendingRegistrations.noCodesWarning')}
                   </small>
                 )}
                 {onboardingCodes.length > 0 && (
                   <small style={{ color: '#28a745' }}>
-                    ✓ {onboardingCodes.length} onboarding code{onboardingCodes.length !== 1 ? 's' : ''} available
+                    {t('admin.pendingRegistrations.codesAvailable', { count: onboardingCodes.length })}
                   </small>
                 )}
               </div>
@@ -592,10 +594,10 @@ function PendingRegistrationsList() {
             </form>
             <div className="modal-actions">
               <button type="button" onClick={closeModal} className="btn-secondary" disabled={formLoading}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" form="pending-registration-form" className="btn-primary" disabled={formLoading}>
-                {formLoading ? 'Saving...' : (modalMode === 'create' ? 'Create & Send Email' : 'Update & Send Email')}
+                {formLoading ? t('common.loading') : (modalMode === 'create' ? t('admin.pendingRegistrations.createAndSend') : t('admin.pendingRegistrations.updateAndSend'))}
               </button>
             </div>
           </div>

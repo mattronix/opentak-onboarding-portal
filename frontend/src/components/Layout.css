@@ -270,6 +270,35 @@
   font-size: inherit;
 }
 
+.language-switcher {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+}
+
+.lang-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: #f0f0f0;
+  border-color: #999;
+}
+
+.lang-btn.active {
+  background: #f57c00;
+  color: white;
+  border-color: #f57c00;
+}
+
 /* Mobile styles */
 @media (max-width: 768px) {
   .navbar {

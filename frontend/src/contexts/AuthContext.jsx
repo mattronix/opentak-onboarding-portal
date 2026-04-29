@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI, approvalsAPI } from '../services/api';
+import i18n from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -57,6 +58,10 @@ export const AuthProvider = ({ children }) => {
             isApprover: approverResponse.data.is_approver,
             pendingCount: approverResponse.data.pending_count
           });
+          // Set UI language from user preference
+          if (userData.language) {
+            i18n.changeLanguage(userData.language);
+          }
           // Check if OIDC user needs to set password
           if (userData.has_password === false) {
             setNeedsPasswordSet(true);
@@ -95,6 +100,11 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setNeedsProfileCompletion(needs_profile_completion || false);
       setNeedsPasswordSet(userData.has_password === false);
+
+      // Set UI language from user preference
+      if (userData.language) {
+        i18n.changeLanguage(userData.language);
+      }
 
       // Fetch permissions and approver status from database after login
       try {
@@ -146,6 +156,11 @@ export const AuthProvider = ({ children }) => {
       });
       setNeedsProfileCompletion(!userData.email || !userData.callsign);
       setNeedsPasswordSet(userData.has_password === false);
+
+      // Set UI language from user preference
+      if (userData.language) {
+        i18n.changeLanguage(userData.language);
+      }
 
       // Detect impersonation from server response
       if (userData.impersonatedBy) {
@@ -279,6 +294,10 @@ export const AuthProvider = ({ children }) => {
         isApprover: approverResponse.data.is_approver,
         pendingCount: approverResponse.data.pending_count
       });
+      // Set UI language from user preference
+      if (userData.language) {
+        i18n.changeLanguage(userData.language);
+      }
       // Check if profile is now complete
       if (userData.email && userData.callsign) {
         setNeedsProfileCompletion(false);

@@ -1,7 +1,9 @@
 import { useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './VerifyEmail.css';
 
 function VerifyEmailSent() {
+  const { t } = useTranslation();
   const location = useLocation();
   const email = location.state?.email || 'your email';
   const message = location.state?.message;
@@ -16,10 +18,10 @@ function VerifyEmailSent() {
           </svg>
         </div>
 
-        <h1>Check Your Email</h1>
+        <h1>{t('auth.emailSentTitle')}</h1>
 
         <p className="verify-message">
-          {message || `We've sent a verification email to:`}
+          {message || t('auth.emailSentTo')}
         </p>
 
         <p className="verify-email-address">
@@ -27,24 +29,24 @@ function VerifyEmailSent() {
         </p>
 
         <div className="verify-instructions">
-          <p>Please click the link in the email to verify your account and complete your registration.</p>
+          <p>{t('auth.emailSentDesc')}</p>
           <p className="verify-note">
-            The verification link will expire in 24 hours.
+            {t('auth.emailSentExpiry')}
           </p>
         </div>
 
         <div className="verify-tips">
-          <h3>Didn't receive the email?</h3>
+          <h3>{t('auth.emailNotReceived')}</h3>
           <ul>
-            <li>Check your spam or junk folder</li>
-            <li>Make sure you entered the correct email address</li>
-            <li>Wait a few minutes and check again</li>
+            <li>{t('auth.checkSpam')}</li>
+            <li>{t('auth.checkEmailCorrect')}</li>
+            <li>{t('auth.waitAndCheck')}</li>
           </ul>
         </div>
 
         <div className="verify-actions">
           <Link to="/login" className="btn btn-secondary">
-            Back to Login
+            {t('auth.backToLogin')}
           </Link>
         </div>
       </div>

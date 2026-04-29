@@ -197,12 +197,19 @@ export const takProfilesAPI = {
   getFiles: (id) =>
     api.get(`/tak-profiles/${id}/files`),
 
-  download: (id) => {
-    const token = localStorage.getItem('access_token');
+  download: async (id) => {
+    const response = await api.post(`/tak-profiles/${id}/download-token`);
+    const dlToken = response.data.token;
     window.open(
-      `${API_BASE_URL}/api/v1/tak-profiles/${id}/download?token=${token}`,
+      `${API_BASE_URL}/api/v1/tak-profiles/${id}/download?dl_token=${dlToken}`,
       '_blank'
     );
+  },
+
+  getDownloadUrl: async (id) => {
+    const response = await api.post(`/tak-profiles/${id}/download-token`);
+    const dlToken = response.data.token;
+    return `${API_BASE_URL}/api/v1/tak-profiles/${id}/download/${dlToken}/profile.zip`;
   },
 
   create: (formData) =>

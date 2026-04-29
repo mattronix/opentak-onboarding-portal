@@ -97,6 +97,12 @@ def get_settings():
         # Theme
         'default_theme': get_str_setting('default_theme', 'light'),
         'kiosk_default_theme': get_str_setting('kiosk_default_theme', 'dark'),
+        # Help
+        'help_link_enabled': get_bool_setting('help_link_enabled', False),
+        'help_link_value': get_str_setting('help_link_value', ''),
+        'help_email_enabled': get_bool_setting('help_email_enabled', False),
+        'help_email_value': get_str_setting('help_email_value', ''),
+        'open_in_atak_enabled': get_bool_setting('open_in_atak_enabled', True),
     }
 
     return jsonify(settings), 200

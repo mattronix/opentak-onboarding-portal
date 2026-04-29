@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiKeysAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import './ApiKeysList.css';
 
 function ApiKeysList() {
+  const { t } = useTranslation();
   const { showSuccess, showError, confirm } = useNotification();
   const { hasRole } = useAuth();
   const canEdit = hasRole('api_key_admin') || hasRole('administrator');
@@ -40,7 +42,7 @@ function ApiKeysList() {
       setApiKeys(response.data.api_keys || []);
     } catch (err) {
       console.error('Error fetching API keys:', err);
-      showError(err.response?.data?.error || 'Failed to load API keys');
+      showError(err.response?.data?.error || t('admin.apiKeys.failedLoad'));
     } finally {
       setLoading(false);
     }
@@ -95,41 +97,41 @@ function ApiKeysList() {
       if (modalMode === 'create') {
         const response = await apiKeysAPI.create(data);
         setNewKeyValue(response.data.raw_key);
-        showSuccess('API key created successfully. Copy the key now - it will not be shown again!');
+        showSuccess(t('admin.apiKeys.createdSuccess'));
         fetchApiKeys();
       } else {
         await apiKeysAPI.update(selectedKey.id, data);
-        showSuccess('API key updated successfully');
+        showSuccess(t('admin.apiKeys.updatedSuccess'));
         setShowModal(false);
         fetchApiKeys();
       }
     } catch (err) {
       console.error('Error saving API key:', err);
-      setFormError(err.response?.data?.error || 'Failed to save API key');
+      setFormError(err.response?.data?.error || t('admin.apiKeys.failedSave'));
     }
   };
 
   const handleDelete = async (apiKey) => {
     const confirmed = await confirm(
-      `Are you sure you want to delete the API key "${apiKey.name}"?`,
-      'Delete API Key'
+      t('admin.apiKeys.deleteConfirm', { name: apiKey.name }),
+      t('admin.apiKeys.deleteKey')
     );
     if (!confirmed) return;
 
     try {
       await apiKeysAPI.delete(apiKey.id);
-      showSuccess('API key deleted successfully');
+      showSuccess(t('admin.apiKeys.deletedSuccess'));
       fetchApiKeys();
     } catch (err) {
       console.error('Error deleting API key:', err);
-      showError(err.response?.data?.error || 'Failed to delete API key');
+      showError(err.response?.data?.error || t('admin.apiKeys.failedDelete'));
     }
   };
 
   const handleRegenerate = async (apiKey) => {
     const confirmed = await confirm(
-      `Are you sure you want to regenerate the API key "${apiKey.name}"? The old key will stop working immediately.`,
-      'Regenerate API Key'
+      t('admin.apiKeys.regenerateConfirm', { name: apiKey.name }),
+      t('admin.apiKeys.regenerateKey')
     );
     if (!confirmed) return;
 
@@ -139,22 +141,22 @@ function ApiKeysList() {
       setNewKeyValue(response.data.raw_key);
       setModalMode('regenerate');
       setShowModal(true);
-      showSuccess('API key regenerated successfully. Copy the new key now!');
+      showSuccess(t('admin.apiKeys.regeneratedSuccess'));
       fetchApiKeys();
     } catch (err) {
       console.error('Error regenerating API key:', err);
-      showError(err.response?.data?.error || 'Failed to regenerate API key');
+      showError(err.response?.data?.error || t('admin.apiKeys.failedRegenerate'));
     }
   };
 
   const handleToggleActive = async (apiKey) => {
     try {
       await apiKeysAPI.update(apiKey.id, { is_active: !apiKey.is_active });
-      showSuccess(`API key ${apiKey.is_active ? 'deactivated' : 'activated'} successfully`);
+      showSuccess(apiKey.is_active ? t('admin.apiKeys.deactivatedSuccess') : t('admin.apiKeys.activatedSuccess'));
       fetchApiKeys();
     } catch (err) {
       console.error('Error toggling API key:', err);
-      showError(err.response?.data?.error || 'Failed to update API key');
+      showError(err.response?.data?.error || t('admin.apiKeys.failedToggle'));
     }
   };
 
@@ -169,11 +171,11 @@ function ApiKeysList() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    showSuccess('Copied to clipboard!');
+    showSuccess(t('admin.apiKeys.copiedClipboard'));
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return t('common.never');
     return new Date(dateString).toLocaleString();
   };
 
@@ -186,9 +188,9 @@ function ApiKeysList() {
     return (
       <div className="admin-page">
         <div className="admin-header">
-          <h1>API Keys</h1>
+          <h1>{t('admin.apiKeys.title')}</h1>
         </div>
-        <div className="loading">Loading API keys...</div>
+        <div className="loading">{t('admin.apiKeys.loadingKeys')}</div>
       </div>
     );
   }
@@ -196,26 +198,26 @@ function ApiKeysList() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>API Keys</h1>
+        <h1>{t('admin.apiKeys.title')}</h1>
         {canEdit && (
           <button className="btn-primary" onClick={handleCreate}>
-            Create API Key
+            {t('admin.apiKeys.createKey')}
           </button>
         )}
       </div>
 
       <div className="api-keys-info">
-        <p>API keys allow external applications to access your API. Each key can have specific permissions and rate limits.</p>
-        <p>Use the <code>X-API-Key</code> header to authenticate requests.</p>
+        <p>{t('admin.apiKeys.introText')}</p>
+        <p>{t('admin.apiKeys.headerUsage')}</p>
       </div>
 
       <div className="api-keys-list">
         {apiKeys.length === 0 ? (
           <div className="empty-state">
-            <p>No API keys created yet.</p>
+            <p>{t('admin.apiKeys.noKeys')}</p>
             {canEdit && (
               <button className="btn-primary" onClick={handleCreate}>
-                Create your first API key
+                {t('admin.apiKeys.createFirst')}
               </button>
             )}
           </div>
@@ -223,14 +225,14 @@ function ApiKeysList() {
           <table className="api-keys-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Key Prefix</th>
-                <th>Status</th>
-                <th>Permissions</th>
-                <th>Usage</th>
-                <th>Last Used</th>
-                <th>Expires</th>
-                <th>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('admin.apiKeys.keyPrefix')}</th>
+                <th>{t('common.status')}</th>
+                <th>{t('admin.apiKeys.permissions')}</th>
+                <th>{t('admin.apiKeys.usage')}</th>
+                <th>{t('admin.apiKeys.lastUsed')}</th>
+                <th>{t('admin.apiKeys.expires')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -247,39 +249,39 @@ function ApiKeysList() {
                   </td>
                   <td>
                     <span className={`status-badge ${apiKey.is_active && !isExpired(apiKey.expires_at) ? 'active' : 'inactive'}`}>
-                      {isExpired(apiKey.expires_at) ? 'Expired' : apiKey.is_active ? 'Active' : 'Inactive'}
+                      {isExpired(apiKey.expires_at) ? t('common.expired') : apiKey.is_active ? t('common.active') : t('common.inactive')}
                     </span>
                   </td>
                   <td>
-                    <span className="permission-count">{apiKey.permissions?.length || 0} permissions</span>
+                    <span className="permission-count">{t('admin.apiKeys.nPermissions', { count: apiKey.permissions?.length || 0 })}</span>
                   </td>
-                  <td>{apiKey.usage_count.toLocaleString()} requests</td>
+                  <td>{t('admin.apiKeys.nRequests', { count: apiKey.usage_count.toLocaleString() })}</td>
                   <td>{formatDate(apiKey.last_used_at)}</td>
-                  <td>{apiKey.expires_at ? formatDate(apiKey.expires_at) : 'Never'}</td>
+                  <td>{apiKey.expires_at ? formatDate(apiKey.expires_at) : t('common.never')}</td>
                   <td>
                     <div className="action-buttons">
                       {canEdit && (
-                        <button className="btn-small btn-edit" onClick={() => handleEdit(apiKey)} title="Edit">
-                          Edit
+                        <button className="btn-small btn-edit" onClick={() => handleEdit(apiKey)} title={t('common.edit')}>
+                          {t('common.edit')}
                         </button>
                       )}
                       {canEdit && (
-                        <button className="btn-small btn-regenerate" onClick={() => handleRegenerate(apiKey)} title="Regenerate">
-                          Regenerate
+                        <button className="btn-small btn-regenerate" onClick={() => handleRegenerate(apiKey)} title={t('admin.apiKeys.regenerate')}>
+                          {t('admin.apiKeys.regenerate')}
                         </button>
                       )}
                       {canEdit && (
                         <button
                           className={`btn-small ${apiKey.is_active ? 'btn-deactivate' : 'btn-activate'}`}
                           onClick={() => handleToggleActive(apiKey)}
-                          title={apiKey.is_active ? 'Deactivate' : 'Activate'}
+                          title={apiKey.is_active ? t('admin.apiKeys.deactivate') : t('admin.apiKeys.activate')}
                         >
-                          {apiKey.is_active ? 'Deactivate' : 'Activate'}
+                          {apiKey.is_active ? t('admin.apiKeys.deactivate') : t('admin.apiKeys.activate')}
                         </button>
                       )}
                       {canEdit && (
-                        <button className="btn-small btn-delete" onClick={() => handleDelete(apiKey)} title="Delete">
-                          Delete
+                        <button className="btn-small btn-delete" onClick={() => handleDelete(apiKey)} title={t('common.delete')}>
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -297,9 +299,9 @@ function ApiKeysList() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                {modalMode === 'create' && 'Create API Key'}
-                {modalMode === 'edit' && 'Edit API Key'}
-                {modalMode === 'regenerate' && 'API Key Regenerated'}
+                {modalMode === 'create' && t('admin.apiKeys.createKey')}
+                {modalMode === 'edit' && t('admin.apiKeys.editKey')}
+                {modalMode === 'regenerate' && t('admin.apiKeys.keyRegenerated')}
               </h2>
               {!newKeyValue && (
                 <button className="modal-close" onClick={() => setShowModal(false)}>&times;</button>
@@ -310,18 +312,18 @@ function ApiKeysList() {
               <div className="modal-body">
                 <div className="new-key-display">
                   <div className="warning-message">
-                    <strong>Important:</strong> Copy this API key now. You won't be able to see it again!
+                    <strong>{t('admin.apiKeys.important')}:</strong> {t('admin.apiKeys.copyWarning')}
                   </div>
                   <div className="key-value-container">
                     <code className="key-value">{newKeyValue}</code>
                     <button className="btn-copy" onClick={() => copyToClipboard(newKeyValue)}>
-                      Copy
+                      {t('admin.apiKeys.copy')}
                     </button>
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button className="btn-primary" onClick={() => { setShowModal(false); setNewKeyValue(null); }}>
-                    I've copied the key
+                    {t('admin.apiKeys.copiedKey')}
                   </button>
                 </div>
               </div>
@@ -329,30 +331,30 @@ function ApiKeysList() {
               <form onSubmit={handleSubmit}>
                 <div className="modal-body">
                   <div className="form-group">
-                    <label htmlFor="name">Name *</label>
+                    <label htmlFor="name">{t('common.name')} *</label>
                     <input
                       type="text"
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g., Production API Key"
+                      placeholder={t('admin.apiKeys.namePlaceholder')}
                       required
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="description">Description</label>
+                    <label htmlFor="description">{t('common.description')}</label>
                     <textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Optional description for this API key"
+                      placeholder={t('admin.apiKeys.descriptionHelp')}
                       rows={2}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="rate_limit">Rate Limit (requests/hour)</label>
+                    <label htmlFor="rate_limit">{t('admin.apiKeys.rateLimit')}</label>
                     <input
                       type="number"
                       id="rate_limit"
@@ -364,7 +366,7 @@ function ApiKeysList() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="expires_at">Expiration Date (optional)</label>
+                    <label htmlFor="expires_at">{t('admin.apiKeys.expirationDate')}</label>
                     <input
                       type="date"
                       id="expires_at"
@@ -375,7 +377,7 @@ function ApiKeysList() {
                   </div>
 
                   <div className="form-group">
-                    <label>Permissions</label>
+                    <label>{t('admin.apiKeys.permissions')}</label>
                     <div className="permissions-grid">
                       {availablePermissions.map((perm) => (
                         <label key={perm.key} className="permission-checkbox">
@@ -396,10 +398,10 @@ function ApiKeysList() {
 
                 <div className="modal-footer">
                   <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button type="submit" className="btn-primary">
-                    {modalMode === 'create' ? 'Create API Key' : 'Save Changes'}
+                    {modalMode === 'create' ? t('admin.apiKeys.createKey') : t('admin.apiKeys.saveChanges')}
                   </button>
                 </div>
               </form>

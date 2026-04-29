@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { settingsAPI } from '../services/api';
 import './Auth.css';
@@ -8,6 +9,7 @@ import './Auth.css';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 function ForgotPassword() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +38,7 @@ function ForgotPassword() {
       await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`, { email });
       setSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send reset email. Please try again.');
+      setError(err.response?.data?.error || t('auth.failedSendReset'));
     } finally {
       setLoading(false);
     }
@@ -51,13 +53,13 @@ function ForgotPassword() {
               <img src={logoPath} alt={brandName} />
             </div>
           )}
-          <h2>Check Your Email</h2>
+          <h2>{t('auth.checkYourEmail')}</h2>
           <div className="alert alert-success">
-            <p>If an account exists with that email address, you will receive password reset instructions.</p>
+            <p>{t('auth.resetEmailSent')}</p>
           </div>
           <div className="auth-links">
             <p>
-              <Link to="/login">Back to Login</Link>
+              <Link to="/login">{t('auth.backToLogin')}</Link>
             </p>
           </div>
         </div>
@@ -73,8 +75,8 @@ function ForgotPassword() {
             <img src={logoPath} alt={brandName} />
           </div>
         )}
-        <h2>Forgot Password</h2>
-        <p>Enter your email address and we'll send you instructions to reset your password.</p>
+        <h2>{t('auth.forgotPasswordTitle')}</h2>
+        <p>{t('auth.forgotPasswordDesc')}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && (
@@ -84,7 +86,7 @@ function ForgotPassword() {
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">{t('auth.emailAddress')}</label>
             <input
               id="email"
               type="email"
@@ -92,7 +94,7 @@ function ForgotPassword() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
-              placeholder="Enter your email"
+              placeholder={t('auth.enterEmail')}
             />
           </div>
 
@@ -101,12 +103,12 @@ function ForgotPassword() {
             disabled={loading}
             className="btn btn-primary btn-block"
           >
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? t('auth.sending') : t('auth.sendResetLink')}
           </button>
 
           <div className="auth-links">
             <p>
-              <Link to="/login">Back to Login</Link>
+              <Link to="/login">{t('auth.backToLogin')}</Link>
             </p>
           </div>
         </form>

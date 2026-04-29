@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { takProfilesAPI, rolesAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -7,6 +8,7 @@ import '../../components/AdminTable.css';
 import './TakProfilesList.css';
 
 function TakProfilesList() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showError, showWarning, confirm } = useNotification();
   const { hasRole } = useAuth();
@@ -18,6 +20,7 @@ function TakProfilesList() {
     description: '',
     isPublic: false,
     takPrefFileLocation: '',
+    injectCallsign: false,
     file: null,
     roleIds: []
   });
@@ -51,7 +54,7 @@ function TakProfilesList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create profile'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.takProfiles.failedCreate')),
   });
 
   const updateMutation = useMutation({
@@ -61,13 +64,13 @@ function TakProfilesList() {
       setShowModal(false);
       resetForm();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to update profile'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.takProfiles.failedUpdate')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => takProfilesAPI.delete(id),
     onSuccess: () => queryClient.invalidateQueries(['takProfiles']),
-    onError: (err) => showError(err.response?.data?.error || 'Failed to delete profile'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.takProfiles.failedDelete')),
   });
 
   const resetForm = () => {
@@ -76,6 +79,7 @@ function TakProfilesList() {
       description: '',
       isPublic: false,
       takPrefFileLocation: '',
+      injectCallsign: false,
       file: null,
       roleIds: []
     });
@@ -110,13 +114,14 @@ function TakProfilesList() {
         description: fullProfile.description || '',
         isPublic: fullProfile.isPublic || false,
         takPrefFileLocation: fullProfile.takPrefFileLocation || '',
+        injectCallsign: fullProfile.injectCallsign || false,
         file: null,
         roleIds: fullProfile.roles?.map(r => r.id) || []
       });
       setError('');
       setShowModal(true);
     } catch (err) {
-      showError('Failed to load profile details: ' + (err.response?.data?.error || err.message));
+      showError(t('admin.takProfiles.failedLoadDetails') + ': ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -129,13 +134,14 @@ function TakProfilesList() {
     data.append('description', formData.description);
     data.append('isPublic', formData.isPublic.toString());
     data.append('takPrefFileLocation', formData.takPrefFileLocation);
+    data.append('injectCallsign', formData.injectCallsign.toString());
 
     // Only add file if provided
     if (formData.file) {
       data.append('datapackage', formData.file);
     } else if (!editing) {
       // File is required for creation
-      setError('Profile file is required for new profiles');
+      setError(t('admin.takProfiles.fileRequired'));
       return;
     }
 
@@ -248,32 +254,32 @@ function TakProfilesList() {
     return ['Root', ...currentBrowserPath].join(' / ');
   };
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+  if (isLoading) return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
 
   const profiles = profilesData?.profiles || [];
 
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>TAK Profiles Management</h1>
+        <h1>{t('admin.takProfiles.title')}</h1>
         {canEdit && (
           <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-            + Add Profile
+            {t('admin.takProfiles.addProfile')}
           </button>
         )}
       </div>
 
       <div className="admin-table-container">
         {profiles.length === 0 ? (
-          <div className="empty-state">No TAK profiles found</div>
+          <div className="empty-state">{t('admin.takProfiles.noProfiles')}</div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Public</th>
-                <th>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('common.description')}</th>
+                <th>{t('common.public')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -283,25 +289,25 @@ function TakProfilesList() {
                   <td>{profile.description || '-'}</td>
                   <td>
                     <span className={`badge ${profile.isPublic ? 'badge-success' : 'badge-warning'}`}>
-                      {profile.isPublic ? 'Public' : 'Private'}
+                      {profile.isPublic ? t('common.public') : t('common.private')}
                     </span>
                   </td>
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-sm btn-success" onClick={() => takProfilesAPI.download(profile.id)}>
-                        Download
+                        {t('common.download')}
                       </button>
                       {canEdit && (
                         <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(profile)}>
-                          Edit
+                          {t('common.edit')}
                         </button>
                       )}
                       {canEdit && (
                         <button className="btn btn-sm btn-danger" onClick={async () => {
-                          const confirmed = await confirm(`Delete "${profile.name}"?`, 'Delete Profile');
+                          const confirmed = await confirm(t('admin.takProfiles.deleteConfirm', { name: profile.name }), t('admin.takProfiles.deleteProfile'));
                           if (confirmed) deleteMutation.mutate(profile.id);
                         }}>
-                          Delete
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -318,7 +324,7 @@ function TakProfilesList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editing ? 'Edit TAK Profile' : 'Upload TAK Profile'}</h2>
+              <h2>{editing ? t('admin.takProfiles.editProfile') : t('admin.takProfiles.uploadProfile')}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -326,45 +332,45 @@ function TakProfilesList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Name *</label>
+                  <label>{t('admin.takProfiles.nameLabel')} *</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
                   />
-                  <span className="help-text">Display name for this TAK profile</span>
+                  <span className="help-text">{t('admin.takProfiles.nameHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{t('admin.takProfiles.descriptionLabel')}</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Optional description of this profile"
+                    placeholder={t('admin.takProfiles.descriptionHelp')}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Profile File (.zip) {!editing && '*'}</label>
+                  <label>{t('admin.takProfiles.fileLabel')} {!editing && '*'}</label>
                   <input
                     type="file"
                     accept=".zip"
                     onChange={(e) => setFormData({...formData, file: e.target.files[0]})}
                     required={!editing}
                   />
-                  {editing && <span className="help-text">Leave blank to keep current file</span>}
-                  {!editing && <span className="help-text">ZIP file containing TAK profile configuration</span>}
+                  {editing && <span className="help-text">{t('admin.takProfiles.fileHelpEdit')}</span>}
+                  {!editing && <span className="help-text">{t('admin.takProfiles.fileHelp')}</span>}
                 </div>
 
                 <div className="form-group">
-                  <label>TAK Preference File Location</label>
+                  <label>{t('admin.takProfiles.prefFileLabel')}</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input
                       type="text"
                       value={formData.takPrefFileLocation}
                       onChange={(e) => setFormData({...formData, takPrefFileLocation: e.target.value})}
-                      placeholder="e.g., ATAK/preference.pref"
+                      placeholder={t('admin.takProfiles.prefFilePlaceholder')}
                       style={{ flex: 1 }}
                     />
                     {editing && (
@@ -375,24 +381,24 @@ function TakProfilesList() {
                           if (fileTree) {
                             setShowFileBrowser(!showFileBrowser);
                           } else {
-                            showWarning('No files available. Upload a profile file first or the profile may not have files extracted yet.');
+                            showWarning(t('admin.takProfiles.noFilesAvailable'));
                           }
                         }}
                         style={{ whiteSpace: 'nowrap' }}
                         disabled={!fileTree}
                       >
-                        📁 Browse Files
+                        {t('admin.takProfiles.browseFiles')}
                       </button>
                     )}
                   </div>
                   <span className="help-text">
-                    {editing && fileTree ? 'Type manually or click Browse Files to select from uploaded ZIP' : 'Optional path to preference file within the ZIP'}
+                    {editing && fileTree ? t('admin.takProfiles.prefFileHelp') : t('admin.takProfiles.prefFileHelpExtra')}
                   </span>
 
                   {showFileBrowser && fileTree && (
                     <div className="file-browser">
                       <div className="file-browser-header">
-                        <div className="file-browser-breadcrumb">{fileSearchQuery ? 'Search Results' : getBreadcrumbPath()}</div>
+                        <div className="file-browser-breadcrumb">{fileSearchQuery ? t('admin.takProfiles.searchResults') : getBreadcrumbPath()}</div>
                         <button
                           type="button"
                           className="file-browser-close"
@@ -407,7 +413,7 @@ function TakProfilesList() {
                         </svg>
                         <input
                           type="text"
-                          placeholder="Search files..."
+                          placeholder={t('admin.takProfiles.searchFiles')}
                           value={fileSearchQuery}
                           onChange={(e) => setFileSearchQuery(e.target.value)}
                         />
@@ -425,8 +431,8 @@ function TakProfilesList() {
                         <table className="file-browser-table">
                           <thead>
                             <tr>
-                              <th>Name</th>
-                              {fileSearchQuery && <th>Path</th>}
+                              <th>{t('common.name')}</th>
+                              {fileSearchQuery && <th>{t('common.path')}</th>}
                             </tr>
                           </thead>
                           <tbody>
@@ -450,7 +456,7 @@ function TakProfilesList() {
                                 ))}
                                 {getSearchResults().length === 0 && (
                                   <tr>
-                                    <td colSpan="2" className="empty-message">No files match your search</td>
+                                    <td colSpan="2" className="empty-message">{t('admin.takProfiles.noFilesMatch')}</td>
                                   </tr>
                                 )}
                               </>
@@ -483,7 +489,7 @@ function TakProfilesList() {
                                 ))}
                                 {getCurrentDirContents().length === 0 && currentBrowserPath.length === 0 && (
                                   <tr>
-                                    <td className="empty-message">No files found</td>
+                                    <td className="empty-message">{t('admin.takProfiles.noFilesFound')}</td>
                                   </tr>
                                 )}
                               </>
@@ -495,9 +501,23 @@ function TakProfilesList() {
                   )}
                 </div>
 
+                {formData.takPrefFileLocation && (
+                  <div className="form-group">
+                    <label className="checkbox-label">
+                      <span>{t('admin.takProfiles.injectCallsign')}</span>
+                      <input
+                        type="checkbox"
+                        checked={formData.injectCallsign}
+                        onChange={(e) => setFormData({...formData, injectCallsign: e.target.checked})}
+                      />
+                    </label>
+                    <span className="help-text">{t('admin.takProfiles.injectCallsignHelp')}</span>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label className="checkbox-label">
-                    <span>Public (visible to all users)</span>
+                    <span>{t('admin.takProfiles.publicLabel')}</span>
                     <input
                       type="checkbox"
                       checked={formData.isPublic}
@@ -507,7 +527,7 @@ function TakProfilesList() {
                 </div>
 
                 <div className="form-group">
-                  <label>Roles</label>
+                  <label>{t('admin.takProfiles.rolesLabel')}</label>
                   <div className="checkbox-list">
                     {rolesData?.roles?.map(role => (
                       <label key={role.id} className="checkbox-label">
@@ -525,20 +545,20 @@ function TakProfilesList() {
                       </label>
                     ))}
                   </div>
-                  <span className="help-text">Assign this profile to specific roles</span>
+                  <span className="help-text">{t('admin.takProfiles.rolesHelp')}</span>
                 </div>
               </div>
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editing ? 'Update' : 'Upload'} Profile
+                  {editing ? t('admin.takProfiles.updateProfile') : t('admin.takProfiles.uploadProfileBtn')}
                 </button>
               </div>
             </form>

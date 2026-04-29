@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTranslation } from 'react-i18next';
 import { kioskAPI, settingsAPI } from '../services/api';
 import ProgramRadioModal from '../components/ProgramRadioModal';
 import ConfigValidatorModal from '../components/ConfigValidatorModal';
@@ -41,6 +42,7 @@ function loadKioskSession() {
 }
 
 function Kiosk() {
+  const { t } = useTranslation();
   const [state, setState] = useState('loading'); // loading, qr, authenticated, disabled, error
   const [sessionId, setSessionId] = useState(null);
   const [qrUrl, setQrUrl] = useState(null);
@@ -113,7 +115,7 @@ function Kiosk() {
       }
     }).catch(() => {
       setState('error');
-      setErrorMessage('Failed to load settings');
+      setErrorMessage(t('kiosk.failedLoadSettings'));
     });
   }, []);
 
@@ -130,7 +132,7 @@ function Kiosk() {
         setState('disabled');
       } else {
         setState('error');
-        setErrorMessage('Failed to create kiosk session');
+        setErrorMessage(t('kiosk.failedCreateSession'));
       }
     }
   };
@@ -262,19 +264,19 @@ function Kiosk() {
     setPasswordSuccess('');
 
     if (!newPassword || !confirmPassword) {
-      setPasswordError('All fields are required');
+      setPasswordError(t('profile.allFieldsRequired'));
       return;
     }
     if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
+      setPasswordError(t('profile.newPasswordTooShort'));
       return;
     }
     if (/[&^$]/.test(newPassword)) {
-      setPasswordError('Password cannot contain &, ^, or $ characters');
+      setPasswordError(t('profile.passwordDisallowedChars'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+      setPasswordError(t('profile.newPasswordsNoMatch'));
       return;
     }
 
@@ -282,7 +284,7 @@ function Kiosk() {
     try {
       const kioskApi = getKioskApi();
       await kioskApi.post('/auth/change-password', { newPassword });
-      setPasswordSuccess('Password changed successfully!');
+      setPasswordSuccess(t('profile.passwordChanged'));
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => {
@@ -290,7 +292,7 @@ function Kiosk() {
         setPasswordSuccess('');
       }, 3000);
     } catch (err) {
-      setPasswordError(err.response?.data?.error || 'Failed to change password');
+      setPasswordError(err.response?.data?.error || t('profile.failedChangePassword'));
     } finally {
       setChangingPassword(false);
     }

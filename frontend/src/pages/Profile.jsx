@@ -1,8 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { usersAPI } from '../services/api';
 
 function Profile() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -10,6 +15,7 @@ function Profile() {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     callsign: user?.callsign || '',
+    language: user?.language || i18n.language || 'en',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -31,10 +37,12 @@ function Profile() {
     try {
       await usersAPI.update(user.id, formData);
       await updateUser();
-      setSuccess('Profile updated successfully');
+      i18n.changeLanguage(formData.language);
+      setSuccess(t('profile.profileUpdated'));
       setEditing(false);
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update profile');
+      setError(err.response?.data?.error || t('profile.failedUpdate'));
     } finally {
       setLoading(false);
     }
@@ -42,7 +50,7 @@ function Profile() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>User Profile</h1>
+      <h1>{t('profile.title')}</h1>
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
@@ -51,22 +59,26 @@ function Profile() {
         {!editing ? (
           <>
             <div style={{ marginBottom: '1rem' }}>
-              <strong>Username:</strong> {user?.username}
+              <strong>{t('profile.usernameLabel')}</strong> {user?.username}
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <strong>Email:</strong> {user?.email}
+              <strong>{t('profile.emailLabel')}</strong> {user?.email}
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <strong>First Name:</strong> {user?.firstName}
+              <strong>{t('profile.firstNameLabel')}</strong> {user?.firstName}
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <strong>Last Name:</strong> {user?.lastName}
+              <strong>{t('profile.lastNameLabel')}</strong> {user?.lastName}
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <strong>Callsign:</strong> {user?.callsign}
+              <strong>{t('profile.callsignLabel')}</strong> {user?.callsign}
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <strong>Roles:</strong>{' '}
+              <strong>{t('profile.languageLabel')}</strong>{' '}
+              {user?.language === 'nl' ? 'Nederlands' : user?.language === 'de' ? 'Deutsch' : 'English'}
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <strong>{t('profile.rolesLabel')}</strong>{' '}
               <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
                 {user?.roles?.map((r, index) => (
                   <span
@@ -91,13 +103,13 @@ function Profile() {
               onClick={() => setEditing(true)}
               style={{ padding: '0.5rem 1rem', background: '#f57c00', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
             >
-              Edit Profile
+              {t('profile.editButton')}
             </button>
           </>
         ) : (
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '1rem' }}>
-              <label><strong>Email:</strong></label>
+              <label><strong>{t('profile.emailLabel')}</strong></label>
               <input
                 type="email"
                 name="email"
@@ -107,7 +119,7 @@ function Profile() {
               />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <label><strong>First Name:</strong></label>
+              <label><strong>{t('profile.firstNameLabel')}</strong></label>
               <input
                 type="text"
                 name="firstName"
@@ -117,7 +129,7 @@ function Profile() {
               />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <label><strong>Last Name:</strong></label>
+              <label><strong>{t('profile.lastNameLabel')}</strong></label>
               <input
                 type="text"
                 name="lastName"
@@ -127,7 +139,7 @@ function Profile() {
               />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <label><strong>Callsign:</strong></label>
+              <label><strong>{t('profile.callsignLabel')}</strong></label>
               <input
                 type="text"
                 name="callsign"
@@ -136,6 +148,19 @@ function Profile() {
                 style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
               />
             </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label><strong>{t('profile.languageLabel')}</strong></label>
+              <select
+                name="language"
+                value={formData.language}
+                onChange={handleChange}
+                style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+              >
+                <option value="en">English</option>
+                <option value="nl">Nederlands</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
@@ -143,7 +168,7 @@ function Profile() {
                 disabled={loading}
                 style={{ padding: '0.5rem 1rem', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? t('common.saving') : t('profile.saveChanges')}
               </button>
               <button
                 type="button"
@@ -154,7 +179,7 @@ function Profile() {
                 }}
                 style={{ padding: '0.5rem 1rem', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </form>

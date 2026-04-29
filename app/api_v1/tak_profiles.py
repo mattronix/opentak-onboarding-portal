@@ -6,7 +6,7 @@ CRUD operations and download for TAK profile management
 from flask import request, jsonify, send_file, g
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity, verify_jwt_in_request, decode_token
 from app.api_v1 import api_v1
-from app.models import TakProfileModel, UserRoleModel, UserModel, db
+from app.models import TakProfileModel, UserRoleModel, UserModel, OneTimeTokenModel, db
 from werkzeug.utils import secure_filename
 import os
 import zipfile
@@ -113,11 +113,12 @@ def get_tak_profiles():
                         if p.id not in profiles_dict:
                             profiles_dict[p.id] = p
 
-        # Get all public profiles
+        # Get public profiles that have no role or user restrictions
         public_profiles = TakProfileModel.query.filter_by(isPublic=True).all()
         for p in public_profiles:
             if p.id not in profiles_dict:
-                profiles_dict[p.id] = p
+                if not p.roles and not p.users:
+                    profiles_dict[p.id] = p
 
         profiles = list(profiles_dict.values())
 
@@ -163,41 +164,105 @@ def get_tak_profile(profile_id):
         'isPublic': profile.isPublic,
         'takTemplateFolderLocation': profile.takTemplateFolderLocation,
         'takPrefFileLocation': profile.takPrefFileLocation,
+        'injectCallsign': profile.injectCallsign or False,
         'roles': [{'id': r.id, 'name': r.name, 'displayName': r.display_name} for r in profile.roles]
     }), 200
 
 
-@api_v1.route('/tak-profiles/<int:profile_id>/download', methods=['GET'])
-@jwt_required_with_query()
-def download_tak_profile(profile_id):
-    """Download TAK profile as ZIP with callsign injection
+@api_v1.route('/tak-profiles/<int:profile_id>/download-token', methods=['POST'])
+@jwt_required()
+def create_download_token(profile_id):
+    """Generate a one-time download token for a TAK profile"""
+    import secrets
+    import datetime
 
-    Supports JWT token from:
-    - Authorization header: Authorization: Bearer <token>
-    - Query parameter: ?token=<token> (for browser/direct link downloads)
-    """
-    current_user_id = int(get_jwt_identity_custom())  # Convert string to int
+    current_user_id = int(get_jwt_identity())
     user = UserModel.get_user_by_id(current_user_id)
-
     profile = TakProfileModel.get_tak_profile_by_id(profile_id)
+
     if not profile:
         return jsonify({'error': 'TAK profile not found'}), 404
 
-    # Check access
-    claims = get_jwt_custom()
+    claims = get_jwt()
     is_admin = 'administrator' in claims.get('roles', [])
-
-    # Check if user has access via direct assignment, role assignment, or public
-    has_access = is_admin or profile.isPublic or profile in user.takprofiles
+    is_unrestricted_public = profile.isPublic and not profile.roles and not profile.users
+    has_access = is_admin or is_unrestricted_public or profile in user.takprofiles
     if not has_access and user.roles:
-        # Check if profile is assigned to any of user's roles
         for role in user.roles:
             if profile in role.takprofiles:
                 has_access = True
                 break
-
     if not has_access:
         return jsonify({'error': 'Access denied'}), 403
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.datetime.now() + datetime.timedelta(minutes=5)
+    OneTimeTokenModel.create_token(
+        user_id=current_user_id,
+        token=token,
+        token_type=f'download_{profile_id}',
+        expires_at=expires_at
+    )
+
+    return jsonify({'token': token}), 201
+
+
+@api_v1.route('/tak-profiles/<int:profile_id>/download/<dl_token>/profile.zip', methods=['GET'])
+def download_tak_profile_by_token(profile_id, dl_token):
+    """Download TAK profile via one-time token with .zip URL for ATAK compatibility"""
+    return download_tak_profile(profile_id, dl_token_override=dl_token)
+
+
+@api_v1.route('/tak-profiles/<int:profile_id>/download', methods=['GET'])
+def download_tak_profile(profile_id, dl_token_override=None):
+    """Download TAK profile as ZIP with callsign injection
+
+    Supports authentication via:
+    - One-time download token: ?dl_token=<token> or URL path (secure, single-use)
+    - JWT Authorization header or query parameter: ?token=<token>
+    """
+    profile = TakProfileModel.get_tak_profile_by_id(profile_id)
+    if not profile:
+        return jsonify({'error': 'TAK profile not found'}), 404
+
+    dl_token = dl_token_override or request.args.get('dl_token')
+    if dl_token:
+        user_id = OneTimeTokenModel.validate_and_use_token(dl_token, f'download_{profile_id}')
+        if not user_id:
+            return jsonify({'error': 'Invalid or expired download link'}), 403
+        user = UserModel.get_user_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 403
+    else:
+        token = request.args.get('token')
+        if token:
+            try:
+                from flask import current_app
+                import jwt as pyjwt
+                decoded = pyjwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                user = UserModel.get_user_by_id(int(decoded['sub']))
+            except Exception:
+                return jsonify({'error': 'Invalid token'}), 401
+        else:
+            try:
+                verify_jwt_in_request()
+                user = UserModel.get_user_by_id(int(get_jwt_identity()))
+            except Exception:
+                return jsonify({'error': 'Authentication required'}), 401
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 403
+
+        is_admin = any(r.name == 'administrator' for r in user.roles)
+        is_unrestricted_public = profile.isPublic and not profile.roles and not profile.users
+        has_access = is_admin or is_unrestricted_public or profile in user.takprofiles
+        if not has_access and user.roles:
+            for role in user.roles:
+                if profile in role.takprofiles:
+                    has_access = True
+                    break
+        if not has_access:
+            return jsonify({'error': 'Access denied'}), 403
 
     try:
         # Create temporary directory for customized package
@@ -223,16 +288,29 @@ def download_tak_profile(profile_id):
 
         shutil.copytree(source_path, dest_path)
 
-        # Inject user callsign into preferences file if exists
-        if profile.takPrefFileLocation:
+        # Inject user callsign into preferences file if enabled
+        if profile.injectCallsign and profile.takPrefFileLocation:
             pref_file = os.path.join(dest_path, profile.takPrefFileLocation)
             if os.path.exists(pref_file):
-                with open(pref_file, 'r') as f:
-                    content = f.read()
-                # Replace ${callsign} placeholder with actual callsign
-                content = content.replace('${callsign}', callsign)
-                with open(pref_file, 'w') as f:
-                    f.write(content)
+                import xml.etree.ElementTree as ET
+                try:
+                    tree = ET.parse(pref_file)
+                    root = tree.getroot()
+                    found = False
+                    for entry in root.iter('entry'):
+                        if entry.get('key') == 'locationCallsign':
+                            entry.text = callsign
+                            found = True
+                            break
+                    if not found:
+                        new_entry = ET.SubElement(root, 'entry', {
+                            'key': 'locationCallsign',
+                            'class': 'class java.lang.String'
+                        })
+                        new_entry.text = callsign
+                    tree.write(pref_file, xml_declaration=True, encoding='unicode')
+                except ET.ParseError:
+                    pass
 
         # Create ZIP file with sanitized filename
         safe_profile_name = "".join(c for c in profile.name if c.isalnum() or c in (' ', '-', '_')).strip()
@@ -309,12 +387,15 @@ def create_tak_profile():
         is_public = request.form.get('isPublic', 'false').lower() == 'true'
         tak_pref_file = request.form.get('takPrefFileLocation', '')
 
+        inject_callsign = request.form.get('injectCallsign', 'false').lower() == 'true'
+
         profile = TakProfileModel.create_tak_profile(
             name=name,
             description=description,
             is_public=is_public,
             template_folder_location=folder_name,
-            pref_file_location=tak_pref_file
+            pref_file_location=tak_pref_file,
+            inject_callsign=inject_callsign
         )
 
         # Add roles
@@ -370,6 +451,8 @@ def update_tak_profile(profile_id):
             profile.isPublic = request.form.get('isPublic').lower() == 'true'
         if 'takPrefFileLocation' in request.form:
             profile.takPrefFileLocation = request.form.get('takPrefFileLocation')
+        if 'injectCallsign' in request.form:
+            profile.injectCallsign = request.form.get('injectCallsign').lower() == 'true'
 
         # Update roles if roleIds[] is present in the request
         if 'roleIds[]' in request.form or request.form:

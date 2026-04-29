@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { settingsAPI, oidcAPI, magicLinkAPI } from '../services/api';
 import './Auth.css';
@@ -8,6 +9,7 @@ import './Auth.css';
 const API_BASE_URL = window.location.origin;
 
 function Login() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -82,7 +84,7 @@ function Login() {
             navigate('/dashboard');
           }
         } else {
-          setError(result.error || 'OIDC login failed');
+          setError(result.error || t('auth.oidcLoginFailed'));
         }
         setLoading(false);
       });
@@ -103,12 +105,12 @@ function Login() {
             else if (needs_profile) navigate('/complete-profile');
             else navigate('/dashboard');
           } else {
-            setError(result.error || 'Magic link login failed');
+            setError(result.error || t('auth.magicLinkFailed'));
           }
           setLoading(false);
         })
         .catch((err) => {
-          setError(err.response?.data?.error || 'Invalid or expired magic link');
+          setError(err.response?.data?.error || t('auth.invalidMagicLink'));
           setLoading(false);
         });
     }
@@ -148,7 +150,7 @@ function Login() {
           </div>
         )}
         <h2>{brandName}</h2>
-        <h3>Login</h3>
+        <h3>{t('auth.login')}</h3>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && (
@@ -158,7 +160,7 @@ function Login() {
           )}
 
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">{t('common.username')}</label>
             <input
               id="username"
               type="text"
@@ -166,19 +168,19 @@ function Login() {
               onChange={(e) => setUsername(e.target.value)}
               required
               autoFocus
-              placeholder="Enter your username"
+              placeholder={t('auth.enterUsername')}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('common.password')}</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Enter your password"
+              placeholder={t('auth.enterPassword')}
             />
           </div>
 
@@ -187,13 +189,13 @@ function Login() {
             disabled={loading}
             className="btn btn-primary btn-block"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? t('auth.loggingIn') : t('auth.login')}
           </button>
 
           {forgotPasswordEnabled && (
             <div className="auth-links">
               <p>
-                <Link to="/forgot-password">forgot your password?</Link>
+                <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
               </p>
             </div>
           )}
@@ -203,7 +205,7 @@ function Login() {
         {oidcProviders.length > 0 && (
           <div className="oidc-providers">
             <div className="oidc-divider">
-              <span>or</span>
+              <span>{t('common.or')}</span>
             </div>
             {oidcProviders.map((provider) => (
               <button
@@ -236,7 +238,7 @@ function Login() {
           <div className="oidc-providers">
             {oidcProviders.length === 0 && (
               <div className="oidc-divider">
-                <span>or</span>
+                <span>{t('common.or')}</span>
               </div>
             )}
             {!showMagicLink ? (
@@ -246,7 +248,7 @@ function Login() {
                 onClick={() => setShowMagicLink(true)}
                 disabled={loading}
               >
-                Email me a login link
+                {t('auth.emailLoginLink')}
               </button>
             ) : !magicLinkSent ? (
               <form
@@ -258,21 +260,21 @@ function Login() {
                     await magicLinkAPI.requestLink(magicLinkEmail);
                     setMagicLinkSent(true);
                   } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to send login link');
+                    setError(err.response?.data?.error || t('auth.failedSendLink'));
                   } finally {
                     setMagicLinkLoading(false);
                   }
                 }}
               >
                 <div className="form-group">
-                  <label htmlFor="magicEmail">Email Address</label>
+                  <label htmlFor="magicEmail">{t('common.email')}</label>
                   <input
                     id="magicEmail"
                     type="email"
                     value={magicLinkEmail}
                     onChange={(e) => setMagicLinkEmail(e.target.value)}
                     required
-                    placeholder="Enter your email"
+                    placeholder={t('auth.enterEmail')}
                     autoFocus
                   />
                 </div>
@@ -281,7 +283,7 @@ function Login() {
                   className="btn btn-primary btn-block"
                   disabled={magicLinkLoading}
                 >
-                  {magicLinkLoading ? 'Sending...' : 'Send Login Link'}
+                  {magicLinkLoading ? t('auth.sending') : t('auth.sendLoginLink')}
                 </button>
                 <button
                   type="button"
@@ -289,13 +291,13 @@ function Login() {
                   style={{ marginTop: '0.5rem', background: 'transparent', color: '#666' }}
                   onClick={() => setShowMagicLink(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </form>
             ) : (
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                 <div className="alert" style={{ background: '#d4edda', color: '#155724', padding: '0.75rem', borderRadius: '8px' }}>
-                  Check your email for a login link
+                  {t('auth.checkEmailLoginLink')}
                 </div>
                 <button
                   type="button"
@@ -303,7 +305,7 @@ function Login() {
                   style={{ marginTop: '0.75rem', background: 'transparent', color: '#666' }}
                   onClick={() => { setShowMagicLink(false); setMagicLinkSent(false); setMagicLinkEmail(''); }}
                 >
-                  Back to login
+                  {t('auth.backToLogin')}
                 </button>
               </div>
             )}
@@ -311,7 +313,7 @@ function Login() {
         )}
 
         <div className="auth-footer">
-          <p>Need an account? Contact your administrator for an onboarding code.</p>
+          <p>{t('auth.needAccount')}</p>
         </div>
       </div>
     </div>

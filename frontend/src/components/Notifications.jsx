@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
 import './Notifications.css';
 
 const Notifications = () => {
+  const { t } = useTranslation();
   const { notifications, removeNotification, confirmDialog } = useNotification();
 
   return (
@@ -48,13 +50,13 @@ const Notifications = () => {
                 className="btn-confirm-cancel"
                 onClick={confirmDialog.onCancel}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 className="btn-confirm-ok"
                 onClick={confirmDialog.onConfirm}
               >
-                Confirm
+                {t('common.confirm')}
               </button>
             </div>
           </div>

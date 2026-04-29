@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, settingsAPI } from '../services/api';
 import './Auth.css';
 
 function SetPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { updateUser } = useAuth();
   const [formData, setFormData] = useState({
@@ -41,23 +43,23 @@ function SetPassword() {
     setError('');
 
     if (!formData.newPassword || !formData.confirmPassword) {
-      setError('Both fields are required');
+      setError(t('auth.bothFieldsRequired'));
       return;
     }
 
     if (formData.newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
     const disallowedChars = /[&^$]/;
     if (disallowedChars.test(formData.newPassword)) {
-      setError('Password cannot contain &, ^, or $ characters');
+      setError(t('auth.passwordNoSpecial'));
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsNoMatch'));
       return;
     }
 
@@ -68,7 +70,7 @@ function SetPassword() {
       await updateUser();
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to set password');
+      setError(err.response?.data?.error || t('auth.failedSetPassword'));
     } finally {
       setLoading(false);
     }
@@ -82,8 +84,8 @@ function SetPassword() {
             <img src={logoPath} alt={brandName} />
           </div>
         )}
-        <h2>Set Your Password</h2>
-        <p>Please set a password for your account to continue.</p>
+        <h2>{t('auth.setPasswordTitle')}</h2>
+        <p>{t('auth.setPasswordDesc')}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {error && (
@@ -93,7 +95,7 @@ function SetPassword() {
           )}
 
           <div className="form-group">
-            <label htmlFor="newPassword">Password *</label>
+            <label htmlFor="newPassword">{t('auth.newPassword')} *</label>
             <input
               id="newPassword"
               name="newPassword"
@@ -104,15 +106,15 @@ function SetPassword() {
               autoFocus
               autoComplete="new-password"
               minLength={8}
-              placeholder="Enter a password"
+              placeholder={t('auth.enterAPassword')}
             />
             <small style={{ color: '#666', fontSize: '0.8rem' }}>
-              Must be at least 8 characters. Cannot contain &amp;, ^, or $ characters.
+              {t('auth.passwordMinLength')}
             </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password *</label>
+            <label htmlFor="confirmPassword">{t('auth.confirmNewPassword')} *</label>
             <input
               id="confirmPassword"
               name="confirmPassword"
@@ -122,7 +124,7 @@ function SetPassword() {
               required
               autoComplete="new-password"
               minLength={8}
-              placeholder="Confirm your password"
+              placeholder={t('auth.confirmYourPassword')}
             />
           </div>
 
@@ -131,7 +133,7 @@ function SetPassword() {
             disabled={loading}
             className="btn btn-primary btn-block"
           >
-            {loading ? 'Setting password...' : 'Set Password'}
+            {loading ? t('auth.settingPassword') : t('auth.setPassword')}
           </button>
         </form>
       </div>

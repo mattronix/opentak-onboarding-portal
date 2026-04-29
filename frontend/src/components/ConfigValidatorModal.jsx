@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { radiosAPI, meshtasticGroupsAPI } from '../services/api';
 import { meshtasticSerial } from '../services/meshtasticSerial';
 import './ConfigValidatorModal.css';
 
 function ConfigValidatorModal({ radio, onClose }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1); // 1: Select config, 2: Connect & Compare
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -366,14 +368,14 @@ function ConfigValidatorModal({ radio, onClose }) {
     <div className="modal-overlay">
       <div className="modal config-validator-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Validate Config: {radio.name}</h2>
+          <h2>{t('radio.validateTitle')}{radio.name}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">
           {!browserSupport.isSupported ? (
             <div className="browser-warning">
-              <h3>Browser Not Supported</h3>
+              <h3>{t('radio.browserNotSupported')}</h3>
               <p>{browserSupport.message}</p>
             </div>
           ) : (
@@ -383,13 +385,13 @@ function ConfigValidatorModal({ radio, onClose }) {
               {/* Step 1: Select config to compare against */}
               {step === 1 && (
                 <div className="validator-step">
-                  <h3>Select Channel Group to Compare</h3>
-                  <p>Choose the configuration you want to validate against.</p>
+                  <h3>{t('radio.selectGroupToCompare')}</h3>
+                  <p>{t('radio.chooseConfigToValidate')}</p>
 
                   {loadingGroups ? (
-                    <div className="loading">Loading channel groups...</div>
+                    <div className="loading">{t('radio.loadingChannelGroups')}</div>
                   ) : groups.length === 0 ? (
-                    <div className="empty-state">No channel groups available.</div>
+                    <div className="empty-state">{t('radio.noChannelGroups')}</div>
                   ) : (
                     <div className="group-select">
                       {groups.map(group => (
@@ -400,8 +402,8 @@ function ConfigValidatorModal({ radio, onClose }) {
                         >
                           <div className="group-name">{group.name}</div>
                           <div className="group-details">
-                            <span className="channel-count">{group.channel_count} channels</span>
-                            {group.yamlConfig && <span className="has-config">Has device config</span>}
+                            <span className="channel-count">{group.channel_count} {t('radio.channels')}</span>
+                            {group.yamlConfig && <span className="has-config">{t('radio.hasDeviceConfig')}</span>}
                           </div>
                         </div>
                       ))}
@@ -417,14 +419,14 @@ function ConfigValidatorModal({ radio, onClose }) {
                     <div className="connecting-overlay">
                       <div className="connecting-header">
                         <div className="programming-spinner"></div>
-                        <h3>Reading Configuration...</h3>
+                        <h3>{t('radio.readingConfig')}</h3>
                       </div>
                       <p className="connecting-message">
-                        {statusMessage || 'Connecting to radio...'}
+                        {statusMessage || t('radio.connectingToRadio')}
                       </p>
                       {scanLog.length > 0 && (
                         <div className="scan-terminal">
-                          <div className="terminal-header">Connection Log</div>
+                          <div className="terminal-header">{t('radio.connectionLog')}</div>
                           <div className="terminal-content" ref={terminalRef}>
                             {scanLog.map((entry, idx) => (
                               <div key={idx} className={`terminal-line ${entry.type}`}>
@@ -439,20 +441,20 @@ function ConfigValidatorModal({ radio, onClose }) {
                   ) : noConfigData ? (
                     <div className="no-config-warning">
                       <div className="warning-icon">⚠</div>
-                      <h3>Could Not Read Configuration</h3>
-                      <p>Unable to read channel and device configuration from the radio.</p>
-                      <p>This can happen if the radio firmware doesn&apos;t support reading config via Web Serial.</p>
+                      <h3>{t('radio.couldNotRead')}</h3>
+                      <p>{t('radio.couldNotReadDesc')}</p>
+                      <p>{t('radio.couldNotReadReason')}</p>
 
                       <div className="alternative-options">
-                        <h4>Alternative Options:</h4>
+                        <h4>{t('radio.alternativeOptions')}</h4>
                         <ol>
                           <li>
-                            <strong>Use Meshtastic Web Client:</strong>
-                            <p>Open <a href="https://client.meshtastic.org" target="_blank" rel="noopener noreferrer">client.meshtastic.org</a> to export your radio&apos;s config</p>
+                            <strong>{t('radio.useWebClient')}</strong>
+                            <p>{t('radio.openWebClient')} <a href="https://client.meshtastic.org" target="_blank" rel="noopener noreferrer">client.meshtastic.org</a></p>
                           </li>
                           <li>
-                            <strong>Use the Program feature:</strong>
-                            <p>Instead of comparing, program the radio with the target configuration directly</p>
+                            <strong>{t('radio.useProgramFeature')}</strong>
+                            <p>{t('radio.programInstead')}</p>
                           </li>
                         </ol>
                       </div>
@@ -463,18 +465,18 @@ function ConfigValidatorModal({ radio, onClose }) {
                         {hasChanges ? (
                           <div className="diff-status changes">
                             <span className="diff-icon">⚠</span>
-                            <span>Configuration differs from target - {diff.diffs.filter(d => d.changed).length} differences found</span>
+                            <span>{t('radio.configDiffers')}{diff.diffs.filter(d => d.changed).length} {t('radio.differencesFound')}</span>
                           </div>
                         ) : (
                           <div className="diff-status match">
                             <span className="diff-icon">✓</span>
-                            <span>Configuration matches target</span>
+                            <span>{t('radio.configMatches')}</span>
                           </div>
                         )}
                         {diff.notReadCount > 0 && (
                           <div className="diff-status not-read">
                             <span className="diff-icon">?</span>
-                            <span>{diff.notReadCount} settings could not be read from radio</span>
+                            <span>{diff.notReadCount} {t('radio.couldNotReadSettings')}</span>
                           </div>
                         )}
                       </div>
@@ -482,7 +484,7 @@ function ConfigValidatorModal({ radio, onClose }) {
                       {/* YAML Side-by-Side Comparison with line-by-line diff */}
                       <div className="yaml-comparison">
                         <div className="yaml-panel current-panel">
-                          <div className="yaml-header">Current (Radio)</div>
+                          <div className="yaml-header">{t('radio.currentRadio')}</div>
                           <div className="yaml-content">
                             {diff.currentLines.map((line, idx) => (
                               <div key={idx} className={`diff-line ${line.type}`}>
@@ -493,7 +495,7 @@ function ConfigValidatorModal({ radio, onClose }) {
                           </div>
                         </div>
                         <div className="yaml-panel target-panel">
-                          <div className="yaml-header">Target (Config)</div>
+                          <div className="yaml-header">{t('radio.targetConfig')}</div>
                           <div className="yaml-content">
                             {diff.targetLines.map((line, idx) => (
                               <div key={idx} className={`diff-line ${line.type}`}>
@@ -508,13 +510,13 @@ function ConfigValidatorModal({ radio, onClose }) {
                       {/* Diff Details - show changed keys */}
                       {hasChanges && (
                         <div className="diff-section">
-                          <h4>Changed Settings</h4>
+                          <h4>{t('radio.changedSettings')}</h4>
                           <table className="diff-table">
                             <thead>
                               <tr>
-                                <th>Key</th>
-                                <th className="current">Current</th>
-                                <th className="target">Target</th>
+                                <th>{t('radio.key')}</th>
+                                <th className="current">{t('radio.current')}</th>
+                                <th className="target">{t('radio.target')}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -539,13 +541,13 @@ function ConfigValidatorModal({ radio, onClose }) {
                       {/* Unread settings - shown in yellow */}
                       {diff.notReadCount > 0 && (
                         <div className="diff-section not-read-section">
-                          <h4>Unread Settings ({diff.notReadCount})</h4>
+                          <h4>{t('radio.unreadSettings')}{diff.notReadCount})</h4>
                           <table className="diff-table">
                             <thead>
                               <tr>
-                                <th>Key</th>
-                                <th className="not-read-col">Current</th>
-                                <th className="not-read-col">Target</th>
+                                <th>{t('radio.key')}</th>
+                                <th className="not-read-col">{t('radio.current')}</th>
+                                <th className="not-read-col">{t('radio.target')}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -554,7 +556,7 @@ function ConfigValidatorModal({ radio, onClose }) {
                                   <td className="diff-key">{item.key}</td>
                                   <td className="not-read-col">
                                     <span className="diff-marker warn">?</span>
-                                    (not read)
+                                    {t('radio.notRead')}
                                   </td>
                                   <td className="not-read-col">{item.target}</td>
                                 </tr>
@@ -566,14 +568,14 @@ function ConfigValidatorModal({ radio, onClose }) {
                     </div>
                   ) : (
                     <div className="validator-instructions">
-                      <h3>Connect Radio to Compare</h3>
-                      <p>Connect your Meshtastic radio via USB to read its current configuration.</p>
+                      <h3>{t('radio.connectToCompare')}</h3>
+                      <p>{t('radio.connectToCompareDesc')}</p>
                       <button
                         className="btn btn-primary btn-lg"
                         onClick={handleCompare}
                         disabled={loading}
                       >
-                        Connect & Compare
+                        {t('radio.connectAndCompare')}
                       </button>
                     </div>
                   )}
@@ -587,14 +589,14 @@ function ConfigValidatorModal({ radio, onClose }) {
           {step === 1 && (
             <>
               <button className="btn btn-secondary" onClick={onClose}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 className="btn btn-primary"
                 onClick={() => setStep(2)}
                 disabled={!selectedGroupId}
               >
-                Next: Compare Config
+                {t('radio.nextCompare')}
               </button>
             </>
           )}
@@ -614,7 +616,7 @@ function ConfigValidatorModal({ radio, onClose }) {
                 }}
                 disabled={loading}
               >
-                Back
+                {t('common.back')}
               </button>
               {diff && (
                 <button
@@ -624,7 +626,7 @@ function ConfigValidatorModal({ radio, onClose }) {
                     onClose();
                   }}
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               )}
             </>

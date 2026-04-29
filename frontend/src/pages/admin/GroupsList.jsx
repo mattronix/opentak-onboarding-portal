@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { groupsAPI, usersAPI } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../components/AdminTable.css';
 
 function GroupsList() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showError, confirm } = useNotification();
   const { hasRole } = useAuth();
@@ -53,7 +55,7 @@ function GroupsList() {
       queryClient.invalidateQueries(['groups']);
       closeModal();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to create group'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.groups.failedCreate')),
   });
 
   const updateMutation = useMutation({
@@ -62,13 +64,13 @@ function GroupsList() {
       queryClient.invalidateQueries(['groups']);
       closeModal();
     },
-    onError: (err) => setError(err.response?.data?.error || 'Failed to update group'),
+    onError: (err) => setError(err.response?.data?.error || t('admin.groups.failedUpdate')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => groupsAPI.delete(id),
     onSuccess: () => queryClient.invalidateQueries(['groups']),
-    onError: (err) => showError(err.response?.data?.error || 'Failed to delete group'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.groups.failedDelete')),
   });
 
   const syncMutation = useMutation({
@@ -77,7 +79,7 @@ function GroupsList() {
       queryClient.invalidateQueries(['groups']);
       setError('');
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to sync groups from OTS'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.groups.failedSync')),
   });
 
   const addMemberMutation = useMutation({
@@ -87,7 +89,7 @@ function GroupsList() {
       queryClient.invalidateQueries(['groups']);
       queryClient.invalidateQueries(['users']);
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to add member'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.groups.failedAddMember')),
   });
 
   const removeMemberMutation = useMutation({
@@ -97,7 +99,7 @@ function GroupsList() {
       queryClient.invalidateQueries(['groups']);
       queryClient.invalidateQueries(['users']);
     },
-    onError: (err) => showError(err.response?.data?.error || 'Failed to remove member'),
+    onError: (err) => showError(err.response?.data?.error || t('admin.groups.failedRemoveMember')),
   });
 
   const closeModal = () => {
@@ -200,14 +202,14 @@ function GroupsList() {
     addMemberMutation.mutate({ userId: user.id, direction: newDirection });
   };
 
-  if (isLoading) return <div className="admin-page"><div className="loading-state">Loading...</div></div>;
+  if (isLoading) return <div className="admin-page"><div className="loading-state">{t('common.loading')}</div></div>;
 
   const groups = groupsData?.groups || [];
 
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <h1>OTS Groups Management</h1>
+        <h1>{t('admin.groups.title')}</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {canEdit && (
             <button
@@ -215,12 +217,12 @@ function GroupsList() {
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
             >
-              {syncMutation.isPending ? 'Syncing...' : 'Sync from OTS'}
+              {syncMutation.isPending ? t('common.syncing') : t('admin.groups.syncFromOts')}
             </button>
           )}
           {canEdit && (
             <button className="btn btn-primary" onClick={openCreate}>
-              + Add Group
+              {t('admin.groups.addGroup')}
             </button>
           )}
         </div>
@@ -228,26 +230,26 @@ function GroupsList() {
 
       {syncMutation.isSuccess && (
         <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
-          {syncMutation.data?.data?.message || 'Groups synced successfully'}
+          {syncMutation.data?.data?.message || t('admin.groups.syncSuccess')}
         </div>
       )}
 
       <div className="admin-table-container">
         {groups.length === 0 ? (
           <div className="empty-state">
-            No groups found. Click "Sync from OTS" to import groups from your OpenTAK Server.
+            {t('admin.groups.noGroups')}
           </div>
         ) : (
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Display Name</th>
-                <th>Active</th>
-                <th>Users</th>
-                <th>Onboarding Codes</th>
-                <th>Last Synced</th>
-                <th>Actions</th>
+                <th>{t('common.name')}</th>
+                <th>{t('admin.groups.displayName')}</th>
+                <th>{t('common.active')}</th>
+                <th>{t('common.users')}</th>
+                <th>{t('admin.groups.onboardingCodes')}</th>
+                <th>{t('admin.groups.lastSynced')}</th>
+                <th>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -264,23 +266,23 @@ function GroupsList() {
                   <td>{group.displayName || '-'}</td>
                   <td>
                     <span className={`badge ${group.active ? 'badge-success' : 'badge-danger'}`}>
-                      {group.active ? 'Active' : 'Inactive'}
+                      {group.active ? t('common.active') : t('common.inactive')}
                     </span>
                   </td>
                   <td>{group.userCount || 0}</td>
                   <td>{group.onboardingCodeCount || 0}</td>
-                  <td>{group.syncedAt ? new Date(group.syncedAt).toLocaleString() : 'Never'}</td>
+                  <td>{group.syncedAt ? new Date(group.syncedAt).toLocaleString() : t('common.never')}</td>
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-sm btn-secondary" onClick={() => openEdit(group)}>
-                        Edit
+                        {t('common.edit')}
                       </button>
                       {canEdit && (
                         <button className="btn btn-sm btn-danger" onClick={async () => {
-                          const confirmed = await confirm(`Delete group "${group.name}"? This will also remove it from OTS.`, 'Delete Group');
+                          const confirmed = await confirm(t('admin.groups.deleteConfirm', { name: group.name }), t('admin.groups.deleteGroup'));
                           if (confirmed) deleteMutation.mutate(group.id);
                         }}>
-                          Delete
+                          {t('common.delete')}
                         </button>
                       )}
                     </div>
@@ -297,7 +299,7 @@ function GroupsList() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
             <div className="modal-header">
-              <h2>{editing ? `Manage ${editing.name}` : 'Create Group'}</h2>
+              <h2>{editing ? t('admin.groups.manageGroup', { name: editing.name }) : t('admin.groups.createGroup')}</h2>
               <button className="modal-close" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -305,7 +307,7 @@ function GroupsList() {
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <div className="form-group">
-                  <label>Name *</label>
+                  <label>{t('admin.groups.nameLabel')}</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -313,21 +315,21 @@ function GroupsList() {
                     required
                     disabled={!!editing}
                   />
-                  <span className="help-text">{editing ? 'Group name cannot be changed' : 'This will create the group in OTS as well'}</span>
+                  <span className="help-text">{editing ? t('admin.groups.nameCannotChange') : t('admin.groups.nameHelpCreate')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Display Name</label>
+                  <label>{t('admin.groups.displayNameLabel')}</label>
                   <input
                     type="text"
                     value={formData.displayName}
                     onChange={(e) => setFormData({...formData, displayName: e.target.value})}
                   />
-                  <span className="help-text">Friendly name shown in the portal</span>
+                  <span className="help-text">{t('admin.groups.displayNameHelp')}</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{t('admin.groups.descriptionLabel')}</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -342,15 +344,15 @@ function GroupsList() {
                       onChange={(e) => setFormData({...formData, active: e.target.checked})}
                       style={{ width: 'auto' }}
                     />
-                    <span style={{ fontWeight: 'normal' }}>Active</span>
+                    <span style={{ fontWeight: 'normal' }}>{t('common.active')}</span>
                   </label>
-                  <span className="help-text">Inactive groups will not be assigned during registration</span>
+                  <span className="help-text">{t('admin.groups.inactiveHelp')}</span>
                 </div>
 
                 {canEdit && (
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                     <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
-                      {createMutation.isPending ? 'Creating in OTS...' : updateMutation.isPending ? 'Saving...' : editing ? 'Save Changes' : 'Create Group'}
+                      {createMutation.isPending ? t('admin.groups.creatingInOts') : updateMutation.isPending ? t('common.saving') : editing ? t('admin.groups.saveChanges') : t('admin.groups.createGroup')}
                     </button>
                   </div>
                 )}
@@ -359,28 +361,28 @@ function GroupsList() {
                 {editing && (
                   <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
                     <div className="form-group">
-                      <label>Members</label>
+                      <label>{t('admin.groups.members')}</label>
                       <input
                         type="text"
-                        placeholder="Search users to add..."
+                        placeholder={t('admin.groups.searchUsers')}
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
                       />
-                      <span className="help-text">Current members shown below. Search to add new users.</span>
+                      <span className="help-text">{t('admin.groups.membersHelp')}</span>
                     </div>
 
                     {membersLoading ? (
-                      <div className="loading-state">Loading members...</div>
+                      <div className="loading-state">{t('admin.groups.loadingMembers')}</div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
                         {displayUsers.length === 0 && !memberSearch && (
                           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                            No members in this group. Search to add users.
+                            {t('admin.groups.noMembers')}
                           </div>
                         )}
                         {displayUsers.length === 0 && memberSearch && (
                           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                            No matching users found.
+                            {t('admin.groups.noMatchingUsers')}
                           </div>
                         )}
                         {displayUsers.map(user => {
@@ -405,9 +407,9 @@ function GroupsList() {
                                   disabled={addMemberMutation.isPending || removeMemberMutation.isPending}
                                   style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-input)', borderRadius: '4px' }}
                                 >
-                                  <option value="BOTH">Both (IN + OUT)</option>
-                                  <option value="IN">IN only</option>
-                                  <option value="OUT">OUT only</option>
+                                  <option value="BOTH">{t('common.both')}</option>
+                                  <option value="IN">{t('common.inOnly')}</option>
+                                  <option value="OUT">{t('common.outOnly')}</option>
                                 </select>
                               )}
                             </div>
@@ -421,7 +423,7 @@ function GroupsList() {
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </form>
