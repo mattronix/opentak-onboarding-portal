@@ -14,6 +14,9 @@ import shutil
 from app.settings import DATAPACKAGE_UPLOAD_FOLDER
 from functools import wraps
 
+DOWNLOAD_TEMP_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tmp_downloads')
+os.makedirs(DOWNLOAD_TEMP_DIR, exist_ok=True)
+
 
 def get_jwt_identity_custom():
     """Get JWT identity from either query parameter or standard header"""
@@ -195,6 +198,13 @@ def create_download_token(profile_id):
     if not has_access:
         return jsonify({'error': 'Access denied'}), 403
 
+    # Remove any existing tokens for this user+profile
+    OneTimeTokenModel.query.filter_by(
+        user_id=current_user_id,
+        token_type=f'download_{profile_id}'
+    ).delete()
+    db.session.commit()
+
     token = secrets.token_urlsafe(32)
     expires_at = datetime.datetime.now() + datetime.timedelta(minutes=5)
     OneTimeTokenModel.create_token(
@@ -267,7 +277,7 @@ def download_tak_profile(profile_id, dl_token_override=None):
     try:
         # Create temporary directory for customized package
         import tempfile
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp(dir=DOWNLOAD_TEMP_DIR)
 
         # Get user callsign or use username as fallback
         callsign = user.callsign if user.callsign else user.username

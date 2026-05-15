@@ -8,6 +8,7 @@ instance/
 .DS_Store
 datapackages/*
 updates/*
+tmp_downloads/
 app/static/img/custom/*.png
 app/static/img/custom/*.jpeg
 app/static/img/custom/*.jpeg
