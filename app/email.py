@@ -35,7 +35,7 @@ def get_logo_url():
     return None
 
 
-def send_html_email(subject, recipients, message, title=None, template="email_default_template.html", sender=MAIL_DEFAULT_SENDER, link_url="https://portal.example.nl", link_title="LOGIN to TAK Portal"):
+def send_html_email(subject, recipients, message, title=None, template="email_default_template.html", sender=MAIL_DEFAULT_SENDER, link_url=FRONTEND_URL, link_title="LOGIN to TAK Portal"):
     # Skip if email is disabled
     if not MAIL_ENABLED:
         logging.info(f"Email disabled - skipping email to {recipients} with subject '{subject}'")
