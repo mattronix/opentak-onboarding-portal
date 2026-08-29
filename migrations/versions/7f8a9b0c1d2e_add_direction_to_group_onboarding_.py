@@ -17,10 +17,10 @@ depends_on = None
 
 
 def column_exists(table_name, column_name):
-    """Check if a column already exists in a table (SQLite)."""
+    """Check if a column already exists in a table (dialect-agnostic)."""
     bind = op.get_bind()
-    result = bind.execute(sa.text(f"PRAGMA table_info('{table_name}')"))
-    columns = [row[1] for row in result]
+    inspector = sa.inspect(bind)
+    columns = [col["name"] for col in inspector.get_columns(table_name)]
     return column_name in columns
 
 
