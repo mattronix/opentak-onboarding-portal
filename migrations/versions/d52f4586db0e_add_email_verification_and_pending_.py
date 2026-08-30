@@ -44,7 +44,7 @@ def upgrade():
         batch_op.add_column(sa.Column('onboardContactId', sa.Integer(), nullable=True))
 
     # Copy data from old column to new column
-    op.execute('UPDATE onboardingcodes SET onboardContactId = onboardContact WHERE onboardContact IS NOT NULL')
+    op.execute('UPDATE onboardingcodes SET "onboardContactId" = "onboardContact" WHERE "onboardContact" IS NOT NULL')
 
     # Now drop old column and add constraints
     with op.batch_alter_table('onboardingcodes', schema=None) as batch_op:
